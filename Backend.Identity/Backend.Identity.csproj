@@ -22,4 +22,9 @@
     <ProjectReference Include="..\Backend.Application\Backend.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\" />
+    <Folder Include="Profiles\" />
+  </ItemGroup>
+
 </Project>
