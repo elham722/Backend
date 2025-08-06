@@ -1,11 +1,42 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35931.197 d17.13
+VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B6FC45E5-4EDF-4553-B182-877240191E1B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "API", "API", "{99967397-A7A5-4312-8111-AA791A1921FB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{B80EE77C-AB3D-474E-AC56-2D93FDA50B0D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{0588DB8C-106B-4B72-9721-78F6C7ED2D17}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastructure", "{1CFD5F9E-5526-4763-BF03-F53A8B3C22C6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.Domain", "Backend.Domain\Backend.Domain.csproj", "{16631002-2C4C-458A-9C40-9CE199A7EFCF}"
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{16631002-2C4C-458A-9C40-9CE199A7EFCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16631002-2C4C-458A-9C40-9CE199A7EFCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16631002-2C4C-458A-9C40-9CE199A7EFCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16631002-2C4C-458A-9C40-9CE199A7EFCF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{99967397-A7A5-4312-8111-AA791A1921FB} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{B80EE77C-AB3D-474E-AC56-2D93FDA50B0D} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{0588DB8C-106B-4B72-9721-78F6C7ED2D17} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{1CFD5F9E-5526-4763-BF03-F53A8B3C22C6} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{16631002-2C4C-458A-9C40-9CE199A7EFCF} = {B80EE77C-AB3D-474E-AC56-2D93FDA50B0D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C6651932-E48F-40B2-AE71-62923DE2A191}
