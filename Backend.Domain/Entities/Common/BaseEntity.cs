@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using Backend.Domain.Events;
 using System.Collections.Generic;
 
-namespace Backend.Domain.Common
+namespace Backend.Domain.Entities.Common
 {
     public abstract class BaseEntity<TId> : IEquatable<BaseEntity<TId>>
     {

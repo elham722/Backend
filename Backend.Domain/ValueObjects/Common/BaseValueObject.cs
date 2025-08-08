@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Backend.Domain.Common
+namespace Backend.Domain.ValueObjects.Common
 {
     public abstract class BaseValueObject
     {
@@ -24,6 +22,16 @@ namespace Backend.Domain.Common
                 {
                     unchecked { return current * 23 + (obj?.GetHashCode() ?? 0); }
                 });
+        }
+
+        public static bool operator ==(BaseValueObject? left, BaseValueObject? right)
+        {
+            return EqualityComparer<BaseValueObject>.Default.Equals(left, right);
+        }
+
+        public static bool operator !=(BaseValueObject? left, BaseValueObject? right)
+        {
+            return !(left == right);
         }
     }
 }

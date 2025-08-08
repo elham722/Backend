@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Backend.Domain.Events;
+using Backend.Domain.Entities.Common;
 
-namespace Backend.Domain.Common
+namespace Backend.Domain.Aggregates.Common
 {
     public abstract class BaseAggregateRoot<TId> : BaseEntity<TId>
     {

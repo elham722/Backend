@@ -1,13 +1,16 @@
-using Backend.Domain.Common;
+using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Backend.Domain.Aggregates.Common;
 
-namespace DigitekShop.Domain.Interfaces
+namespace Backend.Domain.Interfaces.Repositories
 {
-    public interface IGenericRepository<T, TId> where T : BaseAggregateRoot<TId>
+    public interface IGenericRepository<T, TId> : IReadRepository<T, TId>, IWriteRepository<T, TId> 
+        where T : BaseAggregateRoot<TId>
     {
-        Task<T?> GetByIdAsync(TId id, CancellationToken ct = default);
-        Task AddAsync(T entity, CancellationToken ct = default);
-        Task UpdateAsync(T entity, CancellationToken ct = default);
-        Task DeleteAsync(T entity, CancellationToken ct = default);
-
+        // Additional methods specific to generic repository can be added here
+        // For example, methods that combine read and write operations
     }
 } 

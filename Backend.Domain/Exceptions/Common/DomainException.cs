@@ -1,6 +1,6 @@
 using System;
 
-namespace Backend.Domain.Common
+namespace Backend.Domain.Exceptions.Common
 {
     public class DomainException : Exception
     {
