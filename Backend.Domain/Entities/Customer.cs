@@ -21,10 +21,10 @@ namespace Backend.Domain.Entities
         public string? PassportNumber { get; private set; }
         public Address? PrimaryAddress { get; private set; }
 
-        // Contact Information
-        public string? Email { get; private set; }
-        public string? PhoneNumber { get; private set; }
-        public string? MobileNumber { get; private set; }
+        // Contact Information - Using Value Objects
+        public Email? Email { get; private set; }
+        public PhoneNumber? PhoneNumber { get; private set; }
+        public PhoneNumber? MobileNumber { get; private set; }
 
         // Business Information
         public EntityStatus Status { get; private set; }
@@ -47,6 +47,13 @@ namespace Backend.Domain.Entities
         public bool IsAdult => Age.HasValue && Age.Value >= 18;
         public bool IsVerified => CustomerStatus == CustomerStatus.Verified;
         public bool IsPremium => CustomerStatus == CustomerStatus.Premium;
+
+        // Enhanced Computed Properties using Value Objects
+        public bool HasBusinessEmail => Email?.IsBusinessEmail() ?? false;
+        public bool HasCorporateEmail => Email?.IsCorporateEmail() ?? false;
+        public bool HasMobileNumber => MobileNumber?.IsMobile() ?? false;
+        public bool HasTehranNumber => MobileNumber?.IsTehranNumber() ?? PhoneNumber?.IsTehranNumber() ?? false;
+        public bool HasCompleteAddress => PrimaryAddress?.IsComplete ?? false;
 
         private Customer() { } // For EF Core
 
@@ -143,20 +150,35 @@ namespace Backend.Domain.Entities
             OnUpdated();
         }
 
-        // Contact Information Methods
-        public void SetEmail(string? email, string updatedBy)
+        // Contact Information Methods - Using Value Objects
+        public void SetEmail(string? emailValue, string updatedBy)
         {
             Guard.AgainstNullOrEmpty(updatedBy, nameof(updatedBy));
 
-            if (!string.IsNullOrWhiteSpace(email) && !IsValidEmail(email))
-                throw new ArgumentException("Invalid email format", nameof(email));
+            Email = !string.IsNullOrWhiteSpace(emailValue) ? Email.Create(emailValue) : null;
+            SetUpdatedBy(updatedBy);
+            OnUpdated();
+        }
+
+        public void SetEmail(Email? email, string updatedBy)
+        {
+            Guard.AgainstNullOrEmpty(updatedBy, nameof(updatedBy));
 
             Email = email;
             SetUpdatedBy(updatedBy);
             OnUpdated();
         }
 
-        public void SetPhoneNumber(string? phoneNumber, string updatedBy)
+        public void SetPhoneNumber(string? phoneNumberValue, string updatedBy)
+        {
+            Guard.AgainstNullOrEmpty(updatedBy, nameof(updatedBy));
+
+            PhoneNumber = !string.IsNullOrWhiteSpace(phoneNumberValue) ? PhoneNumber.Create(phoneNumberValue) : null;
+            SetUpdatedBy(updatedBy);
+            OnUpdated();
+        }
+
+        public void SetPhoneNumber(PhoneNumber? phoneNumber, string updatedBy)
         {
             Guard.AgainstNullOrEmpty(updatedBy, nameof(updatedBy));
 
@@ -165,7 +187,16 @@ namespace Backend.Domain.Entities
             OnUpdated();
         }
 
-        public void SetMobileNumber(string? mobileNumber, string updatedBy)
+        public void SetMobileNumber(string? mobileNumberValue, string updatedBy)
+        {
+            Guard.AgainstNullOrEmpty(updatedBy, nameof(updatedBy));
+
+            MobileNumber = !string.IsNullOrWhiteSpace(mobileNumberValue) ? PhoneNumber.Create(mobileNumberValue) : null;
+            SetUpdatedBy(updatedBy);
+            OnUpdated();
+        }
+
+        public void SetMobileNumber(PhoneNumber? mobileNumber, string updatedBy)
         {
             Guard.AgainstNullOrEmpty(updatedBy, nameof(updatedBy));
 
@@ -303,22 +334,53 @@ namespace Backend.Domain.Entities
             OnUpdated();
         }
 
-        // Business Logic Methods
+        // Enhanced Business Logic Methods using Value Objects
         public bool CanPlaceOrder()
         {
-            return IsActive && IsAdult && !string.IsNullOrWhiteSpace(Email);
+            return IsActive && IsAdult && Email != null;
         }
 
         public bool HasCompleteProfile()
         {
-            return !string.IsNullOrWhiteSpace(Email) && 
-                   !string.IsNullOrWhiteSpace(MobileNumber) && 
-                   PrimaryAddress != null;
+            return Email != null && MobileNumber != null && HasCompleteAddress;
         }
 
         public bool CanAccessPremiumFeatures()
         {
             return IsActive && IsPremium;
+        }
+
+        public bool IsBusinessCustomer()
+        {
+            return HasBusinessEmail || HasCorporateEmail || !string.IsNullOrWhiteSpace(CompanyName);
+        }
+
+        public bool IsLocalCustomer()
+        {
+            return HasTehranNumber || (PrimaryAddress?.IsInSameCountry(Address.Create("Iran", "Tehran", "Tehran", "District 1", "Test Street", "12345")) ?? false);
+        }
+
+        public bool HasValidContactInfo()
+        {
+            return Email != null && (MobileNumber != null || PhoneNumber != null);
+        }
+
+        public string GetContactPreference()
+        {
+            if (MobileNumber != null) return "Mobile";
+            if (PhoneNumber != null) return "Phone";
+            if (Email != null) return "Email";
+            return "None";
+        }
+
+        public bool CanReceiveSMS()
+        {
+            return MobileNumber != null && MobileNumber.IsMobile();
+        }
+
+        public bool CanReceiveEmail()
+        {
+            return Email != null && !Email.IsDisposableEmail();
         }
 
         // Validation Methods
@@ -330,19 +392,6 @@ namespace Backend.Domain.Entities
         private static bool IsValidNationalCode(string nationalCode)
         {
             return nationalCode.Length == 10 && nationalCode.All(char.IsDigit);
-        }
-
-        private static bool IsValidEmail(string email)
-        {
-            try
-            {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
-                return false;
-            }
         }
 
         // Override methods
@@ -361,8 +410,8 @@ namespace Backend.Domain.Entities
             if (!string.IsNullOrWhiteSpace(NationalCode) && !IsValidNationalCode(NationalCode))
                 throw new InvalidOperationException("Invalid national code format");
 
-            if (!string.IsNullOrWhiteSpace(Email) && !IsValidEmail(Email))
-                throw new InvalidOperationException("Invalid email format");
+            // Email validation is now handled by Email Value Object
+            // PhoneNumber validation is now handled by PhoneNumber Value Object
         }
     }
 } 

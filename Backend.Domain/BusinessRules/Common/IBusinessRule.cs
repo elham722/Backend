@@ -1,4 +1,4 @@
-namespace Backend.Domain.Common
+namespace Backend.Domain.BusinessRules.Common
 {
     public interface IBusinessRule
     {
