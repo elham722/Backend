@@ -83,6 +83,21 @@ namespace Backend.Domain.Entities
             return customer;
         }
 
+        public static Customer Create(string firstName, string lastName, Email email, PhoneNumber phoneNumber, DateTime? dateOfBirth = null, Address? address = null, string? createdBy = null)
+        {
+            var customer = new Customer(Guid.NewGuid(), null, firstName, lastName, createdBy);
+            
+            // Set contact information
+            customer.Email = email;
+            customer.PhoneNumber = phoneNumber;
+            customer.DateOfBirth = dateOfBirth;
+            customer.PrimaryAddress = address;
+            
+            customer.AddDomainEvent(new CustomerRegisteredEvent(customer.Id, null));
+            customer.OnCreated();
+            return customer;
+        }
+
         // Personal Information Methods
         public void ChangeName(string firstName, string lastName, string updatedBy)
         {
