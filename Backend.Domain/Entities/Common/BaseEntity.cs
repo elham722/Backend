@@ -63,6 +63,17 @@ namespace Backend.Domain.Entities.Common
             UpdatedAt = DateTime.UtcNow;
         }
 
+        // Public methods for EF Core to set audit fields
+        public void SetCreatedAt(DateTime createdAt)
+        {
+            CreatedAt = createdAt;
+        }
+
+        public void SetUpdatedAt(DateTime updatedAt)
+        {
+            UpdatedAt = updatedAt;
+        }
+
         protected void MarkAsDeleted(string deletedBy)
         {
             if (string.IsNullOrWhiteSpace(deletedBy))

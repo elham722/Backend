@@ -9,7 +9,7 @@ namespace Backend.Domain.Interfaces.UnitOfWork
     public interface IUnitOfWork : IDisposable, IAsyncDisposable
     {
         // Repository access
-        IGenericRepository<T, TId> Repository<T, TId>() where T : BaseAggregateRoot<TId>;
+        IGenericRepository<T, TId> Repository<T, TId>() where T : BaseAggregateRoot<TId> where TId : struct;
         
         // Specific repositories
         ICustomerRepository CustomerRepository { get; }

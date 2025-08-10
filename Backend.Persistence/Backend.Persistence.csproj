@@ -24,6 +24,7 @@
     <Folder Include="Contexts\" />
     <Folder Include="DependencyInjection\" />
     <Folder Include="Repositories\" />
+    <Folder Include="Seeders\" />
     <Folder Include="UnitOfWork\" />
   </ItemGroup>
 
