@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .footer {
+            background-color: #f5f5f5;
+            padding: 15px;
+            text-align: center;
+            font-size: 12px;
+            color: #777777;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        h1, h2 {
+            color: #4CAF50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .order-summary th {
+            text-align: right;
+        }
+        .order-summary td {
+            text-align: right;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Order Confirmation</h1>
+            <p>Order #{{OrderNumber}}</p>
+        </div>
+        <div class="content">
+            <h2>Thank You for Your Order!</h2>
+            <p>Dear {{CustomerName}},</p>
+            <p>We're pleased to confirm that we've received your order and it's being processed. Here's a summary of your purchase:</p>
+            
+            <h3>Order Details</h3>
+            <p><strong>Order Number:</strong> {{OrderNumber}}</p>
+            <p><strong>Order Date:</strong> {{OrderDate}}</p>
+            <p><strong>Payment Method:</strong> {{PaymentMethod}}</p>
+            
+            <h3>Items Ordered</h3>
+            <table>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+                {{OrderItems}}
+            </table>
+            
+            <h3>Order Summary</h3>
+            <table class="order-summary">
+                <tr>
+                    <td>Subtotal</td>
+                    <td>{{Subtotal}}</td>
+                </tr>
+                <tr>
+                    <td>Shipping</td>
+                    <td>{{ShippingCost}}</td>
+                </tr>
+                <tr>
+                    <td>Tax</td>
+                    <td>{{TaxAmount}}</td>
+                </tr>
+                <tr>
+                    <td>Discount</td>
+                    <td>-{{DiscountAmount}}</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Total</td>
+                    <td>{{TotalAmount}}</td>
+                </tr>
+            </table>
+            
+            <h3>Shipping Address</h3>
+            <p>
+                {{CustomerName}}<br>
+                {{ShippingStreet}}<br>
+                {{ShippingCity}}, {{ShippingState}} {{ShippingZipCode}}<br>
+                {{ShippingCountry}}
+            </p>
+            
+            <p>You can track your order status by clicking the button below:</p>
+            <p style="text-align: center;">
+                <a href="{{OrderTrackingUrl}}" class="button">Track Your Order</a>
+            </p>
+            
+            <p>If you have any questions about your order, please contact our customer service team at <a href="mailto:support@digitekshop.com">support@digitekshop.com</a> or call us at +1-800-123-4567.</p>
+            
+            <p>Thank you for shopping with us!</p>
+            
+            <p>Best regards,<br>The DigitekShop Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{CurrentYear}} {{CompanyName}}. All rights reserved.</p>
+            <p>
+                <a href="{{PrivacyPolicyUrl}}">Privacy Policy</a> | 
+                <a href="{{TermsOfServiceUrl}}">Terms of Service</a> | 
+                <a href="{{ReturnPolicyUrl}}">Return Policy</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
