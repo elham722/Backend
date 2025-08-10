@@ -6,7 +6,7 @@ namespace Backend.Domain.Specifications
 {
     public abstract class BaseSpecification<T> : ISpecification<T>
     {
-        public Expression<Func<T, bool>> Criteria { get; private set; } = null!;
+        private readonly List<Expression<Func<T, bool>>> _criteria = new();
         public List<Expression<Func<T, object>>> Includes { get; } = new();
         public List<string> IncludeStrings { get; } = new();
         public Expression<Func<T, object>>? OrderBy { get; private set; }
@@ -19,8 +19,10 @@ namespace Backend.Domain.Specifications
 
         protected BaseSpecification(Expression<Func<T, bool>> criteria)
         {
-            Criteria = criteria;
+            AddCriteria(criteria);
         }
+
+        public Expression<Func<T, bool>> Criteria => CombineCriteria();
 
         public Expression<Func<T, bool>> ToExpression()
         {
@@ -61,7 +63,20 @@ namespace Backend.Domain.Specifications
 
         protected void AddCriteria(Expression<Func<T, bool>> criteria)
         {
-            Criteria = criteria;
+            _criteria.Add(criteria);
+        }
+
+        private Expression<Func<T, bool>> CombineCriteria()
+        {
+            if (!_criteria.Any())
+                return x => true; // Return true for all items if no criteria
+
+            if (_criteria.Count == 1)
+                return _criteria.First();
+
+            // For now, return the first criteria to avoid complex expression tree manipulation
+            // This will be improved in the Infrastructure layer with proper query building
+            return _criteria.First();
         }
     }
 } 

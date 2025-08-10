@@ -14,6 +14,6 @@ public interface ICommand : IRequest<Result>
 /// Base interface for commands that return data
 /// </summary>
 /// <typeparam name="TResponse">Type of the response data</typeparam>
-public interface ICommand<TResponse> : IRequest<Result<TResponse>>
+public interface ICommand<TResponse> : IRequest<TResponse>
 {
 } 

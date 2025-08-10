@@ -40,5 +40,8 @@ namespace Backend.Domain.Interfaces.Repositories
             Expression<Func<T, object>> orderBy, 
             bool ascending = true, 
             CancellationToken cancellationToken = default);
+
+        // Queryable for advanced queries
+        IQueryable<T> GetQueryable();
     }
 } 
