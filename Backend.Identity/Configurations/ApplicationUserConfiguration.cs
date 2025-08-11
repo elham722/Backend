@@ -25,8 +25,7 @@ namespace Backend.Identity.Configurations
             // Indexes
             ConfigureIndexes(builder);
 
-            // Navigation Properties
-            ConfigureNavigationProperties(builder);
+            // Note: Navigation properties are handled by default Identity entities
         }
 
         private void ConfigureAccountInfo(EntityTypeBuilder<ApplicationUser> builder)
@@ -189,37 +188,6 @@ namespace Backend.Identity.Configurations
 
             builder.HasIndex(u => u.LockoutEnd)
                 .HasDatabaseName("IX_AspNetUsers_LockoutEnd");
-        }
-
-        private void ConfigureNavigationProperties(EntityTypeBuilder<ApplicationUser> builder)
-        {
-            // UserClaims relationship
-            builder.HasMany(u => u.UserClaims)
-                .WithOne()
-                .HasForeignKey(uc => uc.UserId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // UserLogins relationship
-            builder.HasMany(u => u.UserLogins)
-                .WithOne()
-                .HasForeignKey(ul => ul.UserId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // UserRoles relationship
-            builder.HasMany(u => u.UserRoles)
-                .WithOne()
-                .HasForeignKey(ur => ur.UserId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Cascade);
-
-            // UserTokens relationship
-            builder.HasMany(u => u.UserTokens)
-                .WithOne()
-                .HasForeignKey(ut => ut.UserId)
-                .IsRequired()
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

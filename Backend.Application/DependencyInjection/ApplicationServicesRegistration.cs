@@ -2,6 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 using Backend.Application.Common.Extensions;
 using Backend.Application.Common.Interfaces;
+using Backend.Application.Common.Infrastructure;
+using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Services;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -17,13 +19,17 @@ public static class ApplicationServicesRegistration
     /// </summary>
     /// <param name="services">Service collection</param>
     /// <returns>Service collection</returns>
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection ConfigureApplicationServices(this IServiceCollection services)
     {
         // Register application services
         services.AddApplicationServices();
 
         // Register application interfaces
         services.AddScoped<IDateTimeService, DateTimeService>();
+
+        // Register dispatchers
+        services.AddScoped<ICommandDispatcher, CommandDispatcher>();
+        services.AddScoped<IQueryDispatcher, QueryDispatcher>();
 
         // Register HttpContextAccessor for CurrentUserService
         services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();

@@ -4,6 +4,7 @@ namespace Backend.Identity.Models
 {
     public class UserClaim : IdentityUserClaim<string>
     {
+        
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
         public string CreatedBy { get; private set; } = null!;

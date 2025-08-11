@@ -23,12 +23,12 @@ public static class InfrastructureServicesRegistration
     /// <param name="services">Service collection</param>
     /// <param name="configuration">Configuration</param>
     /// <returns>Service collection</returns>
-    public static IServiceCollection AddInfrastructureServices(
+    public static IServiceCollection ConfigureInfrastructureServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
         // Register Application layer services
-        services.AddApplicationServices();
+        services.ConfigureApplicationServices();
 
         // Register Infrastructure services
         services.AddInfrastructureCoreServices(configuration);
@@ -36,6 +36,7 @@ public static class InfrastructureServicesRegistration
         services.AddCacheServices(configuration);
         services.AddFileStorageServices(configuration);
         services.AddExternalServices(configuration);
+        services.AddJwtServices(configuration);
 
         return services;
     }
@@ -148,6 +149,19 @@ public static class InfrastructureServicesRegistration
 
         // Register external service
         services.AddScoped<IExternalService, ExternalService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers JWT services
+    /// </summary>
+    private static IServiceCollection AddJwtServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Register JWT service
+        services.AddScoped<IJwtService, JwtService>();
 
         return services;
     }

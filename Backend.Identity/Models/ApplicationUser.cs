@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Backend.Identity.ValueObjects;
 using Microsoft.AspNetCore.Identity;
 
@@ -15,23 +13,11 @@ namespace Backend.Identity.Models
         // Integration with Domain
         public string? CustomerId { get; private set; }
 
-        // Navigation Properties
-        public virtual ICollection<UserClaim> UserClaims { get; private set; } = new List<UserClaim>();
-        public virtual ICollection<UserLogin> UserLogins { get; private set; } = new List<UserLogin>();
-        public virtual ICollection<UserRole> UserRoles { get; private set; } = new List<UserRole>();
-        public virtual ICollection<UserToken> UserTokens { get; private set; } = new List<UserToken>();
-
         // Computed Properties
         public bool IsLocked => LockoutEnd.HasValue && LockoutEnd.Value > DateTime.UtcNow;
         public bool IsAccountLocked => Account.IsLocked();
         public bool IsActive => Account.IsActive && !Account.IsDeleted;
         public bool IsNewUser => DateTime.UtcNow.Subtract(Account.CreatedAt).Days <= 7;
-
-        // Active entities
-        public IEnumerable<UserClaim> ActiveClaims => UserClaims.Where(uc => uc.IsActive);
-        public IEnumerable<UserLogin> ActiveLogins => UserLogins.Where(ul => ul.IsActive);
-        public IEnumerable<UserRole> ActiveRoles => UserRoles.Where(ur => ur.IsActiveAndNotExpired());
-        public IEnumerable<UserToken> ValidTokens => UserTokens.Where(ut => ut.IsValid());
 
         private ApplicationUser() { } // For EF Core
 
@@ -133,118 +119,6 @@ namespace Backend.Identity.Models
             Audit = Audit.Update(UserName);
         }
 
-        // Claims Management
-        public UserClaim AddClaim(string claimType, string claimValue, string? createdBy = null)
-        {
-            var claim = UserClaim.Create(Id, claimType, claimValue, createdBy ?? UserName);
-            UserClaims.Add(claim);
-            return claim;
-        }
-
-        public void RemoveClaim(int claimId, string removedBy)
-        {
-            var claim = UserClaims.FirstOrDefault(uc => uc.Id == claimId);
-            if (claim != null)
-            {
-                claim.Deactivate(removedBy);
-            }
-        }
-
-        public void UpdateClaim(int claimId, string newValue, string updatedBy)
-        {
-            var claim = UserClaims.FirstOrDefault(uc => uc.Id == claimId);
-            if (claim != null)
-            {
-                claim.Update(newValue, updatedBy);
-            }
-        }
-
-        // Login Management
-        public UserLogin AddLogin(string loginProvider, string providerKey, string? deviceInfo = null, string? ipAddress = null, string? userAgent = null)
-        {
-            var login = UserLogin.Create(Id, loginProvider, providerKey, deviceInfo, ipAddress, userAgent, UserName);
-            UserLogins.Add(login);
-            return login;
-        }
-
-        public void RemoveLogin(string loginProvider, string providerKey, string removedBy)
-        {
-            var login = UserLogins.FirstOrDefault(ul => ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey);
-            if (login != null)
-            {
-                login.Deactivate(removedBy);
-            }
-        }
-
-        public void UpdateLoginDeviceInfo(string loginProvider, string providerKey, string? deviceInfo, string? ipAddress, string? userAgent)
-        {
-            var login = UserLogins.FirstOrDefault(ul => ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey);
-            if (login != null)
-            {
-                login.UpdateDeviceInfo(deviceInfo, ipAddress, userAgent, UserName);
-            }
-        }
-
-        // Role Management
-        public UserRole AddRole(string roleId, string? assignedBy = null, string? assignmentReason = null, DateTime? expiresAt = null)
-        {
-            var userRole = UserRole.Create(Id, roleId, assignedBy, assignmentReason, expiresAt, UserName);
-            UserRoles.Add(userRole);
-            return userRole;
-        }
-
-        public void RemoveRole(string roleId, string removedBy)
-        {
-            var userRole = UserRoles.FirstOrDefault(ur => ur.RoleId == roleId);
-            if (userRole != null)
-            {
-                userRole.Deactivate(removedBy);
-            }
-        }
-
-        public void ExtendRoleExpiration(string roleId, DateTime newExpiresAt)
-        {
-            var userRole = UserRoles.FirstOrDefault(ur => ur.RoleId == roleId);
-            if (userRole != null)
-            {
-                userRole.ExtendExpiration(newExpiresAt, UserName);
-            }
-        }
-
-        // Token Management
-        public UserToken AddToken(string loginProvider, string name, string value, DateTime? expiresAt = null, string? deviceInfo = null, string? ipAddress = null, string? userAgent = null)
-        {
-            var token = UserToken.Create(Id, loginProvider, name, value, expiresAt, deviceInfo, ipAddress, userAgent, UserName);
-            UserTokens.Add(token);
-            return token;
-        }
-
-        public void RevokeToken(string loginProvider, string name, string? revocationReason = null)
-        {
-            var token = UserTokens.FirstOrDefault(ut => ut.LoginProvider == loginProvider && ut.Name == name);
-            if (token != null)
-            {
-                token.Revoke(UserName, revocationReason);
-            }
-        }
-
-        public void RevokeAllTokens(string? revocationReason = null)
-        {
-            foreach (var token in ValidTokens)
-            {
-                token.Revoke(UserName, revocationReason);
-            }
-        }
-
-        public void RevokeTokensFromDevice(string? deviceInfo, string? ipAddress, string? userAgent, string? revocationReason = null)
-        {
-            var tokensToRevoke = UserTokens.Where(ut => ut.IsFromSameDevice(deviceInfo, ipAddress, userAgent) && ut.IsValid());
-            foreach (var token in tokensToRevoke)
-            {
-                token.Revoke(UserName, revocationReason);
-            }
-        }
-
         // Business Logic Methods
         public bool CanLogin()
         {
@@ -259,31 +133,7 @@ namespace Backend.Identity.Models
             return DateTime.UtcNow.Subtract(Account.LastPasswordChangeAt.Value).Days > maxPasswordAgeDays;
         }
 
-        public bool HasActiveRole(string roleId)
-        {
-            return ActiveRoles.Any(ur => ur.RoleId == roleId);
-        }
-
-        public bool HasClaim(string claimType, string claimValue)
-        {
-            return ActiveClaims.Any(uc => uc.ClaimType == claimType && uc.ClaimValue == claimValue);
-        }
-
-        public bool HasValidToken(string loginProvider, string name)
-        {
-            return ValidTokens.Any(ut => ut.LoginProvider == loginProvider && ut.Name == name);
-        }
-
-        public int GetActiveSessionsCount()
-        {
-            return ValidTokens.Count();
-        }
-
-        public void CleanupExpiredEntities()
-        {
-            // This method can be called periodically to clean up expired entities
-            // In a real implementation, you might want to move expired entities to a separate table
-            // or mark them as archived instead of deleting them
-        }
+        // Note: For claims, roles, logins, and tokens management, use UserManager and RoleManager methods
+        // These operations should be handled at the service layer, not in the entity
     }
 }

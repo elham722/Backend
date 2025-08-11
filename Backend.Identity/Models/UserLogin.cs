@@ -4,6 +4,11 @@ namespace Backend.Identity.Models
 {
     public class UserLogin : IdentityUserLogin<string>
     {
+        public string LoginProvider { get; set; } = null!;
+        public string ProviderKey { get; set; } = null!;
+        public string ProviderDisplayName { get; set; } = null!;
+        public string UserId { get; set; } = null!;
+        
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
         public string CreatedBy { get; private set; } = null!;

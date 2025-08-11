@@ -28,11 +28,11 @@ namespace Backend.Identity.DependencyInjection
         private static void ConfigureDbContext(IServiceCollection services, IConfiguration configuration)
         {
             // Get connection string
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            var connectionString = configuration.GetConnectionString("IdentityDBConnection");
             
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new InvalidOperationException("Connection string 'DefaultConnection' not found in configuration.");
+                throw new InvalidOperationException("Connection string 'IdentityDBConnection' not found in configuration.");
             }
 
             // Add DbContext
@@ -61,23 +61,23 @@ namespace Backend.Identity.DependencyInjection
             });
 
             // Add DbContext factory for background services
-            services.AddDbContextFactory<BackendIdentityDbContext>(options =>
-            {
-                options.UseSqlServer(connectionString, sqlOptions =>
-                {
-                    sqlOptions.MigrationsAssembly(typeof(BackendIdentityDbContext).Assembly.GetName().Name);
-                    sqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
-                        errorNumbersToAdd: null);
-                });
-            });
+            // services.AddDbContextFactory<BackendIdentityDbContext>(options =>
+            // {
+            //     options.UseSqlServer(connectionString, sqlOptions =>
+            //     {
+            //         sqlOptions.MigrationsAssembly(typeof(BackendIdentityDbContext).Assembly.GetName().Name);
+            //         sqlOptions.EnableRetryOnFailure(
+            //             maxRetryCount: 5,
+            //             maxRetryDelay: TimeSpan.FromSeconds(30),
+            //             errorNumbersToAdd: null);
+            //     });
+            // });
         }
 
         private static void ConfigureIdentity(IServiceCollection services)
         {
             // Configure Identity with custom entities
-            services.AddIdentity<ApplicationUser, IdentityRole<string>>(options =>
+            services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
                 // Password settings
                 options.Password.RequireDigit = true;

@@ -20,7 +20,7 @@ public static class PersistenceServicesRegistration
     /// <param name="services">Service collection</param>
     /// <param name="configuration">Configuration</param>
     /// <returns>Service collection</returns>
-    public static IServiceCollection AddPersistenceServices(
+    public static IServiceCollection ConfigurePersistenceServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
