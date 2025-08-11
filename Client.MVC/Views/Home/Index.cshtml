@@ -4,5 +4,53 @@
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Authentication System</h5>
+                    <p class="card-text">This is a simple authentication system using ASP.NET Core Identity and JWT tokens.</p>
+                    
+                    @if (ViewBag.IsLoggedIn == true)
+                    {
+                        <div class="alert alert-info">
+                            <strong>Welcome back, @ViewBag.UserName!</strong>
+                            <br />
+                            <small class="text-muted">You are successfully logged in.</small>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-block">
+                            <form method="post" action="@Url.Action("Logout", "Account")" style="display: inline;">
+                                <button type="submit" class="btn btn-outline-danger">Logout</button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-grid gap-2 d-md-block">
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-primary me-md-2">Login</a>
+                            <a asp-controller="Account" asp-action="Register" class="btn btn-success me-md-2">Register</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
