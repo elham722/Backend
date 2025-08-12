@@ -5,16 +5,13 @@ using Microsoft.AspNetCore.Http;
 
 namespace Client.MVC.Controllers
 {
-    public class AccountController : Controller
+    public class AccountController(IExternalService externalService) : Controller
     {
-        private readonly IExternalService _externalService;
+        private readonly IExternalService _externalService = externalService;
 
-        public AccountController(IExternalService externalService)
-        {
-            _externalService = externalService;
-        }
+        #region Login
 
-        [HttpGet]
+        [HttpGet("Login")]
         public IActionResult Login()
         {
             return View();
@@ -35,11 +32,11 @@ namespace Client.MVC.Controllers
                 // Store token in session (since we can't use localStorage in server-side)
                 var token = response.GetProperty("token").GetString();
                 var userName = response.GetProperty("userName").GetString();
-                
+
                 // Use byte array conversion for session storage
                 var tokenBytes = System.Text.Encoding.UTF8.GetBytes(token ?? string.Empty);
                 var userNameBytes = System.Text.Encoding.UTF8.GetBytes(userName ?? string.Empty);
-                
+
                 HttpContext.Session.Set("JWTToken", tokenBytes);
                 HttpContext.Session.Set("UserName", userNameBytes);
 
@@ -57,6 +54,12 @@ namespace Client.MVC.Controllers
                 return View(loginDto);
             }
         }
+
+
+
+        #endregion
+
+        #region Register
 
         [HttpGet]
         public IActionResult Register()
@@ -79,11 +82,11 @@ namespace Client.MVC.Controllers
                 // Store token in session
                 var token = response.GetProperty("token").GetString();
                 var userName = response.GetProperty("userName").GetString();
-                
+
                 // Use byte array conversion for session storage
                 var tokenBytes = System.Text.Encoding.UTF8.GetBytes(token ?? string.Empty);
                 var userNameBytes = System.Text.Encoding.UTF8.GetBytes(userName ?? string.Empty);
-                
+
                 HttpContext.Session.Set("JWTToken", tokenBytes);
                 HttpContext.Session.Set("UserName", userNameBytes);
 
@@ -102,6 +105,11 @@ namespace Client.MVC.Controllers
             }
         }
 
+
+        #endregion
+
+        #region Logout
+
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
@@ -119,5 +127,9 @@ namespace Client.MVC.Controllers
             TempData["SuccessMessage"] = "Logged out successfully!";
             return RedirectToAction("Index", "Home");
         }
+
+        #endregion
+
+
     }
 } 

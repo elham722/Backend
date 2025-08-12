@@ -3,50 +3,77 @@
     ViewData["Title"] = "Login";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-4">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h4 class="mb-0">Login</h4>
+<div class="floating-shapes">
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
+</div>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to your account to continue shopping</p>
+        </div>
+        
+        <div class="auth-body">
+            <form asp-action="Login" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                
+                <div class="form-floating">
+                    <input asp-for="UserName" class="form-control" id="userName" placeholder="Username" />
+                    <label for="userName">Username</label>
+                    <span asp-validation-for="UserName" class="text-danger"></span>
                 </div>
-                <div class="card-body">
-                    <form asp-action="Login" method="post">
-                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
-                        
-                        <div class="mb-3">
-                            <label asp-for="UserName" class="form-label"></label>
-                            <input asp-for="UserName" class="form-control" />
-                            <span asp-validation-for="UserName" class="text-danger"></span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label asp-for="Password" class="form-label"></label>
-                            <input asp-for="Password" class="form-control" />
-                            <span asp-validation-for="Password" class="text-danger"></span>
-                        </div>
-                        
-                        <div class="mb-3 form-check">
-                            <input asp-for="RememberMe" class="form-check-input" />
-                            <label asp-for="RememberMe" class="form-check-label"></label>
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Login</button>
-                        </div>
-                    </form>
-                    
-                    <div class="text-center mt-3">
-                        <p class="mb-0">Don't have an account? 
-                            <a asp-action="Register" class="text-decoration-none">Register here</a>
-                        </p>
-                    </div>
+                
+                <div class="form-floating">
+                    <input asp-for="Password" type="password" class="form-control" id="password" placeholder="Password" />
+                    <label for="password">Password</label>
+                    <span asp-validation-for="Password" class="text-danger"></span>
                 </div>
+                
+                <div class="form-check">
+                    <input asp-for="RememberMe" class="form-check-input" id="rememberMe" />
+                    <label class="form-check-label" for="rememberMe">
+                        Remember me
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-login">
+                    Sign In
+                </button>
+            </form>
+            
+            <div class="social-login">
+                <span style="color: #6c757d; font-size: 14px;">Or continue with</span>
+                <div style="margin-top: 15px;">
+                    <a href="#" class="social-btn" title="Google">
+                        <i class="fab fa-google"></i>
+                    </a>
+                    <a href="#" class="social-btn" title="Facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" class="social-btn" title="Apple">
+                        <i class="fab fa-apple"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="auth-footer">
+                <p class="mb-0">Don't have an account? 
+                    <a asp-action="Register">Create one here</a>
+                </p>
             </div>
         </div>
     </div>
 </div>
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+}
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="~/js/auth.js" asp-append-version="true"></script>
 } 

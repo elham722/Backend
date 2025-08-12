@@ -1,56 +1,177 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
     
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    
-    <div class="row justify-content-center mt-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Authentication System</h5>
-                    <p class="card-text">This is a simple authentication system using ASP.NET Core Identity and JWT tokens.</p>
-                    
-                    @if (ViewBag.IsLoggedIn == true)
-                    {
-                        <div class="alert alert-info">
-                            <strong>Welcome back, @ViewBag.UserName!</strong>
-                            <br />
-                            <small class="text-muted">You are successfully logged in.</small>
-                        </div>
-                        
-                        <div class="d-grid gap-2 d-md-block">
-                            <form method="post" action="@Url.Action("Logout", "Account")" style="display: inline;">
-                                <button type="submit" class="btn btn-outline-danger">Logout</button>
-                            </form>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="d-grid gap-2 d-md-block">
-                            <a asp-controller="Account" asp-action="Login" class="btn btn-primary me-md-2">Login</a>
-                            <a asp-controller="Account" asp-action="Register" class="btn btn-success me-md-2">Register</a>
-                        </div>
-                    }
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <div class="hero-content">
+                    <h1 class="hero-title">Welcome to Our Online Store</h1>
+                    <p class="hero-subtitle">Discover amazing products at unbeatable prices. Shop with confidence and enjoy fast, secure delivery to your doorstep.</p>
+                    <div class="hero-buttons">
+                        <a href="#" class="btn-hero btn-hero-primary">
+                            <i class="fas fa-shopping-cart me-2"></i>Shop Now
+                        </a>
+                        <a href="#" class="btn-hero btn-hero-secondary">
+                            <i class="fas fa-play me-2"></i>Learn More
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="hero-image">
+                    <i class="fas fa-shopping-bag" style="font-size: 15rem; opacity: 0.3;"></i>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h3 class="feature-title">Fast Delivery</h3>
+                    <p class="feature-description">Get your orders delivered within 24-48 hours with our express shipping service.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Secure Shopping</h3>
+                    <p class="feature-description">Your data is protected with bank-level security and SSL encryption.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-undo"></i>
+                    </div>
+                    <h3 class="feature-title">Easy Returns</h3>
+                    <p class="feature-description">30-day return policy with hassle-free returns and full refunds.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3 class="feature-title">24/7 Support</h3>
+                    <p class="feature-description">Our customer support team is available round the clock to help you.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="products-section">
+    <div class="container">
+        <h2 class="section-title">Featured Products</h2>
+        <p class="section-subtitle">Discover our handpicked collection of premium products</p>
+        
+        <div class="row">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="product-card">
+                    <div class="product-image">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <div class="product-content">
+                        <h3 class="product-title">Smartphone Pro</h3>
+                        <div class="product-price">$599.99</div>
+                        <p class="product-description">Latest smartphone with advanced features and high-quality camera.</p>
+                        <a href="#" class="btn-product">
+                            <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="product-card">
+                    <div class="product-image">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <div class="product-content">
+                        <h3 class="product-title">Ultra Laptop</h3>
+                        <div class="product-price">$899.99</div>
+                        <p class="product-description">Powerful laptop perfect for work and entertainment.</p>
+                        <a href="#" class="btn-product">
+                            <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="product-card">
+                    <div class="product-image">
+                        <i class="fas fa-headphones"></i>
+                    </div>
+                    <div class="product-content">
+                        <h3 class="product-title">Wireless Headphones</h3>
+                        <div class="product-price">$199.99</div>
+                        <p class="product-description">Premium wireless headphones with noise cancellation.</p>
+                        <a href="#" class="btn-product">
+                            <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="product-card">
+                    <div class="product-image">
+                        <i class="fas fa-watch"></i>
+                    </div>
+                    <div class="product-content">
+                        <h3 class="product-title">Smart Watch</h3>
+                        <div class="product-price">$299.99</div>
+                        <p class="product-description">Feature-rich smartwatch with health monitoring.</p>
+                        <a href="#" class="btn-product">
+                            <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="#" class="btn-hero btn-hero-primary">
+                <i class="fas fa-eye me-2"></i>View All Products
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Section -->
+<section class="cta-section">
+    <div class="container">
+        <h2 class="cta-title">Ready to Start Shopping?</h2>
+        <p class="cta-description">Join thousands of satisfied customers and discover amazing products today.</p>
+        <div class="hero-buttons">
+            <a href="#" class="btn-hero btn-hero-primary">
+                <i class="fas fa-shopping-cart me-2"></i>Start Shopping
+            </a>
+            <a href="#" class="btn-hero btn-hero-secondary">
+                <i class="fas fa-user-plus me-2"></i>Create Account
+            </a>
+        </div>
+    </div>
+</section>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+}
