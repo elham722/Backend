@@ -171,6 +171,9 @@ await _externalService.DeleteAsync("api/customers/1");
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
+// Add distributed cache for session support
+builder.Services.AddDistributedMemoryCache();
+
 // Add services
 builder.Services.AddSession(options =>
 {
@@ -311,6 +314,11 @@ public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerCommand
 2. **Session Not Working**
    - Ensure `app.UseSession()` is called before other middleware
    - Check session configuration in Program.cs
+
+3. **Session Service Construction Error**
+   - Error: `Unable to resolve service for type 'IDistributedCache'`
+   - Solution: Add `builder.Services.AddDistributedMemoryCache()` before `AddSession()`
+   - Reason: Session requires distributed cache for storage
 
 3. **Rate Limiting Too Strict**
    - Adjust limits in `RateLimitingMiddleware`

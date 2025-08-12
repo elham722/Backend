@@ -12,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+// Add distributed cache for session support
+builder.Services.AddDistributedMemoryCache();
+
 // Add session support for CSRF protection
 builder.Services.AddSession(options =>
 {

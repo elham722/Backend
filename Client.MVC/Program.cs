@@ -7,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Add distributed cache for session support
+builder.Services.AddDistributedMemoryCache();
+
 // Add session support
 builder.Services.AddSession(options =>
 {
