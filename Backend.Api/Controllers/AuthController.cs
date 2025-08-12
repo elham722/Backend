@@ -4,6 +4,7 @@ using Backend.Identity.Models;
 using Backend.Application.Features.Auth.DTOs;
 using Backend.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
+using System.Security.Claims;
 
 namespace Backend.Api.Controllers
 {
@@ -30,7 +31,12 @@ namespace Backend.Api.Controllers
         {
             if (registerDto.Password != registerDto.ConfirmPassword)
             {
-                return BadRequest(new { message = "Passwords do not match" });
+                return BadRequest(new AuthResponseDto 
+                { 
+                    IsSuccess = false,
+                    Message = "Passwords do not match",
+                    Errors = new List<string> { "Password confirmation does not match" }
+                });
             }
 
             var user = ApplicationUser.Create(registerDto.Email, registerDto.UserName);
@@ -43,18 +49,28 @@ namespace Backend.Api.Controllers
                 // Get user roles (default to empty list for new users)
                 var roles = await _userManager.GetRolesAsync(user);
                 var token = _jwtService.GenerateToken(user.Id, user.UserName, user.Email, roles);
+                var refreshToken = _jwtService.GenerateRefreshToken();
                 
-                return Ok(new 
+                return Ok(new AuthResponseDto
                 { 
-                    message = "User registered successfully",
-                    userId = user.Id,
-                    userName = user.UserName,
-                    email = user.Email,
-                    token = token
+                    IsSuccess = true,
+                    Message = "User registered successfully",
+                    UserId = user.Id,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    Token = token,
+                    RefreshToken = refreshToken,
+                    ExpiresAt = _jwtService.GetTokenExpiration(token),
+                    Roles = roles.ToList()
                 });
             }
             
-            return BadRequest(new { message = "Registration failed", errors = result.Errors });
+            return BadRequest(new AuthResponseDto 
+            { 
+                IsSuccess = false,
+                Message = "Registration failed",
+                Errors = result.Errors.Select(e => e.Description).ToList()
+            });
         }
 
         [HttpPost("login")]
@@ -63,45 +79,132 @@ namespace Backend.Api.Controllers
             var user = await _userManager.FindByNameAsync(loginDto.UserName);
             if (user == null)
             {
-                return BadRequest(new { message = "Invalid username or password" });
+                return BadRequest(new AuthResponseDto 
+                { 
+                    IsSuccess = false,
+                    Message = "Invalid username or password"
+                });
             }
 
             var result = await _signInManager.PasswordSignInAsync(user, loginDto.Password, loginDto.RememberMe, lockoutOnFailure: false);
             
             if (result.Succeeded)
             {
+                // Update last login
+                user.UpdateLastLogin();
+                await _userManager.UpdateAsync(user);
+
                 // Get user roles
                 var roles = await _userManager.GetRolesAsync(user);
                 var token = _jwtService.GenerateToken(user.Id, user.UserName, user.Email, roles);
+                var refreshToken = _jwtService.GenerateRefreshToken();
                 
-                return Ok(new 
+                return Ok(new AuthResponseDto
                 { 
-                    message = "Login successful",
-                    userId = user.Id,
-                    userName = user.UserName,
-                    email = user.Email,
-                    token = token
+                    IsSuccess = true,
+                    Message = "Login successful",
+                    UserId = user.Id,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    Token = token,
+                    RefreshToken = refreshToken,
+                    ExpiresAt = _jwtService.GetTokenExpiration(token),
+                    Roles = roles.ToList()
                 });
             }
             
             if (result.IsLockedOut)
             {
-                return BadRequest(new { message = "Account is locked out" });
+                return BadRequest(new AuthResponseDto 
+                { 
+                    IsSuccess = false,
+                    Message = "Account is locked out"
+                });
             }
             
             if (result.RequiresTwoFactor)
             {
-                return BadRequest(new { message = "Two-factor authentication required" });
+                return BadRequest(new AuthResponseDto 
+                { 
+                    IsSuccess = false,
+                    Message = "Two-factor authentication required"
+                });
             }
             
-            return BadRequest(new { message = "Invalid username or password" });
+            return BadRequest(new AuthResponseDto 
+            { 
+                IsSuccess = false,
+                Message = "Invalid username or password"
+            });
         }
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return Ok(new { message = "Logged out successfully" });
+            return Ok(new AuthResponseDto 
+            { 
+                IsSuccess = true,
+                Message = "Logged out successfully"
+            });
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
+        {
+            if (string.IsNullOrEmpty(request.RefreshToken))
+            {
+                return BadRequest(new RefreshTokenResponseDto 
+                { 
+                    IsSuccess = false,
+                    Message = "Refresh token is required"
+                });
+            }
+
+            // Validate refresh token
+            if (!_jwtService.ValidateRefreshToken(request.RefreshToken))
+            {
+                return BadRequest(new RefreshTokenResponseDto 
+                { 
+                    IsSuccess = false,
+                    Message = "Invalid refresh token"
+                });
+            }
+
+            // Get current user from token
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new RefreshTokenResponseDto 
+                { 
+                    IsSuccess = false,
+                    Message = "User not found"
+                });
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return Unauthorized(new RefreshTokenResponseDto 
+                { 
+                    IsSuccess = false,
+                    Message = "User not found"
+                });
+            }
+
+            // Generate new tokens
+            var roles = await _userManager.GetRolesAsync(user);
+            var newToken = _jwtService.GenerateToken(user.Id, user.UserName, user.Email, roles);
+            var newRefreshToken = _jwtService.GenerateRefreshToken();
+
+            return Ok(new RefreshTokenResponseDto
+            {
+                IsSuccess = true,
+                Token = newToken,
+                RefreshToken = newRefreshToken,
+                ExpiresAt = _jwtService.GetTokenExpiration(newToken),
+                Message = "Token refreshed successfully"
+            });
         }
 
         [HttpGet("profile")]

@@ -2,12 +2,21 @@ using Microsoft.AspNetCore.Mvc;
 using Backend.Infrastructure.ExternalServices;
 using Backend.Application.Features.Auth.DTOs;
 using Microsoft.AspNetCore.Http;
+using System.Text.Json;
+using Client.MVC.Services;
 
 namespace Client.MVC.Controllers
 {
-    public class AccountController(IExternalService externalService) : Controller
+    public class AccountController : Controller
     {
-        private readonly IExternalService _externalService = externalService;
+        private readonly IExternalService _externalService;
+        private readonly ITokenService _tokenService;
+
+        public AccountController(IExternalService externalService, ITokenService tokenService)
+        {
+            _externalService = externalService;
+            _tokenService = tokenService;
+        }
 
         #region Login
 
@@ -17,7 +26,7 @@ namespace Client.MVC.Controllers
             return View();
         }
 
-        [HttpPost]
+                [HttpPost]
         public async Task<IActionResult> Login(LoginDto loginDto)
         {
             if (!ModelState.IsValid)
@@ -27,21 +36,27 @@ namespace Client.MVC.Controllers
 
             try
             {
-                var response = await _externalService.PostAsync<LoginDto, dynamic>("api/auth/login", loginDto);
+                var response = await _externalService.PostAsync<LoginDto, AuthResponseDto>("api/auth/login", loginDto);
 
-                // Store token in session (since we can't use localStorage in server-side)
-                var token = response.GetProperty("token").GetString();
-                var userName = response.GetProperty("userName").GetString();
+                if (response.IsSuccess && !string.IsNullOrEmpty(response.Token))
+                {
+                    // Store tokens using token service
+                    _tokenService.StoreTokens(
+                        response.Token,
+                        response.RefreshToken ?? string.Empty,
+                        response.UserName ?? string.Empty,
+                        response.UserId ?? string.Empty,
+                        response.ExpiresAt ?? DateTime.UtcNow.AddHours(1)
+                    );
 
-                // Use byte array conversion for session storage
-                var tokenBytes = System.Text.Encoding.UTF8.GetBytes(token ?? string.Empty);
-                var userNameBytes = System.Text.Encoding.UTF8.GetBytes(userName ?? string.Empty);
-
-                HttpContext.Session.Set("JWTToken", tokenBytes);
-                HttpContext.Session.Set("UserName", userNameBytes);
-
-                TempData["SuccessMessage"] = "Login successful!";
-                return RedirectToAction("Index", "Home");
+                    TempData["SuccessMessage"] = "Login successful!";
+                    return RedirectToAction("Index", "Home");
+                }
+                else
+                {
+                    ModelState.AddModelError("", response.Message ?? "Login failed");
+                    return View(loginDto);
+                }
             }
             catch (HttpRequestException ex)
             {
@@ -67,7 +82,7 @@ namespace Client.MVC.Controllers
             return View();
         }
 
-        [HttpPost]
+                [HttpPost]
         public async Task<IActionResult> Register(RegisterDto registerDto)
         {
             if (!ModelState.IsValid)
@@ -77,21 +92,37 @@ namespace Client.MVC.Controllers
 
             try
             {
-                var response = await _externalService.PostAsync<RegisterDto, dynamic>("api/auth/register", registerDto);
+                var response = await _externalService.PostAsync<RegisterDto, AuthResponseDto>("api/auth/register", registerDto);
 
-                // Store token in session
-                var token = response.GetProperty("token").GetString();
-                var userName = response.GetProperty("userName").GetString();
+                if (response.IsSuccess && !string.IsNullOrEmpty(response.Token))
+                {
+                    // Store tokens using token service
+                    _tokenService.StoreTokens(
+                        response.Token,
+                        response.RefreshToken ?? string.Empty,
+                        response.UserName ?? string.Empty,
+                        response.UserId ?? string.Empty,
+                        response.ExpiresAt ?? DateTime.UtcNow.AddHours(1)
+                    );
 
-                // Use byte array conversion for session storage
-                var tokenBytes = System.Text.Encoding.UTF8.GetBytes(token ?? string.Empty);
-                var userNameBytes = System.Text.Encoding.UTF8.GetBytes(userName ?? string.Empty);
-
-                HttpContext.Session.Set("JWTToken", tokenBytes);
-                HttpContext.Session.Set("UserName", userNameBytes);
-
-                TempData["SuccessMessage"] = "Registration successful!";
-                return RedirectToAction("Index", "Home");
+                    TempData["SuccessMessage"] = "Registration successful!";
+                    return RedirectToAction("Index", "Home");
+                }
+                else
+                {
+                    if (response.Errors?.Any() == true)
+                    {
+                        foreach (var error in response.Errors)
+                        {
+                            ModelState.AddModelError("", error);
+                        }
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", response.Message ?? "Registration failed");
+                    }
+                    return View(registerDto);
+                }
             }
             catch (HttpRequestException ex)
             {
@@ -122,8 +153,8 @@ namespace Client.MVC.Controllers
                 // Ignore errors during logout
             }
 
-            // Clear session
-            HttpContext.Session.Clear();
+            // Clear tokens using token service
+            _tokenService.ClearTokens();
             TempData["SuccessMessage"] = "Logged out successfully!";
             return RedirectToAction("Index", "Home");
         }

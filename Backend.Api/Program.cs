@@ -2,6 +2,7 @@ using Backend.Identity.DependencyInjection;
 using Backend.Persistence.DependencyInjection;
 using Backend.Application.DependencyInjection;
 using Backend.Infrastructure.DependencyInjection;
+using Backend.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -10,6 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+
+// Add session support for CSRF protection
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 // Register Identity services
 builder.Services.ConfigureIdentityServices(builder.Configuration);
@@ -58,6 +67,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Use session
+app.UseSession();
+
+// Add global error handling middleware
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
+// Add rate limiting middleware
+app.UseRateLimiting();
 
 app.UseAuthentication();
 app.UseAuthorization();

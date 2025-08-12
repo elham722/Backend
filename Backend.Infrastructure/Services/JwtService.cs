@@ -13,6 +13,10 @@ namespace Backend.Infrastructure.Services
         string GenerateRefreshToken();
         ClaimsPrincipal? ValidateToken(string token);
         bool ValidateRefreshToken(string refreshToken);
+        string? GetUserIdFromToken(string token);
+        DateTime GetTokenExpiration(string token);
+        bool IsTokenExpired(string token);
+        bool IsTokenExpiringSoon(string token, int minutesThreshold = 5);
     }
 
     public class JwtService : IJwtService
@@ -110,6 +114,45 @@ namespace Backend.Infrastructure.Services
             {
                 return false;
             }
+        }
+
+        public string? GetUserIdFromToken(string token)
+        {
+            try
+            {
+                var principal = ValidateToken(token);
+                return principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public DateTime GetTokenExpiration(string token)
+        {
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadJwtToken(token);
+                return jwtToken.ValidTo;
+            }
+            catch
+            {
+                return DateTime.MinValue;
+            }
+        }
+
+        public bool IsTokenExpired(string token)
+        {
+            var expiration = GetTokenExpiration(token);
+            return expiration <= DateTime.UtcNow;
+        }
+
+        public bool IsTokenExpiringSoon(string token, int minutesThreshold = 5)
+        {
+            var expiration = GetTokenExpiration(token);
+            return expiration <= DateTime.UtcNow.AddMinutes(minutesThreshold);
         }
     }
 } 

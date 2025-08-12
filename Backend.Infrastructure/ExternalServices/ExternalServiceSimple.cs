@@ -7,18 +7,21 @@ using Backend.Infrastructure.LocalStorage;
 
 namespace Backend.Infrastructure.ExternalServices
 {
-    public class ExternalService : IExternalService
+    /// <summary>
+    /// Simplified External Service without Polly for basic HTTP operations
+    /// </summary>
+    public class ExternalServiceSimple : IExternalService
     {
         private readonly HttpClient _httpClient;
         private readonly ExternalServiceOptions _options;
         private readonly ILocalStorageService _localStorage;
-        private readonly ILogger<ExternalService> _logger;
+        private readonly ILogger<ExternalServiceSimple> _logger;
 
-        public ExternalService(
+        public ExternalServiceSimple(
             HttpClient httpClient, 
             IOptions<ExternalServiceOptions> options, 
             ILocalStorageService localStorage,
-            ILogger<ExternalService> logger)
+            ILogger<ExternalServiceSimple> logger)
         {
             _httpClient = httpClient;
             _options = options.Value;
