@@ -5,20 +5,11 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Backend.Infrastructure.Services
+namespace Backend.Identity.Services
 {
-    public interface IJwtService
-    {
-        string GenerateToken(string userId, string userName, string email, IEnumerable<string> roles);
-        string GenerateRefreshToken();
-        ClaimsPrincipal? ValidateToken(string token);
-        bool ValidateRefreshToken(string refreshToken);
-        string? GetUserIdFromToken(string token);
-        DateTime GetTokenExpiration(string token);
-        bool IsTokenExpired(string token);
-        bool IsTokenExpiringSoon(string token, int minutesThreshold = 5);
-    }
-
+    /// <summary>
+    /// Implementation of JWT service for token generation and validation
+    /// </summary>
     public class JwtService : IJwtService
     {
         private readonly IConfiguration _configuration;

@@ -9,6 +9,7 @@ namespace Backend.Application.Features.Auth.Commands.Login
         public string? Email { get; set; }
         public string? Token { get; set; }
         public DateTime? ExpiresAt { get; set; }
+        public List<string>? Roles { get; set; }
         public bool IsLockedOut { get; set; }
         public bool RequiresTwoFactor { get; set; }
 
@@ -17,7 +18,7 @@ namespace Backend.Application.Features.Auth.Commands.Login
         {
         }
 
-        public static LoginResult Success(string userId, string userName, string email, string token, DateTime expiresAt)
+        public static LoginResult Success(string userId, string userName, string email, string token, DateTime expiresAt, List<string> roles)
         {
             return new LoginResult(true)
             {
@@ -25,7 +26,8 @@ namespace Backend.Application.Features.Auth.Commands.Login
                 UserName = userName,
                 Email = email,
                 Token = token,
-                ExpiresAt = expiresAt
+                ExpiresAt = expiresAt,
+                Roles = roles
             };
         }
 

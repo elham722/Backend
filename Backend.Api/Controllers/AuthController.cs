@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Backend.Identity.Models;
 using Backend.Application.Features.Auth.DTOs;
-using Backend.Infrastructure.Services;
-using Microsoft.Extensions.Configuration;
+using Backend.Application.Features.Auth.Commands.Login;
+using Backend.Application.Features.Auth.Commands.Register;
+using Backend.Application.Common.Interfaces;
+using Backend.Application.Common.Interfaces.Infrastructure;
+using Backend.Identity.Services;
 using System.Security.Claims;
 
 namespace Backend.Api.Controllers
@@ -12,17 +13,17 @@ namespace Backend.Api.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly ICommandDispatcher _commandDispatcher;
+        private readonly IAuthService _authService;
         private readonly IJwtService _jwtService;
 
         public AuthController(
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
+            ICommandDispatcher commandDispatcher,
+            IAuthService authService,
             IJwtService jwtService)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
+            _commandDispatcher = commandDispatcher;
+            _authService = authService;
             _jwtService = jwtService;
         }
 
@@ -39,77 +40,69 @@ namespace Backend.Api.Controllers
                 });
             }
 
-            var user = ApplicationUser.Create(registerDto.Email, registerDto.UserName);
-            user.PhoneNumber = registerDto.PhoneNumber;
-
-            var result = await _userManager.CreateAsync(user, registerDto.Password);
-            
-            if (result.Succeeded)
+            var command = new RegisterCommand
             {
-                // Get user roles (default to empty list for new users)
-                var roles = await _userManager.GetRolesAsync(user);
-                var token = _jwtService.GenerateToken(user.Id, user.UserName, user.Email, roles);
+                UserName = registerDto.UserName,
+                Email = registerDto.Email,
+                Password = registerDto.Password,
+                PhoneNumber = registerDto.PhoneNumber
+            };
+
+            var result = await _commandDispatcher.DispatchAsync(command);
+            
+            if (result.IsSuccess)
+            {
                 var refreshToken = _jwtService.GenerateRefreshToken();
                 
                 return Ok(new AuthResponseDto
                 { 
                     IsSuccess = true,
                     Message = "User registered successfully",
-                    UserId = user.Id,
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    Token = token,
+                    UserId = result.UserId,
+                    UserName = result.UserName,
+                    Email = result.Email,
+                    Token = result.Token,
                     RefreshToken = refreshToken,
-                    ExpiresAt = _jwtService.GetTokenExpiration(token),
-                    Roles = roles.ToList()
+                    ExpiresAt = result.ExpiresAt,
+                    Roles = result.Roles ?? new List<string>()
                 });
             }
             
             return BadRequest(new AuthResponseDto 
             { 
                 IsSuccess = false,
-                Message = "Registration failed",
-                Errors = result.Errors.Select(e => e.Description).ToList()
+                Message = result.ErrorMessage ?? "Registration failed",
+                Errors = new List<string> { result.ErrorMessage ?? "Registration failed" }
             });
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var user = await _userManager.FindByNameAsync(loginDto.UserName);
-            if (user == null)
+            var command = new LoginCommand
             {
-                return BadRequest(new AuthResponseDto 
-                { 
-                    IsSuccess = false,
-                    Message = "Invalid username or password"
-                });
-            }
+                UserName = loginDto.UserName,
+                Password = loginDto.Password,
+                RememberMe = loginDto.RememberMe
+            };
 
-            var result = await _signInManager.PasswordSignInAsync(user, loginDto.Password, loginDto.RememberMe, lockoutOnFailure: false);
+            var result = await _commandDispatcher.DispatchAsync(command);
             
-            if (result.Succeeded)
+            if (result.IsSuccess)
             {
-                // Update last login
-                user.UpdateLastLogin();
-                await _userManager.UpdateAsync(user);
-
-                // Get user roles
-                var roles = await _userManager.GetRolesAsync(user);
-                var token = _jwtService.GenerateToken(user.Id, user.UserName, user.Email, roles);
                 var refreshToken = _jwtService.GenerateRefreshToken();
                 
                 return Ok(new AuthResponseDto
                 { 
                     IsSuccess = true,
                     Message = "Login successful",
-                    UserId = user.Id,
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    Token = token,
+                    UserId = result.UserId,
+                    UserName = result.UserName,
+                    Email = result.Email,
+                    Token = result.Token,
                     RefreshToken = refreshToken,
-                    ExpiresAt = _jwtService.GetTokenExpiration(token),
-                    Roles = roles.ToList()
+                    ExpiresAt = result.ExpiresAt,
+                    Roles = result.Roles ?? new List<string>()
                 });
             }
             
@@ -134,18 +127,18 @@ namespace Backend.Api.Controllers
             return BadRequest(new AuthResponseDto 
             { 
                 IsSuccess = false,
-                Message = "Invalid username or password"
+                Message = result.ErrorMessage ?? "Invalid username or password"
             });
         }
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
+            var result = await _authService.LogoutAsync();
             return Ok(new AuthResponseDto 
             { 
-                IsSuccess = true,
-                Message = "Logged out successfully"
+                IsSuccess = result,
+                Message = result ? "Logged out successfully" : "Logout failed"
             });
         }
 
@@ -161,16 +154,6 @@ namespace Backend.Api.Controllers
                 });
             }
 
-            // Validate refresh token
-            if (!_jwtService.ValidateRefreshToken(request.RefreshToken))
-            {
-                return BadRequest(new RefreshTokenResponseDto 
-                { 
-                    IsSuccess = false,
-                    Message = "Invalid refresh token"
-                });
-            }
-
             // Get current user from token
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
@@ -182,49 +165,41 @@ namespace Backend.Api.Controllers
                 });
             }
 
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
+            var result = await _authService.RefreshTokenAsync(request.RefreshToken, userId);
+
+            if (result.IsSuccess)
             {
-                return Unauthorized(new RefreshTokenResponseDto 
-                { 
-                    IsSuccess = false,
-                    Message = "User not found"
+                return Ok(new RefreshTokenResponseDto
+                {
+                    IsSuccess = true,
+                    Token = result.Token,
+                    RefreshToken = result.RefreshToken,
+                    ExpiresAt = result.ExpiresAt,
+                    Message = "Token refreshed successfully"
                 });
             }
 
-            // Generate new tokens
-            var roles = await _userManager.GetRolesAsync(user);
-            var newToken = _jwtService.GenerateToken(user.Id, user.UserName, user.Email, roles);
-            var newRefreshToken = _jwtService.GenerateRefreshToken();
-
-            return Ok(new RefreshTokenResponseDto
-            {
-                IsSuccess = true,
-                Token = newToken,
-                RefreshToken = newRefreshToken,
-                ExpiresAt = _jwtService.GetTokenExpiration(newToken),
-                Message = "Token refreshed successfully"
+            return BadRequest(new RefreshTokenResponseDto 
+            { 
+                IsSuccess = false,
+                Message = result.Message ?? "Invalid refresh token"
             });
         }
 
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
-            var user = await _userManager.GetUserAsync(User);
-            
-            if (user == null)
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized();
             }
 
-            var profile = new
+            var profile = await _authService.GetUserProfileAsync(userId);
+            if (profile == null)
             {
-                user.Id,
-                user.UserName,
-                user.Email,
-                user.PhoneNumber,
-                user.Account.CreatedAt
-            };
+                return Unauthorized();
+            }
 
             return Ok(profile);
         }

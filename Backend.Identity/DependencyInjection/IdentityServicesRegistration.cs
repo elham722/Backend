@@ -155,6 +155,12 @@ namespace Backend.Identity.DependencyInjection
                 options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
                 options.SlidingExpiration = true;
             });
+
+            // Register AuthService
+            services.AddScoped<Backend.Application.Common.Interfaces.IAuthService, Backend.Identity.Services.AuthService>();
+            
+            // Register JwtService
+            services.AddScoped<Backend.Identity.Services.IJwtService, Backend.Identity.Services.JwtService>();
         }
     }
 }

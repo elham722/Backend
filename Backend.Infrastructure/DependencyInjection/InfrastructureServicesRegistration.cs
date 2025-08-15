@@ -36,7 +36,6 @@ public static class InfrastructureServicesRegistration
         services.AddCacheServices(configuration);
         services.AddFileStorageServices(configuration);
         services.AddExternalServices(configuration);
-        services.AddJwtServices(configuration);
 
         return services;
     }
@@ -153,18 +152,7 @@ public static class InfrastructureServicesRegistration
         return services;
     }
 
-    /// <summary>
-    /// Registers JWT services
-    /// </summary>
-    private static IServiceCollection AddJwtServices(
-        this IServiceCollection services,
-        IConfiguration configuration)
-    {
-        // Register JWT service
-        services.AddScoped<IJwtService, JwtService>();
 
-        return services;
-    }
 
     /// <summary>
     /// Registers infrastructure services with custom options

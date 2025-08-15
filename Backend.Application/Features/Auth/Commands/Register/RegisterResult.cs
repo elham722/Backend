@@ -9,13 +9,14 @@ namespace Backend.Application.Features.Auth.Commands.Register
         public string? Email { get; set; }
         public string? Token { get; set; }
         public DateTime? ExpiresAt { get; set; }
+        public List<string>? Roles { get; set; }
 
         private RegisterResult(bool isSuccess, string? errorMessage = null, string? errorCode = null) 
             : base(isSuccess, errorMessage, errorCode)
         {
         }
 
-        public static RegisterResult Success(string userId, string userName, string email, string token, DateTime expiresAt)
+        public static RegisterResult Success(string userId, string userName, string email, string token, DateTime expiresAt, List<string> roles)
         {
             return new RegisterResult(true)
             {
@@ -23,7 +24,8 @@ namespace Backend.Application.Features.Auth.Commands.Register
                 UserName = userName,
                 Email = email,
                 Token = token,
-                ExpiresAt = expiresAt
+                ExpiresAt = expiresAt,
+                Roles = roles
             };
         }
 
