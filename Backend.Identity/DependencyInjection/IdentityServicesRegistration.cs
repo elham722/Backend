@@ -182,6 +182,9 @@ namespace Backend.Identity.DependencyInjection
 
             // Add Memory Cache for refresh tokens
             services.AddMemoryCache();
+
+            // Add MediatR for Identity layer
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IdentityServicesRegistration).Assembly));
         }
     }
 }

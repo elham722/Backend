@@ -6,6 +6,10 @@ using Backend.Application.Common.Infrastructure;
 using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Services;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Mapster;
+using MapsterMapper;
+using System.Reflection;
+using FluentValidation;
 
 namespace Backend.Application.DependencyInjection;
 
@@ -33,6 +37,18 @@ public static class ApplicationServicesRegistration
 
         // Register HttpContextAccessor for CurrentUserService
         services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+        // Register Mapster
+        var config = TypeAdapterConfig.GlobalSettings;
+        config.Scan(Assembly.GetExecutingAssembly());
+        services.AddSingleton(config);
+        services.AddScoped<IMapper, ServiceMapper>();
+
+        // Register MediatR
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+
+        // Register FluentValidation
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
         return services;
     }

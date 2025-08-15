@@ -27,11 +27,11 @@ public static class PersistenceServicesRegistration
         // Register DbContext
         services.AddDbContext<ApplicationDbContext>(options =>
         {
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            var connectionString = configuration.GetConnectionString("DBConnection");
             
             if (string.IsNullOrEmpty(connectionString))
             {
-                throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                throw new InvalidOperationException("Connection string 'DBConnection' not found.");
             }
 
             options.UseSqlServer(
