@@ -2,111 +2,155 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using System.Net;
+using System.Text.Json;
 
 namespace Backend.Infrastructure.Extensions
 {
     /// <summary>
-    /// Rate Limiting Middleware
+    /// Middleware for rate limiting requests
     /// </summary>
     public class RateLimitingMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly IMemoryCache _cache;
         private readonly ILogger<RateLimitingMiddleware> _logger;
-        private const int MaxRequestsPerMinute = 100;
-        private const int MaxRequestsPerHour = 1000;
+        private readonly RateLimitingOptions _options;
 
         public RateLimitingMiddleware(
-            RequestDelegate next, 
-            IMemoryCache cache, 
-            ILogger<RateLimitingMiddleware> logger)
+            RequestDelegate next,
+            IMemoryCache cache,
+            ILogger<RateLimitingMiddleware> logger,
+            RateLimitingOptions options)
         {
             _next = next;
             _cache = cache;
             _logger = logger;
+            _options = options;
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var clientId = GetClientId(context);
-            
-            if (!await IsRequestAllowed(clientId))
+            var clientId = GetClientIdentifier(context);
+            var endpoint = GetEndpointIdentifier(context);
+
+            if (await IsRateLimitExceeded(clientId, endpoint))
             {
-                _logger.LogWarning("Rate limit exceeded for client: {ClientId}", clientId);
-                
-                context.Response.StatusCode = 429; // Too Many Requests
-                context.Response.Headers.Add("Retry-After", "60");
-                await context.Response.WriteAsync("Rate limit exceeded. Please try again later.");
+                _logger.LogWarning("Rate limit exceeded for client {ClientId} on endpoint {Endpoint}", clientId, endpoint);
+                await ReturnRateLimitExceededResponse(context);
                 return;
             }
 
             await _next(context);
         }
 
-        private string GetClientId(HttpContext context)
+        private static string GetClientIdentifier(HttpContext context)
         {
-            // Use IP address as client identifier
-            var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            
-            // For authenticated users, you might want to use user ID instead
-            var userId = context.User?.Identity?.Name;
-            if (!string.IsNullOrEmpty(userId))
+            // Try to get from X-Forwarded-For header first (for proxy scenarios)
+            var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(forwardedFor))
             {
-                return $"user_{userId}";
-            }
-            
-            return $"ip_{ipAddress}";
-        }
-
-        private async Task<bool> IsRequestAllowed(string clientId)
-        {
-            var now = DateTime.UtcNow;
-            var minuteKey = $"rate_limit_minute_{clientId}_{now:yyyyMMddHHmm}";
-            var hourKey = $"rate_limit_hour_{clientId}_{now:yyyyMMddHH}";
-
-            // Check minute limit
-            var minuteCount = await GetRequestCount(minuteKey);
-            if (minuteCount >= MaxRequestsPerMinute)
-            {
-                return false;
+                return forwardedFor.Split(',')[0].Trim();
             }
 
-            // Check hour limit
-            var hourCount = await GetRequestCount(hourKey);
-            if (hourCount >= MaxRequestsPerHour)
+            // Fall back to remote IP address
+            return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        }
+
+        private static string GetEndpointIdentifier(HttpContext context)
+        {
+            var path = context.Request.Path.Value ?? "/";
+            var method = context.Request.Method;
+            return $"{method}:{path}";
+        }
+
+        private async Task<bool> IsRateLimitExceeded(string clientId, string endpoint)
+        {
+            var key = $"rate_limit:{clientId}:{endpoint}";
+            var windowKey = $"rate_limit_window:{clientId}:{endpoint}";
+
+            var currentTime = DateTime.UtcNow;
+            var windowStart = currentTime.AddMinutes(-_options.WindowMinutes);
+
+            // Get or create rate limit info
+            var rateLimitInfo = await GetOrCreateRateLimitInfo(key, windowKey, windowStart);
+
+            // Check if we're in a new window
+            if (rateLimitInfo.WindowStart < windowStart)
             {
-                return false;
+                rateLimitInfo.RequestCount = 0;
+                rateLimitInfo.WindowStart = currentTime;
             }
 
-            // Increment counters
-            await IncrementRequestCount(minuteKey, TimeSpan.FromMinutes(1));
-            await IncrementRequestCount(hourKey, TimeSpan.FromHours(1));
+            // Increment request count
+            rateLimitInfo.RequestCount++;
 
-            return true;
+            // Check if limit exceeded
+            var isExceeded = rateLimitInfo.RequestCount > _options.MaxRequestsPerWindow;
+
+            // Update cache
+            var expiration = currentTime.AddMinutes(_options.WindowMinutes);
+            _cache.Set(key, rateLimitInfo, expiration);
+            _cache.Set(windowKey, rateLimitInfo.WindowStart, expiration);
+
+            // Log if approaching limit
+            if (rateLimitInfo.RequestCount >= _options.MaxRequestsPerWindow * 0.8)
+            {
+                _logger.LogInformation("Rate limit approaching for client {ClientId} on endpoint {Endpoint}: {Count}/{Max}",
+                    clientId, endpoint, rateLimitInfo.RequestCount, _options.MaxRequestsPerWindow);
+            }
+
+            return isExceeded;
         }
 
-        private async Task<int> GetRequestCount(string key)
+        private async Task<RateLimitInfo> GetOrCreateRateLimitInfo(string key, string windowKey, DateTime windowStart)
         {
-            return await Task.FromResult(_cache.Get<int>(key));
+            var rateLimitInfo = _cache.Get<RateLimitInfo>(key);
+            if (rateLimitInfo == null)
+            {
+                rateLimitInfo = new RateLimitInfo
+                {
+                    RequestCount = 0,
+                    WindowStart = windowStart
+                };
+            }
+
+            return rateLimitInfo;
         }
 
-        private async Task IncrementRequestCount(string key, TimeSpan expiration)
+        private static async Task ReturnRateLimitExceededResponse(HttpContext context)
         {
-            var count = _cache.Get<int>(key);
-            count++;
-            _cache.Set(key, count, expiration);
-            await Task.CompletedTask;
+            context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
+            context.Response.ContentType = "application/json";
+
+            var response = new
+            {
+                error = "Rate limit exceeded",
+                message = "Too many requests. Please try again later.",
+                retryAfter = 60 // seconds
+            };
+
+            // Add Retry-After header
+            context.Response.Headers.Add("Retry-After", "60");
+
+            var jsonResponse = JsonSerializer.Serialize(response);
+            await context.Response.WriteAsync(jsonResponse);
+        }
+
+        private class RateLimitInfo
+        {
+            public int RequestCount { get; set; }
+            public DateTime WindowStart { get; set; }
         }
     }
 
     /// <summary>
-    /// Extension method for adding rate limiting
+    /// Options for rate limiting
     /// </summary>
-    public static class RateLimitingMiddlewareExtensions
+    public class RateLimitingOptions
     {
-        public static IApplicationBuilder UseRateLimiting(this IApplicationBuilder builder)
-        {
-            return builder.UseMiddleware<RateLimitingMiddleware>();
-        }
+        public int MaxRequestsPerWindow { get; set; } = 100;
+        public int WindowMinutes { get; set; } = 1;
+        public bool EnableLogging { get; set; } = true;
     }
 } 

@@ -329,5 +329,25 @@ namespace Backend.Identity.Services
                 return null;
             }
         }
+
+        public async Task<IEnumerable<string>?> GetUserRolesAsync(string userId)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    return null;
+                }
+
+                var roles = await _userManager.GetRolesAsync(user);
+                return roles;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting user roles for user: {UserId}", userId);
+                return null;
+            }
+        }
     }
 } 

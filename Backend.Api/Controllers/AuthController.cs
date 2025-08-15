@@ -1,11 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
-using Backend.Application.Features.Auth.DTOs;
-using Backend.Application.Features.Auth.Commands.Login;
-using Backend.Application.Features.Auth.Commands.Register;
+using Backend.Application.Common.Infrastructure;
 using Backend.Application.Common.Interfaces;
 using Backend.Application.Common.Interfaces.Infrastructure;
+using Backend.Application.Features.Auth.Commands.Login;
+using Backend.Application.Features.Auth.Commands.Register;
+using Backend.Application.Features.Auth.DTOs;
 using Backend.Identity.Services;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers
 {
@@ -16,30 +17,26 @@ namespace Backend.Api.Controllers
         private readonly ICommandDispatcher _commandDispatcher;
         private readonly IAuthService _authService;
         private readonly IJwtService _jwtService;
+        private readonly IRefreshTokenService _refreshTokenService;
+        private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             ICommandDispatcher commandDispatcher,
             IAuthService authService,
-            IJwtService jwtService)
+            IJwtService jwtService,
+            IRefreshTokenService refreshTokenService,
+            ILogger<AuthController> logger)
         {
             _commandDispatcher = commandDispatcher;
             _authService = authService;
             _jwtService = jwtService;
+            _refreshTokenService = refreshTokenService;
+            _logger = logger;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            if (registerDto.Password != registerDto.ConfirmPassword)
-            {
-                return BadRequest(new AuthResponseDto 
-                { 
-                    IsSuccess = false,
-                    Message = "Passwords do not match",
-                    Errors = new List<string> { "Password confirmation does not match" }
-                });
-            }
-
             var command = new RegisterCommand
             {
                 UserName = registerDto.UserName,
@@ -49,15 +46,22 @@ namespace Backend.Api.Controllers
             };
 
             var result = await _commandDispatcher.DispatchAsync(command);
-            
+
             if (result.IsSuccess)
             {
                 var refreshToken = _jwtService.GenerateRefreshToken();
-                
+                var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(7);
+
+                // Store refresh token
+                await _refreshTokenService.StoreRefreshTokenAsync(result.UserId!, refreshToken, refreshTokenExpiresAt);
+
+                // Set secure cookie for refresh token
+                SetRefreshTokenCookie(refreshToken, refreshTokenExpiresAt);
+
                 return Ok(new AuthResponseDto
-                { 
+                {
                     IsSuccess = true,
-                    Message = "User registered successfully",
+                    Message = "Registration successful",
                     UserId = result.UserId,
                     UserName = result.UserName,
                     Email = result.Email,
@@ -67,12 +71,11 @@ namespace Backend.Api.Controllers
                     Roles = result.Roles ?? new List<string>()
                 });
             }
-            
-            return BadRequest(new AuthResponseDto 
-            { 
+
+            return BadRequest(new AuthResponseDto
+            {
                 IsSuccess = false,
-                Message = result.ErrorMessage ?? "Registration failed",
-                Errors = new List<string> { result.ErrorMessage ?? "Registration failed" }
+                Message = result.ErrorMessage ?? "Registration failed"
             });
         }
 
@@ -87,13 +90,20 @@ namespace Backend.Api.Controllers
             };
 
             var result = await _commandDispatcher.DispatchAsync(command);
-            
+
             if (result.IsSuccess)
             {
                 var refreshToken = _jwtService.GenerateRefreshToken();
-                
+                var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(loginDto.RememberMe ? 30 : 7);
+
+                // Store refresh token
+                await _refreshTokenService.StoreRefreshTokenAsync(result.UserId!, refreshToken, refreshTokenExpiresAt);
+
+                // Set secure cookie for refresh token
+                SetRefreshTokenCookie(refreshToken, refreshTokenExpiresAt);
+
                 return Ok(new AuthResponseDto
-                { 
+                {
                     IsSuccess = true,
                     Message = "Login successful",
                     UserId = result.UserId,
@@ -105,103 +115,164 @@ namespace Backend.Api.Controllers
                     Roles = result.Roles ?? new List<string>()
                 });
             }
-            
-            if (result.IsLockedOut)
+
+            return BadRequest(new AuthResponseDto
             {
-                return BadRequest(new AuthResponseDto 
-                { 
-                    IsSuccess = false,
-                    Message = "Account is locked out"
-                });
-            }
-            
-            if (result.RequiresTwoFactor)
-            {
-                return BadRequest(new AuthResponseDto 
-                { 
-                    IsSuccess = false,
-                    Message = "Two-factor authentication required"
-                });
-            }
-            
-            return BadRequest(new AuthResponseDto 
-            { 
                 IsSuccess = false,
                 Message = result.ErrorMessage ?? "Invalid username or password"
             });
         }
 
         [HttpPost("logout")]
+        [Authorize]
         public async Task<IActionResult> Logout()
         {
-            var result = await _authService.LogoutAsync();
-            return Ok(new AuthResponseDto 
-            { 
-                IsSuccess = result,
-                Message = result ? "Logged out successfully" : "Logout failed"
-            });
+            try
+            {
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    // Revoke all refresh tokens for the user
+                    await _refreshTokenService.RevokeAllRefreshTokensAsync(userId);
+                }
+
+                // Remove refresh token cookie
+                RemoveRefreshTokenCookie();
+
+                return Ok(new { IsSuccess = true, Message = "Logout successful" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during logout");
+                return StatusCode(500, new { IsSuccess = false, Message = "Logout failed" });
+            }
         }
 
         [HttpPost("refresh-token")]
-        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
+        public async Task<IActionResult> RefreshToken()
         {
-            if (string.IsNullOrEmpty(request.RefreshToken))
+            try
             {
-                return BadRequest(new RefreshTokenResponseDto 
-                { 
-                    IsSuccess = false,
-                    Message = "Refresh token is required"
-                });
-            }
+                // Get refresh token from cookie
+                var refreshToken = Request.Cookies["refresh_token"];
+                if (string.IsNullOrEmpty(refreshToken))
+                {
+                    return BadRequest(new { IsSuccess = false, Message = "Refresh token not found" });
+                }
 
-            // Get current user from token
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new RefreshTokenResponseDto 
-                { 
-                    IsSuccess = false,
-                    Message = "User not found"
-                });
-            }
+                // Get user ID from current token (if available) or validate refresh token
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    // Try to get user ID from refresh token (you might need to store this in the token)
+                    // For now, we'll require the user to be authenticated
+                    return Unauthorized(new { IsSuccess = false, Message = "User not authenticated" });
+                }
 
-            var result = await _authService.RefreshTokenAsync(request.RefreshToken, userId);
+                // Validate refresh token
+                if (!await _refreshTokenService.ValidateRefreshTokenAsync(userId, refreshToken))
+                {
+                    return BadRequest(new { IsSuccess = false, Message = "Invalid refresh token" });
+                }
 
-            if (result.IsSuccess)
-            {
-                return Ok(new RefreshTokenResponseDto
+                // Check for token reuse
+                if (await _refreshTokenService.IsRefreshTokenReusedAsync(userId, refreshToken))
+                {
+                    return BadRequest(new { IsSuccess = false, Message = "Refresh token has been reused" });
+                }
+
+                // Get user profile
+                var userProfile = await _authService.GetUserProfileAsync(userId);
+                if (userProfile == null)
+                {
+                    return BadRequest(new { IsSuccess = false, Message = "User not found" });
+                }
+
+                // Generate new access token
+                var roles = await _authService.GetUserRolesAsync(userId);
+                var newToken = _jwtService.GenerateToken(userId, userProfile.UserName, userProfile.Email, roles);
+
+                // Generate new refresh token
+                var newRefreshToken = _jwtService.GenerateRefreshToken();
+                var newRefreshTokenExpiresAt = DateTime.UtcNow.AddDays(7);
+
+                // Revoke old refresh token
+                await _refreshTokenService.RevokeRefreshTokenAsync(userId, refreshToken);
+
+                // Store new refresh token
+                await _refreshTokenService.StoreRefreshTokenAsync(userId, newRefreshToken, newRefreshTokenExpiresAt);
+
+                // Set new secure cookie for refresh token
+                SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt);
+
+                return Ok(new AuthResponseDto
                 {
                     IsSuccess = true,
-                    Token = result.Token,
-                    RefreshToken = result.RefreshToken,
-                    ExpiresAt = result.ExpiresAt,
-                    Message = "Token refreshed successfully"
+                    Message = "Token refreshed successfully",
+                    UserId = userId,
+                    UserName = userProfile.UserName,
+                    Email = userProfile.Email,
+                    Token = newToken,
+                    RefreshToken = newRefreshToken,
+                    ExpiresAt = _jwtService.GetTokenExpiration(newToken),
+                    Roles = roles?.ToList() ?? new List<string>()
                 });
             }
-
-            return BadRequest(new RefreshTokenResponseDto 
-            { 
-                IsSuccess = false,
-                Message = result.Message ?? "Invalid refresh token"
-            });
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error refreshing token");
+                return StatusCode(500, new { IsSuccess = false, Message = "Token refresh failed" });
+            }
         }
 
         [HttpGet("profile")]
+        [Authorize]
         public async Task<IActionResult> GetProfile()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            try
             {
-                return Unauthorized();
-            }
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { IsSuccess = false, Message = "User not authenticated" });
+                }
 
-            var profile = await _authService.GetUserProfileAsync(userId);
-            if (profile == null)
+                var profile = await _authService.GetUserProfileAsync(userId);
+                if (profile == null)
+                {
+                    return NotFound(new { IsSuccess = false, Message = "User not found" });
+                }
+
+                return Ok(new { IsSuccess = true, Profile = profile });
+            }
+            catch (Exception ex)
             {
-                return Unauthorized();
+                _logger.LogError(ex, "Error getting user profile");
+                return StatusCode(500, new { IsSuccess = false, Message = "Failed to get profile" });
             }
+        }
 
-            return Ok(profile);
+        private void SetRefreshTokenCookie(string refreshToken, DateTime expiresAt)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true, // Only send over HTTPS
+                SameSite = SameSiteMode.Strict,
+                Path = "/api/auth/refresh-token",
+                Expires = expiresAt,
+                MaxAge = TimeSpan.FromDays(7)
+            };
+
+            Response.Cookies.Append("refresh_token", refreshToken, cookieOptions);
+        }
+
+        private void RemoveRefreshTokenCookie()
+        {
+            Response.Cookies.Delete("refresh_token", new CookieOptions
+            {
+                Path = "/api/auth/refresh-token"
+            });
         }
     }
 } 

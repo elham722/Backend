@@ -78,7 +78,14 @@ app.UseSession();
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Add rate limiting middleware
-app.UseRateLimiting();
+var rateLimitingOptions = new Backend.Infrastructure.Extensions.RateLimitingOptions
+{
+    MaxRequestsPerWindow = builder.Configuration.GetValue<int>("RateLimiting:MaxRequestsPerWindow", 100),
+    WindowMinutes = builder.Configuration.GetValue<int>("RateLimiting:WindowMinutes", 1),
+    EnableLogging = builder.Configuration.GetValue<bool>("RateLimiting:EnableLogging", true)
+};
+
+app.UseMiddleware<Backend.Infrastructure.Extensions.RateLimitingMiddleware>(rateLimitingOptions);
 
 app.UseAuthentication();
 app.UseAuthorization();

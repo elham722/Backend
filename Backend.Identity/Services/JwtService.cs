@@ -17,6 +17,8 @@ namespace Backend.Identity.Services
         private readonly string _issuer;
         private readonly string _audience;
         private readonly int _expirationInMinutes;
+        private readonly string _algorithm;
+        private readonly string _keyId;
 
         public JwtService(IConfiguration configuration)
         {
@@ -25,6 +27,8 @@ namespace Backend.Identity.Services
             _issuer = configuration["JwtSettings:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
             _audience = configuration["JwtSettings:Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
             _expirationInMinutes = int.Parse(configuration["JwtSettings:ExpirationInMinutes"] ?? "60");
+            _algorithm = configuration["JwtSettings:Algorithm"] ?? "HS256";
+            _keyId = configuration["JwtSettings:KeyId"] ?? "default-key";
         }
 
         public string GenerateToken(string userId, string userName, string email, IEnumerable<string> roles)
@@ -44,18 +48,27 @@ namespace Backend.Identity.Services
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = GetSigningKey();
+            var credentials = new SigningCredentials(key, GetSecurityAlgorithm());
 
-            var token = new JwtSecurityToken(
-                issuer: _issuer,
-                audience: _audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_expirationInMinutes),
-                signingCredentials: credentials
-            );
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(_expirationInMinutes),
+                Issuer = _issuer,
+                Audience = _audience,
+                SigningCredentials = credentials
+            };
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            // Add kid header for key rotation
+            tokenDescriptor.AdditionalHeaderClaims = new Dictionary<string, object>
+            {
+                { "kid", _keyId }
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
         }
 
         public string GenerateRefreshToken()
@@ -71,18 +84,20 @@ namespace Backend.Identity.Services
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.UTF8.GetBytes(_secretKey);
+                var key = GetSigningKey();
 
                 var validationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    IssuerSigningKey = key,
                     ValidateIssuer = true,
                     ValidIssuer = _issuer,
                     ValidateAudience = true,
                     ValidAudience = _audience,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.Zero,
+                    // Add kid validation for key rotation
+                    RequireSignedTokens = true
                 };
 
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
@@ -144,6 +159,36 @@ namespace Backend.Identity.Services
         {
             var expiration = GetTokenExpiration(token);
             return expiration <= DateTime.UtcNow.AddMinutes(minutesThreshold);
+        }
+
+        private SecurityKey GetSigningKey()
+        {
+            if (_algorithm.Equals("RS256", StringComparison.OrdinalIgnoreCase))
+            {
+                // For RS256, we need to load the private key
+                var privateKey = _configuration["JwtSettings:PrivateKey"];
+                if (string.IsNullOrEmpty(privateKey))
+                {
+                    throw new InvalidOperationException("Private key not configured for RS256");
+                }
+
+                // Load RSA private key
+                var rsa = RSA.Create();
+                rsa.ImportFromPem(privateKey);
+                return new RsaSecurityKey(rsa);
+            }
+            else
+            {
+                // Default to HS256
+                return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
+            }
+        }
+
+        private string GetSecurityAlgorithm()
+        {
+            return _algorithm.Equals("RS256", StringComparison.OrdinalIgnoreCase) 
+                ? SecurityAlgorithms.RsaSha256 
+                : SecurityAlgorithms.HmacSha256;
         }
     }
 } 

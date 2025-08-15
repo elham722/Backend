@@ -12,6 +12,15 @@ namespace Backend.Identity.Models
 
         // Integration with Domain
         public string? CustomerId { get; private set; }
+        
+        // MFA Properties
+        public string? TotpSecretKey { get; private set; }
+        public bool TotpEnabled { get; private set; } = false;
+        public bool SmsEnabled { get; private set; } = false;
+        
+        // Social Login Properties
+        public string? GoogleId { get; private set; }
+        public string? MicrosoftId { get; private set; }
 
         // Computed Properties
         public bool IsLocked => LockoutEnd.HasValue && LockoutEnd.Value > DateTime.UtcNow;
@@ -116,6 +125,70 @@ namespace Backend.Identity.Models
         public void UnlinkFromCustomer()
         {
             CustomerId = null;
+            Audit = Audit.Update(UserName);
+        }
+
+        // MFA Management Methods
+        public void EnableTotp(string secretKey)
+        {
+            if (string.IsNullOrWhiteSpace(secretKey))
+                throw new ArgumentException("TOTP secret key cannot be null or empty", nameof(secretKey));
+
+            TotpSecretKey = secretKey;
+            TotpEnabled = true;
+            Audit = Audit.Update(UserName);
+        }
+
+        public void DisableTotp()
+        {
+            TotpSecretKey = null;
+            TotpEnabled = false;
+            Audit = Audit.Update(UserName);
+        }
+
+        public void EnableSms()
+        {
+            if (string.IsNullOrWhiteSpace(PhoneNumber))
+                throw new InvalidOperationException("Phone number must be set before enabling SMS");
+
+            SmsEnabled = true;
+            Audit = Audit.Update(UserName);
+        }
+
+        public void DisableSms()
+        {
+            SmsEnabled = false;
+            Audit = Audit.Update(UserName);
+        }
+
+        // Social Login Management Methods
+        public void LinkGoogleAccount(string googleId)
+        {
+            if (string.IsNullOrWhiteSpace(googleId))
+                throw new ArgumentException("Google ID cannot be null or empty", nameof(googleId));
+
+            GoogleId = googleId;
+            Audit = Audit.Update(UserName);
+        }
+
+        public void UnlinkGoogleAccount()
+        {
+            GoogleId = null;
+            Audit = Audit.Update(UserName);
+        }
+
+        public void LinkMicrosoftAccount(string microsoftId)
+        {
+            if (string.IsNullOrWhiteSpace(microsoftId))
+                throw new ArgumentException("Microsoft ID cannot be null or empty", nameof(microsoftId));
+
+            MicrosoftId = microsoftId;
+            Audit = Audit.Update(UserName);
+        }
+
+        public void UnlinkMicrosoftAccount()
+        {
+            MicrosoftId = null;
             Audit = Audit.Update(UserName);
         }
 

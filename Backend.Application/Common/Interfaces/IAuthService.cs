@@ -31,6 +31,11 @@ namespace Backend.Application.Common.Interfaces
         /// Gets the current user profile
         /// </summary>
         Task<UserProfile?> GetUserProfileAsync(string userId);
+
+        /// <summary>
+        /// Gets the current user roles
+        /// </summary>
+        Task<IEnumerable<string>?> GetUserRolesAsync(string userId);
     }
 
     /// <summary>
