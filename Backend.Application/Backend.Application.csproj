@@ -25,13 +25,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Backend.Domain\Backend.Domain.csproj" />
-    <ProjectReference Include="..\Backend.Identity\Backend.Identity.csproj" />
+    <Folder Include="Common\Pagination\" />
+    <Folder Include="Features\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Common\Pagination\" />
-    <Folder Include="Features\" />
+    <ProjectReference Include="..\Backend.Domain\Backend.Domain.csproj" />
   </ItemGroup>
 
 </Project>

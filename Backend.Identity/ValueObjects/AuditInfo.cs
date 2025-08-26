@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Backend.Application.Common.Interfaces;
 
 namespace Backend.Identity.ValueObjects
 {
@@ -24,13 +25,16 @@ namespace Backend.Identity.ValueObjects
             };
         }
 
-        public AuditInfo Update(string? updatedBy)
+        public AuditInfo Update(string? updatedBy, IDateTimeService dateTimeService)
         {
+            if (dateTimeService == null)
+                throw new ArgumentNullException(nameof(dateTimeService));
+
             return new AuditInfo
             {
                 CreatedBy = this.CreatedBy,
                 UpdatedBy = updatedBy,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = dateTimeService.UtcNow
             };
         }
 

@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Backend.Application.Common.Interfaces;
+using Backend.Identity.Services;
 
 namespace Backend.Identity.DependencyInjection
 {
@@ -166,6 +168,19 @@ namespace Backend.Identity.DependencyInjection
 
             // Add MediatR for Identity layer
             //services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IdentityServicesRegistration).Assembly));
+        }
+
+        public static IServiceCollection AddIdentityServices(this IServiceCollection services)
+        {
+            // Register Identity services
+            services.AddScoped<IAccountManagementService, AccountManagementService>();
+            services.AddScoped<ITwoFactorService, TwoFactorService>();
+            services.AddScoped<ISocialLoginService, SocialLoginService>();
+            
+            // Register default date time service if not already registered
+            services.AddScoped<IDateTimeService, DefaultDateTimeService>();
+
+            return services;
         }
     }
 }

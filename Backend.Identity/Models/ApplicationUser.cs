@@ -1,17 +1,20 @@
 ﻿using System;
 using Backend.Identity.ValueObjects;
+using Backend.Application.Common.Interfaces;
+using Backend.Identity.Services;
 using Microsoft.AspNetCore.Identity;
 
 namespace Backend.Identity.Models
 {
     public class ApplicationUser : IdentityUser
     {
+        // Core Identity Properties
         public AccountInfo Account { get; private set; } = null!;
         public SecurityInfo Security { get; private set; } = null!;
         public AuditInfo Audit { get; private set; } = null!;
 
-        // Integration with Domain
-        public string? CustomerId { get; private set; }
+        // Integration with Domain (using Guid instead of string)
+        public Guid? CustomerId { get; private set; }
         
         // MFA Properties
         public string? TotpSecretKey { get; private set; }
@@ -30,13 +33,16 @@ namespace Backend.Identity.Models
 
         private ApplicationUser() { } // For EF Core
 
-        public static ApplicationUser Create(string email, string userName, string? customerId = null, string? createdBy = null)
+        public static ApplicationUser Create(string email, string userName, Guid? customerId = null, string? createdBy = null, IDateTimeService? dateTimeService = null)
         {
             if (string.IsNullOrWhiteSpace(email))
                 throw new ArgumentException("Email cannot be null or empty", nameof(email));
 
             if (string.IsNullOrWhiteSpace(userName))
                 throw new ArgumentException("Username cannot be null or empty", nameof(userName));
+
+            // Use provided dateTimeService or fallback to DateTime.UtcNow for backward compatibility
+            var dtService = dateTimeService ?? new DefaultDateTimeService();
 
             return new ApplicationUser
             {
@@ -48,148 +54,56 @@ namespace Backend.Identity.Models
                 LockoutEnabled = true,
                 AccessFailedCount = 0,
                 CustomerId = customerId,
-                Account = AccountInfo.Create(),
+                Account = AccountInfo.Create(dtService),
                 Security = SecurityInfo.Create(),
                 Audit = AuditInfo.Create(createdBy)
             };
         }
 
-        // Account Management Methods
-        public void UpdateLastLogin()
+        // Internal methods for services to update user state
+        internal void UpdateAccount(AccountInfo account)
         {
-            Account = Account.UpdateLastLogin();
+            Account = account ?? throw new ArgumentNullException(nameof(account));
         }
 
-        public void UpdatePasswordChange()
+        internal void UpdateSecurity(SecurityInfo security)
         {
-            Account = Account.UpdatePasswordChange();
+            Security = security ?? throw new ArgumentNullException(nameof(security));
         }
 
-        public void IncrementLoginAttempts()
+        internal void UpdateAudit(AuditInfo audit)
         {
-            Account = Account.IncrementLoginAttempts();
+            Audit = audit ?? throw new ArgumentNullException(nameof(audit));
         }
 
-        public void DeactivateAccount()
+        internal void SetCustomerId(Guid? customerId)
         {
-            Account = Account.Deactivate();
-            Audit = Audit.Update(UserName);
-        }
-
-        public void ActivateAccount()
-        {
-            Account = Account.Activate();
-            Audit = Audit.Update(UserName);
-        }
-
-        public void MarkAsDeleted()
-        {
-            Account = Account.MarkAsDeleted();
-            Audit = Audit.Update(UserName);
-        }
-
-        // Security Management Methods
-        public void EnableTwoFactor(string secret)
-        {
-            Security = Security.EnableTwoFactor(secret);
-            Audit = Audit.Update(UserName);
-        }
-
-        public void DisableTwoFactor()
-        {
-            Security = Security.DisableTwoFactor();
-            Audit = Audit.Update(UserName);
-        }
-
-        public void UpdateTwoFactorSecret(string newSecret)
-        {
-            Security = Security.UpdateTwoFactorSecret(newSecret);
-            Audit = Audit.Update(UserName);
-        }
-
-        public bool ValidateTwoFactorSecret(string secret)
-        {
-            return Security.ValidateTwoFactorSecret(secret);
-        }
-
-        // Customer Integration
-        public void LinkToCustomer(string customerId)
-        {
-            if (string.IsNullOrWhiteSpace(customerId))
-                throw new ArgumentException("Customer ID cannot be null or empty", nameof(customerId));
-
             CustomerId = customerId;
-            Audit = Audit.Update(UserName);
         }
 
-        public void UnlinkFromCustomer()
+        internal void SetTotpSecretKey(string? secretKey)
         {
-            CustomerId = null;
-            Audit = Audit.Update(UserName);
-        }
-
-        // MFA Management Methods
-        public void EnableTotp(string secretKey)
-        {
-            if (string.IsNullOrWhiteSpace(secretKey))
-                throw new ArgumentException("TOTP secret key cannot be null or empty", nameof(secretKey));
-
             TotpSecretKey = secretKey;
-            TotpEnabled = true;
-            Audit = Audit.Update(UserName);
         }
 
-        public void DisableTotp()
+        internal void SetTotpEnabled(bool enabled)
         {
-            TotpSecretKey = null;
-            TotpEnabled = false;
-            Audit = Audit.Update(UserName);
+            TotpEnabled = enabled;
         }
 
-        public void EnableSms()
+        internal void SetSmsEnabled(bool enabled)
         {
-            if (string.IsNullOrWhiteSpace(PhoneNumber))
-                throw new InvalidOperationException("Phone number must be set before enabling SMS");
-
-            SmsEnabled = true;
-            Audit = Audit.Update(UserName);
+            SmsEnabled = enabled;
         }
 
-        public void DisableSms()
+        internal void SetGoogleId(string? googleId)
         {
-            SmsEnabled = false;
-            Audit = Audit.Update(UserName);
-        }
-
-        // Social Login Management Methods
-        public void LinkGoogleAccount(string googleId)
-        {
-            if (string.IsNullOrWhiteSpace(googleId))
-                throw new ArgumentException("Google ID cannot be null or empty", nameof(googleId));
-
             GoogleId = googleId;
-            Audit = Audit.Update(UserName);
         }
 
-        public void UnlinkGoogleAccount()
+        internal void SetMicrosoftId(string? microsoftId)
         {
-            GoogleId = null;
-            Audit = Audit.Update(UserName);
-        }
-
-        public void LinkMicrosoftAccount(string microsoftId)
-        {
-            if (string.IsNullOrWhiteSpace(microsoftId))
-                throw new ArgumentException("Microsoft ID cannot be null or empty", nameof(microsoftId));
-
             MicrosoftId = microsoftId;
-            Audit = Audit.Update(UserName);
-        }
-
-        public void UnlinkMicrosoftAccount()
-        {
-            MicrosoftId = null;
-            Audit = Audit.Update(UserName);
         }
 
         // Business Logic Methods

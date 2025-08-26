@@ -23,11 +23,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Identity layer should not depend on Application layer -->
+    <Folder Include="Profiles\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Profiles\" />
+    <ProjectReference Include="..\Backend.Application\Backend.Application.csproj" />
   </ItemGroup>
 
 </Project>

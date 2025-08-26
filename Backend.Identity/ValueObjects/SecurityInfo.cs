@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Backend.Application.Common.Interfaces;
 
 namespace Backend.Identity.ValueObjects
 {
@@ -24,16 +25,19 @@ namespace Backend.Identity.ValueObjects
             };
         }
 
-        public SecurityInfo EnableTwoFactor(string secret)
+        public SecurityInfo EnableTwoFactor(string secret, IDateTimeService dateTimeService)
         {
             if (string.IsNullOrWhiteSpace(secret))
                 throw new ArgumentException("Two-factor secret cannot be null or empty", nameof(secret));
+
+            if (dateTimeService == null)
+                throw new ArgumentNullException(nameof(dateTimeService));
 
             return new SecurityInfo
             {
                 TwoFactorEnabled = true,
                 TwoFactorSecret = secret,
-                TwoFactorEnabledAt = DateTime.UtcNow
+                TwoFactorEnabledAt = dateTimeService.UtcNow
             };
         }
 

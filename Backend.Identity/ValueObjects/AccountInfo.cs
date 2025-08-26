@@ -1,4 +1,5 @@
 ﻿using System;
+using Backend.Application.Common.Interfaces;
 
 namespace Backend.Identity.ValueObjects
 {
@@ -14,23 +15,29 @@ namespace Backend.Identity.ValueObjects
 
         private AccountInfo() { } // For EF Core
 
-        public static AccountInfo Create()
+        public static AccountInfo Create(IDateTimeService dateTimeService)
         {
+            if (dateTimeService == null)
+                throw new ArgumentNullException(nameof(dateTimeService));
+
             return new AccountInfo
             {
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = dateTimeService.UtcNow,
                 LoginAttempts = 0,
                 IsActive = true,
                 IsDeleted = false
             };
         }
 
-        public AccountInfo UpdateLastLogin()
+        public AccountInfo UpdateLastLogin(IDateTimeService dateTimeService)
         {
+            if (dateTimeService == null)
+                throw new ArgumentNullException(nameof(dateTimeService));
+
             return new AccountInfo
             {
                 CreatedAt = this.CreatedAt,
-                LastLoginAt = DateTime.UtcNow,
+                LastLoginAt = dateTimeService.UtcNow,
                 LastPasswordChangeAt = this.LastPasswordChangeAt,
                 LoginAttempts = 0, // Reset on successful login
                 IsActive = this.IsActive,
@@ -39,13 +46,16 @@ namespace Backend.Identity.ValueObjects
             };
         }
 
-        public AccountInfo UpdatePasswordChange()
+        public AccountInfo UpdatePasswordChange(IDateTimeService dateTimeService)
         {
+            if (dateTimeService == null)
+                throw new ArgumentNullException(nameof(dateTimeService));
+
             return new AccountInfo
             {
                 CreatedAt = this.CreatedAt,
                 LastLoginAt = this.LastLoginAt,
-                LastPasswordChangeAt = DateTime.UtcNow,
+                LastPasswordChangeAt = dateTimeService.UtcNow,
                 LoginAttempts = this.LoginAttempts,
                 IsActive = this.IsActive,
                 IsDeleted = this.IsDeleted,
@@ -95,8 +105,11 @@ namespace Backend.Identity.ValueObjects
             };
         }
 
-        public AccountInfo MarkAsDeleted()
+        public AccountInfo MarkAsDeleted(IDateTimeService dateTimeService)
         {
+            if (dateTimeService == null)
+                throw new ArgumentNullException(nameof(dateTimeService));
+
             return new AccountInfo
             {
                 CreatedAt = this.CreatedAt,
@@ -105,7 +118,7 @@ namespace Backend.Identity.ValueObjects
                 LoginAttempts = this.LoginAttempts,
                 IsActive = false,
                 IsDeleted = true,
-                DeletedAt = DateTime.UtcNow
+                DeletedAt = dateTimeService.UtcNow
             };
         }
 
