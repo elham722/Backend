@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Backend.Application\Backend.Application.csproj" />
+    <!-- Identity layer should not depend on Application layer -->
   </ItemGroup>
 
   <ItemGroup>

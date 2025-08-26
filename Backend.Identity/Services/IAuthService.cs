@@ -1,10 +1,9 @@
 using Backend.Identity.DTOs;
 
-namespace Backend.Application.Common.Interfaces
+namespace Backend.Identity.Services
 {
     /// <summary>
-    /// Interface for authentication operations - Application layer abstraction
-    /// This interface delegates to the Identity layer implementation
+    /// Interface for authentication operations
     /// </summary>
     public interface IAuthService
     {

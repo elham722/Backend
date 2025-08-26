@@ -30,6 +30,9 @@ public static class ApplicationServicesRegistration
 
         // Register application interfaces
         services.AddScoped<IDateTimeService, DateTimeService>();
+        
+        // Register AuthService adapter to bridge with Identity layer
+        services.AddScoped<IAuthService, AuthServiceAdapter>();
 
         // Register dispatchers
         services.AddScoped<ICommandDispatcher, CommandDispatcher>();

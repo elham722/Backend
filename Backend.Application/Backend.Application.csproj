@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Backend.Domain\Backend.Domain.csproj" />
+    <ProjectReference Include="..\Backend.Identity\Backend.Identity.csproj" />
   </ItemGroup>
 
   <ItemGroup>

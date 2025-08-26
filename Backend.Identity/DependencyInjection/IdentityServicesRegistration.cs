@@ -157,7 +157,7 @@ namespace Backend.Identity.DependencyInjection
             });
 
                         // Register AuthService
-            services.AddScoped<Backend.Application.Common.Interfaces.IAuthService, Backend.Identity.Services.AuthService>();
+            services.AddScoped<Backend.Identity.Services.IAuthService, Backend.Identity.Services.AuthService>();
 
             // Register JwtService
             services.AddScoped<Backend.Identity.Services.IJwtService, Backend.Identity.Services.JwtService>();

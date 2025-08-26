@@ -1,6 +1,6 @@
-using Backend.Application.Common.Interfaces;
 using Backend.Identity.Models;
 using Backend.Identity.Services;
+using Backend.Identity.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
