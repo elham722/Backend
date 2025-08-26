@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Persistence layer is responsible for data access and database operations. It implements the Repository pattern and Unit of Work pattern to provide a clean abstraction over the data access layer.
+The Persistence layer is responsible for data access and database operations. It implements the Repository pattern and Unit of Work pattern to provide a clean abstraction over the data access layer. The layer is designed to work with both Domain entities and Identity users through a bridge service.
 
 ## Architecture
 
@@ -11,6 +11,7 @@ Backend.Persistence/
 ├── Contexts/                 # Database contexts
 ├── Configurations/           # Entity Framework configurations
 ├── Repositories/            # Repository implementations
+├── Services/                # Bridge services for Identity integration
 ├── UnitOfWork/              # Unit of Work implementation
 ├── DependencyInjection/     # Service registration
 ├── Migrations/              # Database migrations
@@ -24,10 +25,37 @@ Backend.Persistence/
 The main database context that manages entity configurations and provides database access.
 
 **Features:**
-- Automatic audit field management (CreatedAt, UpdatedAt)
+- Automatic audit field management (CreatedAt, UpdatedAt, CreatedBy, UpdatedBy)
 - Global query filters for soft delete
 - Entity configurations
+- Value object conversions
 - Sensitive data logging in development
+
+**Audit Support:**
+```csharp
+// Automatic audit field population
+_context.SetAuditUser(currentUserId);
+
+// Manual audit field setting
+public void SetAuditUser(string userId)
+{
+    var entries = ChangeTracker.Entries<BaseEntity>()
+        .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+    
+    foreach (var entry in entries)
+    {
+        if (entry.State == EntityState.Added)
+        {
+            entry.Entity.CreatedBy = userId;
+            entry.Entity.UpdatedBy = userId;
+        }
+        else if (entry.State == EntityState.Modified)
+        {
+            entry.Entity.UpdatedBy = userId;
+        }
+    }
+}
+```
 
 ### 2. Entity Configurations
 
@@ -38,6 +66,25 @@ Entity Framework configurations for mapping domain entities to database tables.
 - Value object mappings (Email, PhoneNumber, Address)
 - Indexes for performance optimization
 - Audit field configurations
+
+**Value Object Conversions:**
+```csharp
+// Email value object conversion
+modelBuilder.Entity<Customer>()
+    .Property(c => c.Email)
+    .HasConversion(
+        email => email.Value,
+        value => Email.Create(value));
+
+// Address value object as owned entity
+modelBuilder.Entity<Customer>()
+    .OwnsOne(c => c.Address, address =>
+    {
+        address.Property(a => a.Street).HasMaxLength(200);
+        address.Property(a => a.City).HasMaxLength(100);
+        // ... other properties
+    });
+```
 
 ### 3. Repository Pattern
 
@@ -63,28 +110,34 @@ Generic repository implementation providing common CRUD operations:
 - `UpdateRange()` - Update multiple entities
 - `Delete()` - Delete entity
 - `DeleteRange()` - Delete multiple entities
-- `DeleteAsync()` - Delete entity by ID
+- `BulkInsertAsync()` - Bulk insert operations
+- `BulkUpdateAsync()` - Bulk update operations
+- `BulkDeleteAsync()` - Bulk delete operations
 
 #### CustomerRepository
 
 Specific repository for Customer entity with business-specific queries:
 
 **Customer-Specific Methods:**
+- `GetByApplicationUserIdAsync()` - Get customer by Identity user ID
 - `GetByEmailAsync()` - Get customer by email
-- `GetByPhoneNumberAsync()` - Get customer by phone number
-- `GetPremiumCustomersAsync()` - Get premium customers
-- `GetVerifiedCustomersAsync()` - Get verified customers
-- `GetCustomersByStatusAsync()` - Get customers by status
+- `GetByPhoneAsync()` - Get customer by phone number
+- `GetByStatusAsync()` - Get customers by status
+- `GetActiveCustomersAsync()` - Get active customers
+- `GetCustomersByRegistrationDateAsync()` - Get customers by registration date range
+- `IsEmailUniqueAsync()` - Check if email is unique
+- `IsPhoneUniqueAsync()` - Check if phone is unique
+- `GetCustomerCountByStatusAsync()` - Get customer count by status
+
+**Additional Business Methods:**
 - `GetCustomersByAgeRangeAsync()` - Get customers by age range
 - `GetCustomersByLocationAsync()` - Get customers by location
-- `EmailExistsAsync()` - Check if email exists
-- `PhoneNumberExistsAsync()` - Check if phone number exists
-- `GetCustomerCountByStatusAsync()` - Get customer count by status
-- `GetPremiumCustomerCountAsync()` - Get premium customer count
-- `GetVerifiedCustomerCountAsync()` - Get verified customer count
-- `GetCustomersCreatedInDateRangeAsync()` - Get customers by creation date range
+- `GetPremiumCustomersAsync()` - Get premium customers
+- `GetVerifiedCustomersAsync()` - Get verified customers
 - `GetCustomersWithIncompleteProfileAsync()` - Get customers with incomplete profiles
 - `GetCustomersBySearchTermAsync()` - Search customers by term
+- `GetPremiumCustomerCountAsync()` - Get premium customer count
+- `GetVerifiedCustomerCountAsync()` - Get verified customer count
 
 ### 4. Unit of Work
 
@@ -95,15 +148,70 @@ Manages database transactions and coordinates multiple repositories.
 - Repository coordination
 - Automatic disposal
 - Async/await support
+- Domain event dispatching
 
 **Methods:**
 - `BeginTransactionAsync()` - Start a new transaction
 - `CommitTransactionAsync()` - Commit the current transaction
 - `RollbackTransactionAsync()` - Rollback the current transaction
 - `SaveChangesAsync()` - Save all changes
-- `SaveEntitiesAsync()` - Save entities and return success status
+- `HasChangesAsync()` - Check if there are unsaved changes
+- `DispatchDomainEventsAsync()` - Dispatch domain events
 
-### 5. Dependency Injection
+### 5. User Persistence Service
+
+Bridge service that connects Persistence layer with Identity layer for user management.
+
+**Features:**
+- Creates users with both Domain entity and Identity user
+- Updates users across both layers
+- Manages transactions between Identity and Domain
+- Provides unified user management interface
+
+**Key Methods:**
+- `CreateUserAsync()` - Create user with Domain and Identity
+- `UpdateUserAsync()` - Update user across both layers
+- `GetUserByIdAsync()` - Get user with both Domain and Identity info
+- `GetUsersAsync()` - Get paginated users with filtering
+- `DeleteUserAsync()` - Delete user (soft or permanent)
+- `ActivateUserAsync()` - Activate user account
+- `DeactivateUserAsync()` - Deactivate user account
+
+**Transaction Management:**
+```csharp
+public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto createUserDto, string createdBy, CancellationToken cancellationToken = default)
+{
+    await _unitOfWork.BeginTransactionAsync(cancellationToken);
+    
+    try
+    {
+        // 1. Create Identity User
+        var identityUser = ApplicationUser.Create(...);
+        await _userManager.CreateAsync(identityUser, createUserDto.Password);
+        
+        // 2. Create Domain Customer entity
+        var customer = Customer.Create(...);
+        await _customerRepository.AddAsync(customer, cancellationToken);
+        
+        // 3. Link Identity and Domain
+        identityUser.SetCustomerId(customer.Id);
+        await _userManager.UpdateAsync(identityUser);
+        
+        // 4. Commit transaction
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.CommitTransactionAsync(cancellationToken);
+        
+        return Result<UserDto>.Success(userDto);
+    }
+    catch
+    {
+        await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+        throw;
+    }
+}
+```
+
+### 6. Dependency Injection
 
 **PersistenceServicesRegistration:**
 
@@ -115,34 +223,17 @@ services.AddPersistenceServices(configuration);
 
 // Using connection string directly
 services.AddPersistenceServices(connectionString, enableSensitiveDataLogging);
+
+// For testing
+services.AddPersistenceServicesForTesting(databaseName);
 ```
 
 **Registered Services:**
 - `ApplicationDbContext` - Scoped
 - `ICustomerRepository` - Scoped
 - `IUnitOfWork` - Scoped
-
-### 6. Database Migrations
-
-**InitialCreate Migration:**
-- Creates Customers table
-- Configures all columns and constraints
-- Creates indexes for performance
-- Sets up value object mappings
-
-### 7. Database Seeder
-
-**DatabaseSeeder:**
-
-Seeds the database with initial test data:
-
-**Sample Data:**
-- Premium customers
-- Regular customers
-- Business customers
-- Young customers
-- International customers
-- Inactive customers
+- `IRepositoryFactory` - Scoped
+- `IUserPersistenceService` - Scoped
 
 ## Database Schema
 
@@ -159,6 +250,7 @@ Seeds the database with initial test data:
 | IsPremium | bit | NOT NULL, Default: false | Premium status |
 | Email | nvarchar(255) | NULL, Unique | Customer email |
 | PhoneNumber | nvarchar(20) | NULL, Unique | Customer phone number |
+| ApplicationUserId | nvarchar(450) | NULL, FK | Link to Identity user |
 | Street | nvarchar(200) | NULL | Address street |
 | City | nvarchar(100) | NULL | Address city |
 | State | nvarchar(100) | NULL | Address state |
@@ -183,6 +275,7 @@ Seeds the database with initial test data:
 - `IX_Customers_IsVerified`
 - `IX_Customers_LastName`
 - `IX_Customers_PhoneNumber` (Unique)
+- `IX_Customers_ApplicationUserId` (Unique)
 
 **Composite Indexes:**
 - `IX_Customers_FirstName_LastName`
@@ -227,6 +320,27 @@ catch
 }
 ```
 
+### User Management with Bridge Service
+
+```csharp
+// Create user with both Domain and Identity
+var result = await _userPersistenceService.CreateUserAsync(createUserDto, currentUserId);
+
+// Update user across both layers
+var updateResult = await _userPersistenceService.UpdateUserAsync(userId, updateUserDto, currentUserId);
+
+// Get user with both Domain and Identity information
+var userResult = await _userPersistenceService.GetUserByIdAsync(userId, includeRoles: true);
+
+// Get paginated users with filtering
+var usersResult = await _userPersistenceService.GetUsersAsync(
+    pageNumber: 1,
+    pageSize: 10,
+    searchTerm: "john",
+    status: "Active",
+    role: "Customer");
+```
+
 ### Complex Queries
 
 ```csharp
@@ -261,6 +375,33 @@ var result = await query
 }
 ```
 
+## Integration with Identity Layer
+
+The Persistence layer integrates with the Identity layer through the `UserPersistenceService`:
+
+1. **Separation of Concerns**: Identity layer manages authentication/authorization, Persistence layer manages Domain entities
+2. **Bridge Service**: `UserPersistenceService` coordinates operations between both layers
+3. **Transaction Management**: Ensures consistency across Identity and Domain operations
+4. **Audit Trail**: Maintains audit information in both layers
+5. **Value Objects**: Properly maps Domain value objects to database columns
+
+### Identity Integration Flow
+
+```
+Application Layer
+       ↓
+UserPersistenceService (Bridge)
+       ↓
+┌─────────────────┬─────────────────┐
+│   Identity      │    Domain       │
+│   Layer         │    Layer        │
+│                 │                 │
+│ ApplicationUser │    Customer     │
+│ UserManager     │   Repository    │
+│ RoleManager     │   UnitOfWork    │
+└─────────────────┴─────────────────┘
+```
+
 ## Best Practices
 
 1. **Always use Unit of Work for transactions**
@@ -273,6 +414,8 @@ var result = await query
 8. **Use async/await for all database operations**
 9. **Implement proper disposal patterns**
 10. **Use connection string retry policies**
+11. **Maintain separation between Identity and Domain layers**
+12. **Use bridge services for cross-layer operations**
 
 ## Performance Considerations
 
@@ -283,6 +426,7 @@ var result = await query
 5. **Connection string retry policies**
 6. **Query optimization with proper predicates**
 7. **Use of IQueryable for deferred execution**
+8. **AsNoTracking() for read-only operations**
 
 ## Security
 
@@ -291,4 +435,6 @@ var result = await query
 3. **Audit trail with CreatedBy/UpdatedBy**
 4. **Soft delete for data retention**
 5. **Input validation at repository level**
-6. **Sensitive data logging only in development** 
+6. **Sensitive data logging only in development**
+7. **Proper transaction isolation levels**
+8. **Role-based access control through Identity integration** 

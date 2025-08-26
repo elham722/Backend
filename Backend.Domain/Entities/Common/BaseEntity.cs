@@ -44,26 +44,26 @@ namespace Backend.Domain.Entities.Common
         public bool HasDomainEvents => (_domainEvents?.Count ?? 0) > 0; // به property تبدیل شد برای simplicity
 
         // Audit Methods (با validation تمیزتر)
-        protected void SetCreatedBy(string createdBy)
+        public void SetCreatedBy(string createdBy)
         {
             CreatedBy = ValidateString(createdBy, nameof(createdBy));
             CreatedAt = DateTime.UtcNow; // اگر می‌خوای اینجا ست کن، اما پیشنهاد: در handler
         }
 
-        protected void SetUpdatedBy(string updatedBy)
+        public void SetUpdatedBy(string updatedBy)
         {
             UpdatedBy = ValidateString(updatedBy, nameof(updatedBy));
             UpdatedAt = DateTime.UtcNow;
         }
 
-        protected void MarkAsDeleted(string deletedBy)
+        public void MarkAsDeleted(string deletedBy)
         {
             DeletedBy = ValidateString(deletedBy, nameof(deletedBy));
             IsDeleted = true;
             DeletedAt = DateTime.UtcNow;
         }
 
-        protected void Restore()
+        public void Restore()
         {
             IsDeleted = false;
             DeletedAt = null;
@@ -78,9 +78,9 @@ namespace Backend.Domain.Entities.Common
             return value;
         }
 
-        // Public methods for EF Core (internal بهتره اگر ممکن)
-        internal void SetCreatedAt(DateTime createdAt) => CreatedAt = createdAt; // internal برای محدودیت دسترسی
-        internal void SetUpdatedAt(DateTime updatedAt) => UpdatedAt = updatedAt;
+        // Public methods for EF Core
+        public void SetCreatedAt(DateTime createdAt) => CreatedAt = createdAt;
+        public void SetUpdatedAt(DateTime updatedAt) => UpdatedAt = updatedAt;
 
         // Business Logic Methods
         public bool IsNew() => EqualityComparer<TId>.Default.Equals(Id, default!); // فیکس: بر اساس Id

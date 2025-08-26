@@ -54,8 +54,7 @@ builder.Services.AddSession(options =>
 // Register Identity services
 builder.Services.ConfigureIdentityServices(builder.Configuration);
 
-// Register Persistence services
-builder.Services.ConfigurePersistenceServices(builder.Configuration);
+
 
 // Register Application services
 builder.Services.ConfigureApplicationServices();
