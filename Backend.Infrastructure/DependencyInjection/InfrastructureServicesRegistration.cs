@@ -60,6 +60,8 @@ public static class InfrastructureServicesRegistration
         return services;
     }
 
+ 
+
     /// <summary>
     /// Registers email services
     /// </summary>

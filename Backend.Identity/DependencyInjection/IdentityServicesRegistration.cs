@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Backend.Application.Common.Interfaces;
+using Backend.Identity.Mappers;
 using Backend.Identity.Services;
 
 namespace Backend.Identity.DependencyInjection
@@ -49,31 +50,9 @@ namespace Backend.Identity.DependencyInjection
                         errorNumbersToAdd: null);
                 });
 
-                //// Enable sensitive data logging in development
-                //if (configuration.GetValue<bool>("EnableSensitiveDataLogging"))
-                //{
-                //    options.EnableSensitiveDataLogging();
-                //}
-
-                //// Enable detailed errors in development
-                //if (configuration.GetValue<bool>("EnableDetailedErrors"))
-                //{
-                //    options.EnableDetailedErrors();
-                //}
+              
             });
 
-            // Add DbContext factory for background services
-            // services.AddDbContextFactory<BackendIdentityDbContext>(options =>
-            // {
-            //     options.UseSqlServer(connectionString, sqlOptions =>
-            //     {
-            //         sqlOptions.MigrationsAssembly(typeof(BackendIdentityDbContext).Assembly.GetName().Name);
-            //         sqlOptions.EnableRetryOnFailure(
-            //             maxRetryCount: 5,
-            //             maxRetryDelay: TimeSpan.FromSeconds(30),
-            //             errorNumbersToAdd: null);
-            //     });
-            // });
         }
 
         private static void ConfigureIdentity(IServiceCollection services)
@@ -179,6 +158,18 @@ namespace Backend.Identity.DependencyInjection
             
             // Register default date time service if not already registered
             services.AddScoped<IDateTimeService, DefaultDateTimeService>();
+
+            return services;
+        }
+        /// <summary>
+        /// Registers mapping services
+        /// </summary>
+        private static IServiceCollection AddMappingServices(this IServiceCollection services)
+        {
+            // Register AutoMapper
+
+            // Register user mapper
+            services.AddScoped<IUserMapper, UserMapper>();
 
             return services;
         }
