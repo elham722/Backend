@@ -30,7 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Customer\Specifications\" />
+    <Folder Include="Common\Pagination\" />
+    <Folder Include="Features\" />
   </ItemGroup>
 
 </Project>

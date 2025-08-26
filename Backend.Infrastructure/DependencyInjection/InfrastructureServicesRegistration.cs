@@ -47,8 +47,7 @@ public static class InfrastructureServicesRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Register current user service
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
+       
 
         // Register date time service
         services.AddScoped<IDateTimeService, DateTimeService>();
@@ -186,7 +185,7 @@ public static class InfrastructureServicesRegistration
         });
 
         // Register services
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
+      
         services.AddScoped<IDateTimeService, DateTimeService>();
         services.AddScoped<ILocalStorageService, LocalStorageService>();
         services.AddScoped<ICacheService, MemoryCacheService>();

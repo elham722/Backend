@@ -156,35 +156,16 @@ namespace Backend.Identity.DependencyInjection
                 options.SlidingExpiration = true;
             });
 
-                        // Register AuthService
-            services.AddScoped<Backend.Identity.Services.IAuthService, Backend.Identity.Services.AuthService>();
-
-            // Register JwtService
-            services.AddScoped<Backend.Identity.Services.IJwtService, Backend.Identity.Services.JwtService>();
-
-            // Register RefreshTokenService
-            services.AddScoped<Backend.Identity.Services.IRefreshTokenService, Backend.Identity.Services.RefreshTokenService>();
-
-            // Register AuthorizationService
-            services.AddScoped<Backend.Identity.Services.ICustomAuthorizationService, Backend.Identity.Services.AuthorizationService>();
-
-            // Register TOTP Service
-            services.AddScoped<Backend.Identity.Services.ITotpService, Backend.Identity.Services.TotpService>();
-
-            // Register SMS Service
-            services.AddScoped<Backend.Identity.Services.ISmsService, Backend.Identity.Services.SmsService>();
-
-            // Register Social Auth Service
-            services.AddScoped<Backend.Identity.Services.ISocialAuthService, Backend.Identity.Services.SocialAuthService>();
+            
 
             // Add HttpClient for social auth
-            services.AddHttpClient();
+          //  services.AddHttpClient();
 
             // Add Memory Cache for refresh tokens
             services.AddMemoryCache();
 
             // Add MediatR for Identity layer
-            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IdentityServicesRegistration).Assembly));
+            //services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IdentityServicesRegistration).Assembly));
         }
     }
 }
