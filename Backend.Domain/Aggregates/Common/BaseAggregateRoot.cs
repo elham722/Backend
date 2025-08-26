@@ -1,35 +1,37 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using Backend.Domain.Events;
 using Backend.Domain.Entities.Common;
+using Backend.Domain.Events;
 
-namespace Backend.Domain.Aggregates.Common
+namespace Backend.Domain.Aggregates.Common 
 {
-    public abstract class BaseAggregateRoot<TId> : BaseEntity<TId>
+    public abstract class BaseAggregateRoot<TId> : BaseEntity<TId>, IAggregateRoot where TId : IEquatable<TId>
     {
         // Optimistic concurrency control
-        public int Version { get; protected set; } = 0;
+        public int Version { get; protected set; }
 
-        // Aggregate-specific domain events
+        // Aggregate-specific domain events (optional, اگر جدا لازم داری)
         private List<BaseDomainEvent>? _aggregateEvents;
-        public IReadOnlyCollection<BaseDomainEvent> AggregateEvents => 
+        public IReadOnlyCollection<BaseDomainEvent> AggregateEvents =>
             _aggregateEvents?.AsReadOnly() ?? new List<BaseDomainEvent>().AsReadOnly();
 
-        protected BaseAggregateRoot() : base() { }
+        protected BaseAggregateRoot() : base()
+        {
+            Version = 0; // Explicit initialization
+        }
 
-        protected BaseAggregateRoot(TId id) : base(id) { }
+        protected BaseAggregateRoot(TId id) : base(id)
+        {
+            Version = 0;
+        }
 
         // Version management
-        protected void IncrementVersion()
-        {
-            Version++;
-        }
+        protected void IncrementVersion() => Version++;
 
         protected void SetVersion(int version)
         {
             if (version < 0)
                 throw new ArgumentException("Version cannot be negative", nameof(version));
-
             Version = version;
         }
 
@@ -37,36 +39,28 @@ namespace Backend.Domain.Aggregates.Common
         protected void AddAggregateEvent(BaseDomainEvent @event)
         {
             _aggregateEvents ??= new List<BaseDomainEvent>();
-            _aggregateEvents.Add(@event);
-            
-            // Also add to base domain events
-            AddDomainEvent(@event);
+            _aggregateEvents.Add(@event ?? throw new ArgumentNullException(nameof(@event)));
+            AddDomainEvent(@event); // همچنان به BaseEntity می‌فرستیم
         }
 
-        public void ClearAggregateEvents() => _aggregateEvents?.Clear();
-
-        public bool HasAggregateEvents => _aggregateEvents?.Count > 0;
-
-        // Aggregate state validation
-        protected virtual void ValidateAggregateState()
+        public void ClearAggregateEvents()
         {
-            // Override in derived classes for aggregate-specific validation
+            _aggregateEvents?.Clear();
+            ClearDomainEvents(); // هماهنگی با BaseEntity
         }
 
-        // Aggregate invariants
-        protected virtual bool ValidateInvariants()
+        public bool HasAggregateEvents => (_aggregateEvents?.Count ?? 0) > 0;
+
+        // Aggregate validation
+        protected virtual void ValidateState()
         {
-            // Override in derived classes to validate aggregate invariants
-            return true;
+            // Override در subclasses برای validation خاص
         }
 
-        // Aggregate consistency
-        protected void EnsureConsistency()
+        protected void EnsureInvariants()
         {
-            if (!ValidateInvariants())
-                throw new InvalidOperationException("Aggregate invariants violated");
-
-            ValidateAggregateState();
+            ValidateState();
+            // Invariants خاص در subclasses تعریف می‌شه
         }
 
         // Override base methods to include version management
@@ -89,11 +83,9 @@ namespace Backend.Domain.Aggregates.Common
         }
 
         // Aggregate-specific business logic
-        public bool IsConsistent() => ValidateInvariants();
-
-        public void EnsureValidState()
-        {
-            EnsureConsistency();
-        }
+        public void EnsureValidState() => EnsureInvariants();
     }
-} 
+
+    // Marker interface برای aggregates
+    public interface IAggregateRoot { }
+}

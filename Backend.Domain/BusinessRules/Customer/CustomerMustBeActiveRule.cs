@@ -20,6 +20,6 @@ namespace Backend.Domain.BusinessRules.Customer
             return !_customer.IsActive;
         }
 
-        public override string Message => $"Customer must be active to perform {_operation}. Current status: {_customer.Status}, Customer status: {_customer.CustomerStatus}";
+        public override string Message => $"Customer must be active to perform {_operation}, Customer status: {_customer.CustomerStatus}";
     }
 } 

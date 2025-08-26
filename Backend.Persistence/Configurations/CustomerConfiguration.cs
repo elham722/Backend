@@ -98,10 +98,7 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.UpdatedBy)
             .HasMaxLength(100);
 
-        builder.Property(c => c.Status)
-            .IsRequired()
-            .HasConversion<string>()
-            .HasDefaultValue(Domain.Enums.EntityStatus.Active);
+       
 
         // Indexes
         builder.HasIndex(c => c.Email.Value)

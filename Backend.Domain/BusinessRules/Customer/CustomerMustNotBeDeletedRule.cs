@@ -17,9 +17,9 @@ namespace Backend.Domain.BusinessRules.Customer
 
         public override bool IsBroken()
         {
-            return _customer.Status == EntityStatus.Deleted || _customer.CustomerStatus == CustomerStatus.Deleted;
+            return  _customer.CustomerStatus == CustomerStatus.Deleted;
         }
 
-        public override string Message => $"Cannot perform {_operation} on deleted customer. Current status: {_customer.Status}, Customer status: {_customer.CustomerStatus}";
+        public override string Message => $"Cannot perform {_operation} on deleted customer, Customer status: {_customer.CustomerStatus}";
     }
 } 

@@ -2,15 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Backend.Domain.ValueObjects.Common
+namespace Backend.Domain.ValueObjects.Common 
 {
+    /// <summary>
+    /// Base class for Value Objects in DDD, providing equality comparison based on components.
+    /// </summary>
     public abstract class BaseValueObject
     {
+        /// <summary>
+        /// Gets the components to compare for equality.
+        /// </summary>
         protected abstract IEnumerable<object?> GetEqualityComponents();
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || obj.GetType() != GetType()) return false;
+            if (obj == null || obj.GetType() != GetType())
+                return false;
+
             var other = (BaseValueObject)obj;
             return GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
         }
@@ -18,20 +26,17 @@ namespace Backend.Domain.ValueObjects.Common
         public override int GetHashCode()
         {
             return GetEqualityComponents()
-                .Aggregate(1, (current, obj) =>
-                {
-                    unchecked { return current * 23 + (obj?.GetHashCode() ?? 0); }
-                });
+                .Aggregate(17, (current, obj) => current * 23 ^ (obj?.GetHashCode() ?? 0));
         }
 
         public static bool operator ==(BaseValueObject? left, BaseValueObject? right)
         {
-            return EqualityComparer<BaseValueObject>.Default.Equals(left, right);
+            return Equals(left, right);
         }
 
         public static bool operator !=(BaseValueObject? left, BaseValueObject? right)
         {
-            return !(left == right);
+            return !Equals(left, right);
         }
     }
 }

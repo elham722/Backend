@@ -1,8 +1,6 @@
 using Backend.Domain.Interfaces.Repositories;
 using Backend.Domain.Interfaces.UnitOfWork;
 using Backend.Persistence.Contexts;
-using Backend.Persistence.Repositories;
-using Backend.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,14 +49,14 @@ public static class PersistenceServicesRegistration
             }
         });
 
-        // Register Repository Factory
-        services.AddScoped<IRepositoryFactory, RepositoryFactory>();
+        //// Register Repository Factory
+        //services.AddScoped<IRepositoryFactory, RepositoryFactory>();
 
-        // Register Repositories
-        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        //// Register Repositories
+        //services.AddScoped<ICustomerRepository, CustomerRepository>();
 
-        // Register Unit of Work
-        services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
+        //// Register Unit of Work
+        //services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
 
         return services;
     }
@@ -94,14 +92,14 @@ public static class PersistenceServicesRegistration
             }
         });
 
-        // Register Repository Factory
-        services.AddScoped<IRepositoryFactory, RepositoryFactory>();
+        //// Register Repository Factory
+        //services.AddScoped<IRepositoryFactory, RepositoryFactory>();
 
-        // Register Repositories
-        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        //// Register Repositories
+        //services.AddScoped<ICustomerRepository, CustomerRepository>();
 
-        // Register Unit of Work
-        services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
+        //// Register Unit of Work
+        //services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
 
         return services;
     }
