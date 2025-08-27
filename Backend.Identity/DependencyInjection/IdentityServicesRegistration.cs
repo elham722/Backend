@@ -25,6 +25,12 @@ namespace Backend.Identity.DependencyInjection
             // Configure AutoMapper
             services.AddAutoMapper(cfg => cfg.AddMaps(Assembly.GetExecutingAssembly()));
 
+            // Add Identity services
+            services.AddIdentityServices();
+
+            // Add mapping services
+            services.AddMappingServices();
+
             return services;
         }
 
@@ -155,6 +161,9 @@ namespace Backend.Identity.DependencyInjection
             services.AddScoped<IAccountManagementService, AccountManagementService>();
             services.AddScoped<ITwoFactorService, TwoFactorService>();
             services.AddScoped<ISocialLoginService, SocialLoginService>();
+            
+            // Register UserService
+            services.AddScoped<IUserService, UserService>();
             
             // Register default date time service if not already registered
             services.AddScoped<IDateTimeService, DefaultDateTimeService>();

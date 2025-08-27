@@ -13,7 +13,7 @@ public class UserMappingProfile : Profile
     {
         // ApplicationUser to UserDto
         CreateMap<ApplicationUser, UserDto>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Guid.Parse(src.Id)))
             .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email ?? string.Empty))
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName ?? string.Empty))
             .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
@@ -22,6 +22,7 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.TwoFactorEnabled, opt => opt.MapFrom(src => src.TwoFactorEnabled))
             .ForMember(dest => dest.IsLocked, opt => opt.MapFrom(src => src.IsLocked))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+            .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => src.Account.IsDeleted))
             .ForMember(dest => dest.LastLoginAt, opt => opt.MapFrom(src => src.Account.LastLoginAt))
             .ForMember(dest => dest.LastPasswordChangeAt, opt => opt.MapFrom(src => src.Account.LastPasswordChangeAt))
             .ForMember(dest => dest.LoginAttempts, opt => opt.MapFrom(src => src.Account.LoginAttempts))
@@ -39,6 +40,10 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
             .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
             .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.CustomerId))
+            // Password handling: Password should be handled separately using UserManager.CreateAsync(user, password)
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()) // Never map password directly
+            
+            .ForMember(dest => dest.Roles, opt => opt.Ignore()) // Roles handled separately
             .ForMember(dest => dest.EmailConfirmed, opt => opt.Ignore())
             .ForMember(dest => dest.PhoneNumberConfirmed, opt => opt.Ignore())
             .ForMember(dest => dest.TwoFactorEnabled, opt => opt.Ignore())
@@ -62,6 +67,56 @@ public class UserMappingProfile : Profile
             .ForMember(dest => dest.EmailConfirmed, opt => opt.MapFrom(src => src.EmailConfirmed))
             .ForMember(dest => dest.PhoneNumberConfirmed, opt => opt.MapFrom(src => src.PhoneNumberConfirmed))
             .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.CustomerId))
+            // Password handling: Password updates should be handled separately using UserManager.ChangePasswordAsync
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()) // Never map password directly
+          
+            .ForMember(dest => dest.Roles, opt => opt.Ignore()) // Roles handled separately
+            .ForMember(dest => dest.TwoFactorEnabled, opt => opt.Ignore())
+            .ForMember(dest => dest.IsLocked, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
+            .ForMember(dest => dest.IsNewUser, opt => opt.Ignore())
+            .ForMember(dest => dest.Account, opt => opt.Ignore())
+            .ForMember(dest => dest.Security, opt => opt.Ignore())
+            .ForMember(dest => dest.Audit, opt => opt.Ignore())
+            .ForMember(dest => dest.TotpSecretKey, opt => opt.Ignore())
+            .ForMember(dest => dest.TotpEnabled, opt => opt.Ignore())
+            .ForMember(dest => dest.SmsEnabled, opt => opt.Ignore())
+            .ForMember(dest => dest.GoogleId, opt => opt.Ignore())
+            .ForMember(dest => dest.MicrosoftId, opt => opt.Ignore());
+
+        // RegisterDto to ApplicationUser (for registration)
+        CreateMap<RegisterDto, ApplicationUser>()
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
+            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
+            // Password handling: Password should be handled separately using UserManager.CreateAsync(user, password)
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()) // Never map password directly
+           
+            .ForMember(dest => dest.EmailConfirmed, opt => opt.Ignore())
+            .ForMember(dest => dest.PhoneNumberConfirmed, opt => opt.Ignore())
+            .ForMember(dest => dest.TwoFactorEnabled, opt => opt.Ignore())
+            .ForMember(dest => dest.IsLocked, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore())
+            .ForMember(dest => dest.IsNewUser, opt => opt.Ignore())
+            .ForMember(dest => dest.Account, opt => opt.Ignore())
+            .ForMember(dest => dest.Security, opt => opt.Ignore())
+            .ForMember(dest => dest.Audit, opt => opt.Ignore())
+            .ForMember(dest => dest.TotpSecretKey, opt => opt.Ignore())
+            .ForMember(dest => dest.TotpEnabled, opt => opt.Ignore())
+            .ForMember(dest => dest.SmsEnabled, opt => opt.Ignore())
+            .ForMember(dest => dest.GoogleId, opt => opt.Ignore())
+            .ForMember(dest => dest.MicrosoftId, opt => opt.Ignore());
+
+        // UserProfileDto to ApplicationUser (for profile updates)
+        CreateMap<UserProfileDto, ApplicationUser>()
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
+            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
+            // Password handling: Password changes should be handled separately using UserManager.ChangePasswordAsync
+            .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()) // Never map password directly
+           
+            .ForMember(dest => dest.Email, opt => opt.Ignore())
+            .ForMember(dest => dest.EmailConfirmed, opt => opt.Ignore())
+            .ForMember(dest => dest.PhoneNumberConfirmed, opt => opt.Ignore())
             .ForMember(dest => dest.TwoFactorEnabled, opt => opt.Ignore())
             .ForMember(dest => dest.IsLocked, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.Ignore())

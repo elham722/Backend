@@ -3,6 +3,7 @@ using Backend.Identity.ValueObjects;
 using Backend.Application.Common.Interfaces;
 using Backend.Identity.Services;
 using Microsoft.AspNetCore.Identity;
+using System.Collections.Generic; // Added for List<string>
 
 namespace Backend.Identity.Models
 {
@@ -24,6 +25,9 @@ namespace Backend.Identity.Models
         // Social Login Properties
         public string? GoogleId { get; private set; }
         public string? MicrosoftId { get; private set; }
+
+        // Navigation property for roles (not mapped to database, used for DTO mapping)
+        public List<string> Roles { get; set; } = new();
 
         // Computed Properties
         public bool IsLocked => LockoutEnd.HasValue && LockoutEnd.Value > DateTime.UtcNow;
