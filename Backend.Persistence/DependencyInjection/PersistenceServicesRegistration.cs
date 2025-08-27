@@ -24,7 +24,7 @@ public static class PersistenceServicesRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("DBConnection");
         var enableSensitiveDataLogging = configuration.GetValue<bool>("EnableSensitiveDataLogging", false);
 
         return services.AddPersistenceServices(connectionString, enableSensitiveDataLogging);

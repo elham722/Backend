@@ -4,8 +4,10 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Backend.Application.Common.Interfaces;
+using Backend.Domain.Aggregates.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Entities.Common;
+using Backend.Domain.Events;
 using Backend.Domain.Enums;
 using Backend.Domain.ValueObjects;
 using Backend.Persistence.Configurations;
@@ -19,8 +21,13 @@ namespace Backend.Persistence.Contexts;
 /// </summary>
 public class ApplicationDbContext : DbContext
 {
-    private readonly IDateTimeService _dateTimeService;
-    private readonly ILogger<ApplicationDbContext> _logger;
+    private readonly IDateTimeService? _dateTimeService;
+    private readonly ILogger<ApplicationDbContext>? _logger;
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    {
+        // Design-time constructor - no dependencies required
+    }
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
@@ -55,8 +62,28 @@ public class ApplicationDbContext : DbContext
         // Configure global query filters
         ConfigureGlobalQueryFilters(modelBuilder);
 
-        // Configure value object conversions
-        ConfigureValueObjectConversions(modelBuilder);
+        // Ignore DomainEvents and AggregateEvents in all entities
+        ConfigureDomainEventsIgnore(modelBuilder);
+    }
+
+    private void ConfigureDomainEventsIgnore(ModelBuilder modelBuilder)
+    {
+        // Ignore DomainEvents and AggregateEvents properties in all entities
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity<Guid>).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Ignore("DomainEvents");
+            }
+
+            // Also ignore AggregateEvents for aggregate roots
+            if (typeof(BaseAggregateRoot<Guid>).IsAssignableFrom(entityType.ClrType))
+            {
+                modelBuilder.Entity(entityType.ClrType)
+                    .Ignore("AggregateEvents");
+            }
+        }
     }
 
     private void ConfigureGlobalQueryFilters(ModelBuilder modelBuilder)
@@ -77,56 +104,33 @@ public class ApplicationDbContext : DbContext
         }
     }
 
-    private void ConfigureValueObjectConversions(ModelBuilder modelBuilder)
-    {
-        // Email value object conversion
-        modelBuilder.Entity<Customer>()
-            .Property(c => c.Email)
-            .HasConversion(
-                email => email.Value,
-                value => Email.Create(value));
-
-        // PhoneNumber value object conversion
-        modelBuilder.Entity<Customer>()
-            .Property(c => c.PhoneNumber)
-            .HasConversion(
-                phone => phone.Value,
-                value => PhoneNumber.Create(value));
-
-        // Address value object conversion
-        modelBuilder.Entity<Customer>()
-            .OwnsOne(c => c.PrimaryAddress, address =>
-            {
-                address.Property(a => a.Street).HasMaxLength(200);
-                address.Property(a => a.City).HasMaxLength(100);
-                address.Property(a => a.Country).HasMaxLength(100);
-                address.Property(a => a.PostalCode).HasMaxLength(20);
-                address.Property(a => a.Province).HasMaxLength(100);
-            });
-    }
-
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            // Apply audit information before saving
-            ApplyAuditInformation();
+            // Apply audit information before saving (only if services are available)
+            if (_dateTimeService != null)
+            {
+                ApplyAuditInformation();
+            }
 
             var result = await base.SaveChangesAsync(cancellationToken);
             
-            _logger.LogInformation("Saved {Count} changes to database", result);
+            _logger?.LogInformation("Saved {Count} changes to database", result);
             
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving changes to database");
+            _logger?.LogError(ex, "Error saving changes to database");
             throw;
         }
     }
 
     private void ApplyAuditInformation()
     {
+        if (_dateTimeService == null) return;
+
         var entries = ChangeTracker.Entries<BaseEntity<Guid>>()
             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
             .ToList();
