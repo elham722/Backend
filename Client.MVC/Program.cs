@@ -1,6 +1,5 @@
 using Backend.Infrastructure.ExternalServices;
 using Backend.Infrastructure.LocalStorage;
-using Client.MVC.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +25,7 @@ builder.Services.AddScoped<Backend.Infrastructure.ExternalServices.IExternalServ
 builder.Services.AddScoped<Backend.Infrastructure.LocalStorage.ILocalStorageService, Backend.Infrastructure.LocalStorage.LocalStorageService>();
 
 // Register token service
-builder.Services.AddScoped<ITokenService, TokenService>();
+
 builder.Services.AddHttpContextAccessor();
 
 // Configure ExternalService options

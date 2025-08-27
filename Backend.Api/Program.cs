@@ -62,8 +62,12 @@ builder.Services.ConfigureApplicationServices();
 // Register Infrastructure services
 builder.Services.ConfigureInfrastructureServices(builder.Configuration);
 
-// Register MediatR for API layer
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+// Register MediatR for API and Application layers
+builder.Services.AddMediatR(cfg => 
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(Backend.Application.Features.UserManagement.Commands.Register.RegisterCommand).Assembly);
+});
 
 // Configure JWT Authentication
 builder.Services.AddAuthentication(options =>

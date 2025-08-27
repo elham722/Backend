@@ -4,3 +4,20 @@ GET {{Backend.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+### Register a new user
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "userName": "testuser",
+  "password": "Test123!@#",
+  "confirmPassword": "Test123!@#",
+  "phoneNumber": "+1234567890",
+  "acceptTerms": true,
+  "subscribeToNewsletter": false
+}
+
+### Variables
+@baseUrl = https://localhost:7001
