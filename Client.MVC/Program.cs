@@ -24,7 +24,11 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<Backend.Infrastructure.ExternalServices.IExternalService, Backend.Infrastructure.ExternalServices.ExternalServiceSimple>();
 builder.Services.AddScoped<Backend.Infrastructure.LocalStorage.ILocalStorageService, Backend.Infrastructure.LocalStorage.LocalStorageService>();
 
-// Register token service
+// Register typed API clients
+builder.Services.AddScoped<Client.MVC.Services.IAuthApiClient, Client.MVC.Services.AuthApiClient>();
+
+// Register session management service
+builder.Services.AddScoped<Client.MVC.Services.IUserSessionService, Client.MVC.Services.UserSessionService>();
 
 builder.Services.AddHttpContextAccessor();
 

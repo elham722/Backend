@@ -1,39 +1,22 @@
 using Client.MVC.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using System.Text;
+using Client.MVC.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Client.MVC.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController : BaseController
     {
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IUserSessionService userSessionService, ILogger<HomeController> logger)
+            : base(userSessionService, logger)
         {
-            _logger = logger;
         }
 
         public IActionResult Index()
         {
-            // Read session data
-            var token = HttpContext.Session.Get("JWTToken");
-            var userName = HttpContext.Session.Get("UserName");
-            
-            if (token != null && userName != null)
-            {
-                var tokenString = Encoding.UTF8.GetString(token);
-                var userNameString = Encoding.UTF8.GetString(userName);
-                
-                ViewBag.IsLoggedIn = true;
-                ViewBag.UserName = userNameString;
-                ViewBag.Token = tokenString;
-            }
-            else
-            {
-                ViewBag.IsLoggedIn = false;
-            }
+            // Set user information in view bag
+            SetUserViewBag();
             
             return View();
         }

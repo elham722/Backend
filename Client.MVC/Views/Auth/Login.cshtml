@@ -1,0 +1,64 @@
+@model Backend.Application.Features.UserManagement.DTOs.LoginDto
+
+@{
+    ViewData["Title"] = "ورود";
+    Layout = "_Layout";
+}
+
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card auth-card">
+                    <div class="card-header text-white text-center">
+                        <h3><i class="fas fa-sign-in-alt me-2"></i>ورود</h3>
+                    </div>
+                    <div class="card-body">
+                        <form action="/Auth/Login" method="post" novalidate>
+                            <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+                            
+                            <div class="form-group mb-3">
+                                <label asp-for="EmailOrUsername" class="form-label"></label>
+                                <input asp-for="EmailOrUsername" class="form-control" placeholder="example@email.com" required />
+                                <span asp-validation-for="EmailOrUsername" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label asp-for="Password" class="form-label"></label>
+                                <input asp-for="Password" class="form-control" placeholder="رمز عبور" required />
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+
+                         @*    <div class="form-check mb-3">
+                                <input asp-for="RememberMe" class="form-check-input" />
+                                <label asp-for="RememberMe" class="form-check-label"></label>
+                            </div> *@
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-auth">
+                                    <i class="fas fa-sign-in-alt me-2"></i>ورود
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer text-center">
+                        <p class="mb-0">
+                            حساب کاربری ندارید؟ 
+                            <a asp-action="Register" class="text-decoration-none">ثبت نام</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <!-- Temporarily disabled auth.js for debugging -->
+    <!-- <script src="~/js/auth.js" asp-append-version="true"></script> -->
+} 

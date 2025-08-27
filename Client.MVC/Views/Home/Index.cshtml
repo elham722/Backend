@@ -16,14 +16,35 @@
                 <div class="hero-content">
                     <h1 class="hero-title">Welcome to Our Online Store</h1>
                     <p class="hero-subtitle">Discover amazing products at unbeatable prices. Shop with confidence and enjoy fast, secure delivery to your doorstep.</p>
-                    <div class="hero-buttons">
-                        <a href="#" class="btn-hero btn-hero-primary">
-                            <i class="fas fa-shopping-cart me-2"></i>Shop Now
-                        </a>
-                        <a href="#" class="btn-hero btn-hero-secondary">
-                            <i class="fas fa-play me-2"></i>Learn More
-                        </a>
-                    </div>
+                    
+                    @if (ViewBag.IsLoggedIn == true)
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <i class="fas fa-user-check me-2"></i>
+                            خوش آمدید @ViewBag.UserName!
+                        </div>
+                        <div class="hero-buttons">
+                            <a href="#" class="btn-hero btn-hero-primary">
+                                <i class="fas fa-shopping-cart me-2"></i>Shop Now
+                            </a>
+                            <form asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
+                                <button type="submit" class="btn-hero btn-hero-secondary">
+                                    <i class="fas fa-sign-out-alt me-2"></i>خروج
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="hero-buttons">
+                            <a asp-controller="Auth" asp-action="Login" class="btn-hero btn-hero-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i>ورود
+                            </a>
+                            <a asp-controller="Auth" asp-action="Register" class="btn-hero btn-hero-secondary">
+                                <i class="fas fa-user-plus me-2"></i>ثبت نام
+                            </a>
+                        </div>
+                    }
                 </div>
             </div>
             <div class="col-lg-6 text-center">

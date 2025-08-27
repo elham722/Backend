@@ -96,6 +96,34 @@ body {
     padding-bottom: 20px;
 }
 
+/* Auth pages specific styles */
+.auth-page .main-content {
+    min-height: calc(100vh - 80px); /* Subtract navbar height */
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+}
+
+.auth-page main {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+}
+
+.auth-page .navbar {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.auth-page .navbar-brand {
+    font-size: 1.3rem;
+}
+
+.auth-page .navbar-nav .nav-link {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+}
+
 .footer {
     background: linear-gradient(135deg, var(--text-dark) 0%, #1a202c 100%);
     color: white;
