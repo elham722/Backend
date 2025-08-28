@@ -18,15 +18,13 @@ namespace Client.MVC.Controllers
         }
 
         [HttpGet]
-        [Route("Auth/Register")]
         public IActionResult Register()
         {
             return View();
         }
 
         [HttpPost]
-        [Route("Auth/Register")]
-        public async Task<IActionResult> Register([FromForm] RegisterDto model)
+        public async Task<IActionResult> Register(RegisterDto model)
         {
             if (!ModelState.IsValid)
             {
@@ -44,6 +42,8 @@ namespace Client.MVC.Controllers
                     UserSessionService.SetUserSession(response);
 
                     TempData["SuccessMessage"] = "ثبت نام با موفقیت انجام شد!";
+                    
+                    // Redirect to home with user info
                     return RedirectToAction("Index", "Home");
                 }
                 else
@@ -61,29 +61,16 @@ namespace Client.MVC.Controllers
         }
 
         [HttpGet]
-        [Route("Auth/Login")]
         public IActionResult Login()
         {
             return View();
         }
 
         [HttpPost]
-        [Route("Auth/Login")]
-        public async Task<IActionResult> Login([FromForm] LoginDto model)
+        public async Task<IActionResult> Login(LoginDto model)
         {
-            // Add debug logging
-            Logger.LogInformation("Login POST method called");
-            Logger.LogInformation("Model: {Model}", model);
-            Logger.LogInformation("EmailOrUsername: {Email}", model?.EmailOrUsername);
-            Logger.LogInformation("Password: {Password}", model?.Password);
-            
             if (!ModelState.IsValid)
             {
-                Logger.LogWarning("ModelState is invalid");
-                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    Logger.LogWarning("ModelState Error: {Error}", error.ErrorMessage);
-                }
                 return View(model);
             }
 
@@ -98,6 +85,8 @@ namespace Client.MVC.Controllers
                     UserSessionService.SetUserSession(response);
 
                     TempData["SuccessMessage"] = "ورود با موفقیت انجام شد!";
+                    
+                    // Redirect to home with user info
                     return RedirectToAction("Index", "Home");
                 }
                 else

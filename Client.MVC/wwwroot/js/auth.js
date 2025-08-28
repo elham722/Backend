@@ -60,13 +60,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Loading state for submit buttons - Simplified
+    // Loading state for submit buttons - Fixed
     const submitButtons = document.querySelectorAll('button[type="submit"]');
     submitButtons.forEach(button => {
         button.addEventListener('click', function() {
             console.log('Submit button clicked');
-            this.disabled = true;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>در حال پردازش...';
+            // Don't disable the button immediately, let the form submit first
+            setTimeout(() => {
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>در حال پردازش...';
+            }, 100);
         });
     });
 });
