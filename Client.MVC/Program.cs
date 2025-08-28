@@ -1,6 +1,3 @@
-using Backend.Infrastructure.ExternalServices;
-using Backend.Infrastructure.LocalStorage;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -17,41 +14,18 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Add HttpClient for ExternalService
-builder.Services.AddHttpClient();
-
-// Register only the necessary services for MVC client
-builder.Services.AddScoped<Backend.Infrastructure.ExternalServices.IExternalService, Backend.Infrastructure.ExternalServices.ExternalServiceSimple>();
-builder.Services.AddScoped<Backend.Infrastructure.LocalStorage.ILocalStorageService, Backend.Infrastructure.LocalStorage.LocalStorageService>();
-
-// Register typed API clients
-builder.Services.AddScoped<Client.MVC.Services.IAuthApiClient, Client.MVC.Services.AuthApiClient>();
+// Add Typed HttpClient for AuthApiClient
+builder.Services.AddHttpClient<Client.MVC.Services.IAuthApiClient, Client.MVC.Services.AuthApiClient>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7209/");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 // Register session management service
 builder.Services.AddScoped<Client.MVC.Services.IUserSessionService, Client.MVC.Services.UserSessionService>();
 
 builder.Services.AddHttpContextAccessor();
-
-// Configure ExternalService options
-builder.Services.Configure<Backend.Infrastructure.ExternalServices.ExternalServiceOptions>(options =>
-{
-    options.BaseUrl = "https://localhost:7209/"; // Backend API URL
-    options.TimeoutSeconds = 30;
-    options.UseHttps = true;
-    options.DefaultHeaders = new Dictionary<string, string>
-    {
-        { "Accept", "application/json" }
-    };
-});
-
-// Configure LocalStorage options
-builder.Services.Configure<Backend.Infrastructure.LocalStorage.LocalStorageOptions>(options =>
-{
-    options.Directory = "LocalStorage";
-    options.Filename = "ClientMVC.LocalStorage";
-    options.AutoLoad = true;
-    options.AutoSave = true;
-});
 
 var app = builder.Build();
 

@@ -1,21 +1,28 @@
 using Backend.Application.Features.UserManagement.DTOs;
-using Backend.Infrastructure.ExternalServices;
 using Microsoft.Extensions.Logging;
+using System.Text;
+using System.Text.Json;
 
 namespace Client.MVC.Services
 {
     /// <summary>
-    /// Typed API client implementation for authentication operations
+    /// Typed API client implementation for authentication operations using HttpClient
     /// </summary>
     public class AuthApiClient : IAuthApiClient
     {
-        private readonly IExternalService _externalService;
+        private readonly HttpClient _httpClient;
         private readonly ILogger<AuthApiClient> _logger;
+        private readonly JsonSerializerOptions _jsonOptions;
 
-        public AuthApiClient(IExternalService externalService, ILogger<AuthApiClient> logger)
+        public AuthApiClient(HttpClient httpClient, ILogger<AuthApiClient> logger)
         {
-            _externalService = externalService ?? throw new ArgumentNullException(nameof(externalService));
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            };
         }
 
         /// <summary>
@@ -27,19 +34,40 @@ namespace Client.MVC.Services
             {
                 _logger.LogInformation("Attempting to register user with email: {Email}", dto.Email);
                 
-                var result = await _externalService.PostAsync<RegisterDto, AuthResultDto>("api/Auth/register", dto);
+                var json = JsonSerializer.Serialize(dto, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                if (result?.IsSuccess == true)
+                var response = await _httpClient.PostAsync("api/Auth/register", content);
+                
+                if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("User registration successful for email: {Email}", dto.Email);
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<AuthResultDto>(responseContent, _jsonOptions);
+                    
+                    if (result?.IsSuccess == true)
+                    {
+                        _logger.LogInformation("User registration successful for email: {Email}", dto.Email);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("User registration failed for email: {Email}. Error: {Error}", 
+                            dto.Email, result?.ErrorMessage);
+                    }
+                    
+                    return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Invalid response format" };
                 }
                 else
                 {
-                    _logger.LogWarning("User registration failed for email: {Email}. Error: {Error}", 
-                        dto.Email, result?.ErrorMessage);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("User registration failed with status {StatusCode}. Error: {Error}", 
+                        response.StatusCode, errorContent);
+                    
+                    return new AuthResultDto 
+                    { 
+                        IsSuccess = false, 
+                        ErrorMessage = $"Server error: {response.StatusCode}" 
+                    };
                 }
-                
-                return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "No response from server" };
             }
             catch (Exception ex)
             {
@@ -61,19 +89,40 @@ namespace Client.MVC.Services
             {
                 _logger.LogInformation("Attempting to login user with email: {Email}", dto.EmailOrUsername);
                 
-                var result = await _externalService.PostAsync<LoginDto, AuthResultDto>("api/Auth/login", dto);
+                var json = JsonSerializer.Serialize(dto, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                if (result?.IsSuccess == true)
+                var response = await _httpClient.PostAsync("api/Auth/login", content);
+                
+                if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("User login successful for email: {Email}", dto.EmailOrUsername);
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<AuthResultDto>(responseContent, _jsonOptions);
+                    
+                    if (result?.IsSuccess == true)
+                    {
+                        _logger.LogInformation("User login successful for email: {Email}", dto.EmailOrUsername);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("User login failed for email: {Email}. Error: {Error}", 
+                            dto.EmailOrUsername, result?.ErrorMessage);
+                    }
+                    
+                    return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Invalid response format" };
                 }
                 else
                 {
-                    _logger.LogWarning("User login failed for email: {Email}. Error: {Error}", 
-                        dto.EmailOrUsername, result?.ErrorMessage);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("User login failed with status {StatusCode}. Error: {Error}", 
+                        response.StatusCode, errorContent);
+                    
+                    return new AuthResultDto 
+                    { 
+                        IsSuccess = false, 
+                        ErrorMessage = $"Server error: {response.StatusCode}" 
+                    };
                 }
-                
-                return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "No response from server" };
             }
             catch (Exception ex)
             {
@@ -96,10 +145,23 @@ namespace Client.MVC.Services
                 _logger.LogInformation("Attempting to logout user");
                 
                 var logoutRequest = logoutDto ?? new LogoutDto();
-                await _externalService.PostAsync<LogoutDto, object>("api/Auth/logout", logoutRequest);
+                var json = JsonSerializer.Serialize(logoutRequest, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                _logger.LogInformation("User logout successful");
-                return true;
+                var response = await _httpClient.PostAsync("api/Auth/logout", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("User logout successful");
+                    return true;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("User logout failed with status {StatusCode}. Error: {Error}", 
+                        response.StatusCode, errorContent);
+                    return false;
+                }
             }
             catch (Exception ex)
             {
@@ -118,18 +180,39 @@ namespace Client.MVC.Services
                 _logger.LogInformation("Attempting to refresh token");
                 
                 var request = new RefreshTokenDto { RefreshToken = refreshToken };
-                var result = await _externalService.PostAsync<RefreshTokenDto, AuthResultDto>("api/Auth/refresh-token", request);
+                var json = JsonSerializer.Serialize(request, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                if (result?.IsSuccess == true)
+                var response = await _httpClient.PostAsync("api/Auth/refresh-token", content);
+                
+                if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("Token refresh successful");
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<AuthResultDto>(responseContent, _jsonOptions);
+                    
+                    if (result?.IsSuccess == true)
+                    {
+                        _logger.LogInformation("Token refresh successful");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Token refresh failed. Error: {Error}", result?.ErrorMessage);
+                    }
+                    
+                    return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Invalid response format" };
                 }
                 else
                 {
-                    _logger.LogWarning("Token refresh failed. Error: {Error}", result?.ErrorMessage);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Token refresh failed with status {StatusCode}. Error: {Error}", 
+                        response.StatusCode, errorContent);
+                    
+                    return new AuthResultDto 
+                    { 
+                        IsSuccess = false, 
+                        ErrorMessage = $"Server error: {response.StatusCode}" 
+                    };
                 }
-                
-                return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "No response from server" };
             }
             catch (Exception ex)
             {
@@ -151,16 +234,29 @@ namespace Client.MVC.Services
             {
                 _logger.LogInformation("Attempting to validate token");
                 
-                var result = await _externalService.GetAsync<ValidateTokenDto>("api/Auth/validate-token");
+                var response = await _httpClient.GetAsync("api/Auth/validate-token");
                 
-                if (result?.IsValid == true)
+                if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("Token validation successful");
-                    return true;
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<ValidateTokenDto>(responseContent, _jsonOptions);
+                    
+                    if (result?.IsValid == true)
+                    {
+                        _logger.LogInformation("Token validation successful");
+                        return true;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Token validation failed. Error: {Error}", result?.ErrorMessage);
+                        return false;
+                    }
                 }
                 else
                 {
-                    _logger.LogWarning("Token validation failed. Error: {Error}", result?.ErrorMessage);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Token validation failed with status {StatusCode}. Error: {Error}", 
+                        response.StatusCode, errorContent);
                     return false;
                 }
             }

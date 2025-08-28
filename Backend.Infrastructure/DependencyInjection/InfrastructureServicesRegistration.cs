@@ -3,9 +3,7 @@ using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.DependencyInjection;
 using Backend.Infrastructure.Cache;
 using Backend.Infrastructure.Email;
-using Backend.Infrastructure.ExternalServices;
 using Backend.Infrastructure.FileStorage;
-using Backend.Infrastructure.LocalStorage;
 using Backend.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +33,6 @@ public static class InfrastructureServicesRegistration
         services.AddEmailServices(configuration);
         services.AddCacheServices(configuration);
         services.AddFileStorageServices(configuration);
-        services.AddExternalServices(configuration);
 
         return services;
     }
@@ -47,20 +44,11 @@ public static class InfrastructureServicesRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-       
-
         // Register date time service
         services.AddScoped<IDateTimeService, DateTimeService>();
 
-        // Register local storage service
-        services.Configure<LocalStorageOptions>(
-            configuration.GetSection("LocalStorage"));
-        services.AddScoped<ILocalStorageService, LocalStorageService>();
-
         return services;
     }
-
- 
 
     /// <summary>
     /// Registers email services
@@ -103,12 +91,9 @@ public static class InfrastructureServicesRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Configure memory cache
+        // Configure memory cache options
         services.Configure<MemoryCacheOptions>(
             configuration.GetSection("MemoryCache"));
-
-        // Register memory cache
-        services.AddMemoryCache();
 
         // Register cache service
         services.AddScoped<ICacheService, MemoryCacheService>();
@@ -123,32 +108,12 @@ public static class InfrastructureServicesRegistration
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // Configure local file storage
+        // Configure local file storage options
         services.Configure<LocalFileStorageOptions>(
             configuration.GetSection("LocalFileStorage"));
 
         // Register file storage service
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
-
-        return services;
-    }
-
-    /// <summary>
-    /// Registers external services
-    /// </summary>
-    private static IServiceCollection AddExternalServices(
-        this IServiceCollection services,
-        IConfiguration configuration)
-    {
-        // Configure external service options
-        services.Configure<ExternalServiceOptions>(
-            configuration.GetSection("ExternalService"));
-
-        // Register HTTP client for external services
-        services.AddHttpClient<IExternalService, ExternalService>();
-
-        // Register external service
-        services.AddScoped<IExternalService, ExternalService>();
 
         return services;
     }
@@ -187,9 +152,7 @@ public static class InfrastructureServicesRegistration
         });
 
         // Register services
-      
         services.AddScoped<IDateTimeService, DateTimeService>();
-        services.AddScoped<ILocalStorageService, LocalStorageService>();
         services.AddScoped<ICacheService, MemoryCacheService>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
@@ -208,8 +171,6 @@ public static class InfrastructureServicesRegistration
         }
 
         services.AddScoped<EmailTemplateService>();
-        services.AddHttpClient<IExternalService, ExternalService>();
-        services.AddScoped<IExternalService, ExternalService>();
 
         return services;
     }
