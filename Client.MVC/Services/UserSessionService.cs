@@ -135,9 +135,7 @@ namespace Client.MVC.Services
             return !string.IsNullOrEmpty(jwtToken) && !string.IsNullOrEmpty(userId);
         }
 
-        /// <summary>
-        /// Get logout DTO with current refresh token
-        /// </summary>
+       
         public LogoutDto GetLogoutDto()
         {
             var refreshToken = GetRefreshToken();

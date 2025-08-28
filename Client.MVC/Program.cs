@@ -14,16 +14,28 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Add Typed HttpClient for AuthApiClient
-builder.Services.AddHttpClient<Client.MVC.Services.IAuthApiClient, Client.MVC.Services.AuthApiClient>(client =>
+// Add Typed HttpClient for API communication
+builder.Services.AddHttpClient<HttpClient>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7209/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
+// Register authentication interceptor
+builder.Services.AddScoped<Client.MVC.Services.IAuthenticationInterceptor, Client.MVC.Services.AuthenticationInterceptor>();
+
+// Register authenticated HTTP client
+builder.Services.AddScoped<Client.MVC.Services.IAuthenticatedHttpClient, Client.MVC.Services.AuthenticatedHttpClient>();
+
 // Register session management service
 builder.Services.AddScoped<Client.MVC.Services.IUserSessionService, Client.MVC.Services.UserSessionService>();
+
+// Register AuthApiClient
+builder.Services.AddScoped<Client.MVC.Services.IAuthApiClient, Client.MVC.Services.AuthApiClient>();
+
+// Register UserApiClient
+builder.Services.AddScoped<Client.MVC.Services.IUserApiClient, Client.MVC.Services.UserApiClient>();
 
 builder.Services.AddHttpContextAccessor();
 

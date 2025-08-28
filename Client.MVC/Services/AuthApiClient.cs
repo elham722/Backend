@@ -5,16 +5,13 @@ using System.Text.Json;
 
 namespace Client.MVC.Services
 {
-    /// <summary>
-    /// Typed API client implementation for authentication operations using HttpClient
-    /// </summary>
     public class AuthApiClient : IAuthApiClient
     {
-        private readonly HttpClient _httpClient;
+        private readonly IAuthenticatedHttpClient _httpClient;
         private readonly ILogger<AuthApiClient> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public AuthApiClient(HttpClient httpClient, ILogger<AuthApiClient> logger)
+        public AuthApiClient(IAuthenticatedHttpClient httpClient, ILogger<AuthApiClient> logger)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -32,50 +29,29 @@ namespace Client.MVC.Services
         {
             try
             {
-                _logger.LogInformation("Attempting to register user with email: {Email}", dto.Email);
+                _logger.LogInformation("Attempting to register user: {Email}", dto.Email);
                 
-                var json = JsonSerializer.Serialize(dto, _jsonOptions);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var result = await _httpClient.PostAsync<RegisterDto, AuthResultDto>("api/Auth/register", dto);
                 
-                var response = await _httpClient.PostAsync("api/Auth/register", content);
-                
-                if (response.IsSuccessStatusCode)
+                if (result?.IsSuccess == true)
                 {
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<AuthResultDto>(responseContent, _jsonOptions);
-                    
-                    if (result?.IsSuccess == true)
-                    {
-                        _logger.LogInformation("User registration successful for email: {Email}", dto.Email);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("User registration failed for email: {Email}. Error: {Error}", 
-                            dto.Email, result?.ErrorMessage);
-                    }
-                    
-                    return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Invalid response format" };
+                    _logger.LogInformation("User registration successful: {Email}", dto.Email);
                 }
                 else
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("User registration failed with status {StatusCode}. Error: {Error}", 
-                        response.StatusCode, errorContent);
-                    
-                    return new AuthResultDto 
-                    { 
-                        IsSuccess = false, 
-                        ErrorMessage = $"Server error: {response.StatusCode}" 
-                    };
+                    _logger.LogWarning("User registration failed: {Email}. Error: {Error}", 
+                        dto.Email, result?.ErrorMessage);
                 }
+                
+                return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Registration failed" };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during user registration for email: {Email}", dto.Email);
+                _logger.LogError(ex, "Error during user registration: {Email}", dto.Email);
                 return new AuthResultDto 
                 { 
                     IsSuccess = false, 
-                    ErrorMessage = "خطا در ارتباط با سرور" 
+                    ErrorMessage = "An error occurred during registration" 
                 };
             }
         }
@@ -87,50 +63,29 @@ namespace Client.MVC.Services
         {
             try
             {
-                _logger.LogInformation("Attempting to login user with email: {Email}", dto.EmailOrUsername);
+                _logger.LogInformation("Attempting to login user: {Email}", dto.EmailOrUsername);
                 
-                var json = JsonSerializer.Serialize(dto, _jsonOptions);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var result = await _httpClient.PostAsync<LoginDto, AuthResultDto>("api/Auth/login", dto);
                 
-                var response = await _httpClient.PostAsync("api/Auth/login", content);
-                
-                if (response.IsSuccessStatusCode)
+                if (result?.IsSuccess == true)
                 {
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<AuthResultDto>(responseContent, _jsonOptions);
-                    
-                    if (result?.IsSuccess == true)
-                    {
-                        _logger.LogInformation("User login successful for email: {Email}", dto.EmailOrUsername);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("User login failed for email: {Email}. Error: {Error}", 
-                            dto.EmailOrUsername, result?.ErrorMessage);
-                    }
-                    
-                    return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Invalid response format" };
+                    _logger.LogInformation("User login successful: {Email}", dto.EmailOrUsername);
                 }
                 else
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("User login failed with status {StatusCode}. Error: {Error}", 
-                        response.StatusCode, errorContent);
-                    
-                    return new AuthResultDto 
-                    { 
-                        IsSuccess = false, 
-                        ErrorMessage = $"Server error: {response.StatusCode}" 
-                    };
+                    _logger.LogWarning("User login failed: {Email}. Error: {Error}", 
+                        dto.EmailOrUsername, result?.ErrorMessage);
                 }
+                
+                return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Login failed" };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during user login for email: {Email}", dto.EmailOrUsername);
+                _logger.LogError(ex, "Error during user login: {Email}", dto.EmailOrUsername);
                 return new AuthResultDto 
                 { 
                     IsSuccess = false, 
-                    ErrorMessage = "خطا در ارتباط با سرور" 
+                    ErrorMessage = "An error occurred during login" 
                 };
             }
         }
@@ -144,22 +99,16 @@ namespace Client.MVC.Services
             {
                 _logger.LogInformation("Attempting to logout user");
                 
-                var logoutRequest = logoutDto ?? new LogoutDto();
-                var json = JsonSerializer.Serialize(logoutRequest, _jsonOptions);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var result = await _httpClient.PostAsync<LogoutDto, AuthResultDto>("api/Auth/logout", logoutDto ?? new LogoutDto());
                 
-                var response = await _httpClient.PostAsync("api/Auth/logout", content);
-                
-                if (response.IsSuccessStatusCode)
+                if (result?.IsSuccess == true)
                 {
                     _logger.LogInformation("User logout successful");
                     return true;
                 }
                 else
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("User logout failed with status {StatusCode}. Error: {Error}", 
-                        response.StatusCode, errorContent);
+                    _logger.LogWarning("User logout failed. Error: {Error}", result?.ErrorMessage);
                     return false;
                 }
             }
@@ -180,39 +129,18 @@ namespace Client.MVC.Services
                 _logger.LogInformation("Attempting to refresh token");
                 
                 var request = new RefreshTokenDto { RefreshToken = refreshToken };
-                var json = JsonSerializer.Serialize(request, _jsonOptions);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var result = await _httpClient.PostAsync<RefreshTokenDto, AuthResultDto>("api/Auth/refresh-token", request);
                 
-                var response = await _httpClient.PostAsync("api/Auth/refresh-token", content);
-                
-                if (response.IsSuccessStatusCode)
+                if (result?.IsSuccess == true)
                 {
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<AuthResultDto>(responseContent, _jsonOptions);
-                    
-                    if (result?.IsSuccess == true)
-                    {
-                        _logger.LogInformation("Token refresh successful");
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Token refresh failed. Error: {Error}", result?.ErrorMessage);
-                    }
-                    
-                    return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Invalid response format" };
+                    _logger.LogInformation("Token refresh successful");
                 }
                 else
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("Token refresh failed with status {StatusCode}. Error: {Error}", 
-                        response.StatusCode, errorContent);
-                    
-                    return new AuthResultDto 
-                    { 
-                        IsSuccess = false, 
-                        ErrorMessage = $"Server error: {response.StatusCode}" 
-                    };
+                    _logger.LogWarning("Token refresh failed. Error: {Error}", result?.ErrorMessage);
                 }
+                
+                return result ?? new AuthResultDto { IsSuccess = false, ErrorMessage = "Token refresh failed" };
             }
             catch (Exception ex)
             {
@@ -220,7 +148,7 @@ namespace Client.MVC.Services
                 return new AuthResultDto 
                 { 
                     IsSuccess = false, 
-                    ErrorMessage = "خطا در تمدید توکن" 
+                    ErrorMessage = "An error occurred during token refresh" 
                 };
             }
         }
@@ -234,35 +162,22 @@ namespace Client.MVC.Services
             {
                 _logger.LogInformation("Attempting to validate token");
                 
-                var response = await _httpClient.GetAsync("api/Auth/validate-token");
+                var result = await _httpClient.GetAsync<ValidateTokenDto>("api/Auth/validate-token");
                 
-                if (response.IsSuccessStatusCode)
+                if (result?.IsValid == true)
                 {
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<ValidateTokenDto>(responseContent, _jsonOptions);
-                    
-                    if (result?.IsValid == true)
-                    {
-                        _logger.LogInformation("Token validation successful");
-                        return true;
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Token validation failed. Error: {Error}", result?.ErrorMessage);
-                        return false;
-                    }
+                    _logger.LogInformation("Token validation successful");
+                    return true;
                 }
                 else
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("Token validation failed with status {StatusCode}. Error: {Error}", 
-                        response.StatusCode, errorContent);
+                    _logger.LogWarning("Token validation failed. Error: {Error}", result?.ErrorMessage);
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Token validation failed");
+                _logger.LogError(ex, "Error during token validation");
                 return false;
             }
         }

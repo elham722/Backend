@@ -11,31 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Form validation enhancement - Temporarily disabled for debugging
-    /*
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            // Only prevent if there are obvious validation errors
-            const requiredInputs = this.querySelectorAll('input[required]');
-            let hasEmptyRequired = false;
-            
-            requiredInputs.forEach(input => {
-                if (!input.value.trim()) {
-                    hasEmptyRequired = true;
-                    input.classList.add('is-invalid');
-                } else {
-                    input.classList.remove('is-invalid');
-                }
-            });
-            
-            if (hasEmptyRequired) {
-                e.preventDefault();
-                showFormErrors(this);
-            }
-        });
-    });
-    */
+
 
     // Auto-hide alerts after 5 seconds
     const alerts = document.querySelectorAll('.alert');
