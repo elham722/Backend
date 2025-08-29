@@ -14,7 +14,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Add distributed cache for session support
+// Add distributed memory cache for session support
 builder.Services.AddDistributedMemoryCache();
 
 // Add session support with improved security

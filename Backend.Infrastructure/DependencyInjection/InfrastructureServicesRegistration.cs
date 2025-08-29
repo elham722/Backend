@@ -95,8 +95,40 @@ public static class InfrastructureServicesRegistration
         services.Configure<MemoryCacheOptions>(
             configuration.GetSection("MemoryCache"));
 
-        // Register cache service
+        // Configure Redis options
+        services.Configure<RedisConfiguration>(
+            configuration.GetSection("Redis"));
+
+        // Register distributed cache based on environment
+        var environment = configuration["ASPNETCORE_ENVIRONMENT"] ?? "Development";
+        
+        if (environment.Equals("Development", StringComparison.OrdinalIgnoreCase))
+        {
+            // Use in-memory cache for development
+            services.AddDistributedMemoryCache();
+        }
+        else
+        {
+            // Use Redis for production
+            var redisConnectionString = configuration["Redis:ConnectionString"];
+            if (!string.IsNullOrEmpty(redisConnectionString))
+            {
+                services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = redisConnectionString;
+                    options.InstanceName = configuration["Redis:InstanceName"] ?? "Backend:";
+                });
+            }
+            else
+            {
+                // Fallback to in-memory cache if Redis is not configured
+                services.AddDistributedMemoryCache();
+            }
+        }
+
+        // Register cache services
         services.AddScoped<ICacheService, MemoryCacheService>();
+        services.AddScoped<IRedisCacheService, RedisCacheService>();
 
         return services;
     }
