@@ -1,6 +1,7 @@
 using Backend.Application.Features.UserManagement.DTOs;
 using Microsoft.AspNetCore.Http;
 using System.IdentityModel.Tokens.Jwt;
+using System.Text.Json;
 
 namespace Client.MVC.Services
 {
@@ -56,6 +57,11 @@ namespace Client.MVC.Services
         private readonly ILogger<UserSessionService> _logger;
         private readonly IAuthApiClient _authApiClient;
         private readonly CookieSecurityConfig _cookieConfig;
+        private readonly JsonSerializerOptions _jsonOptions;
+        
+        // Token expiration cache for optimization
+        private DateTimeOffset? _cachedTokenExpiration;
+        private string? _cachedTokenHash;
 
         public UserSessionService(
             IHttpContextAccessor httpContextAccessor, 
@@ -68,6 +74,11 @@ namespace Client.MVC.Services
             _authApiClient = authApiClient ?? throw new ArgumentNullException(nameof(authApiClient));
             _cookieConfig = CookieSecurityConfig.FromConfiguration(configuration);
             
+            _jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+            
             _logger.LogInformation("UserSessionService initialized with JWT SameSite: {JwtSameSite}, Refresh SameSite: {RefreshSameSite}", 
                 _cookieConfig.JwtTokenSameSite, _cookieConfig.RefreshTokenSameSite);
         }
@@ -76,6 +87,29 @@ namespace Client.MVC.Services
         /// Set user session data from authentication result
         /// </summary>
         public void SetUserSession(AuthResultDto result)
+        {
+            SetUserSessionInternal(result);
+        }
+
+        /// <summary>
+        /// Set user session data from API response
+        /// </summary>
+        public void SetUserSession(ApiResponse<AuthResultDto> response)
+        {
+            if (response?.IsSuccess == true && response.Data != null)
+            {
+                SetUserSessionInternal(response.Data);
+            }
+            else
+            {
+                _logger.LogWarning("Cannot set user session from failed API response");
+            }
+        }
+
+        /// <summary>
+        /// Internal method to set user session data
+        /// </summary>
+        private void SetUserSessionInternal(AuthResultDto result)
         {
             try
             {
@@ -99,6 +133,9 @@ namespace Client.MVC.Services
                     );
                     
                     response.Cookies.Append("jwt_token", result.AccessToken, jwtCookieOptions);
+                    
+                    // ✅ Cache token expiration for optimization
+                    CacheTokenExpiration(result.AccessToken);
                     
                     _logger.LogDebug("JWT token stored in HttpOnly cookie with SameSite: {SameSite}", 
                         _cookieConfig.JwtTokenSameSite);
@@ -138,6 +175,101 @@ namespace Client.MVC.Services
         }
 
         /// <summary>
+        /// Cache token expiration for optimization
+        /// </summary>
+        private void CacheTokenExpiration(string token)
+        {
+            try
+            {
+                // Parse JWT token to extract expiration
+                var tokenParts = token.Split('.');
+                if (tokenParts.Length != 3)
+                {
+                    _logger.LogWarning("Invalid JWT token format");
+                    return;
+                }
+
+                // Decode payload (second part)
+                var payload = tokenParts[1];
+                var paddedPayload = payload.PadRight(4 * ((payload.Length + 3) / 4), '=');
+                var decodedPayload = Convert.FromBase64String(paddedPayload.Replace('-', '+').Replace('_', '/'));
+                var payloadJson = System.Text.Encoding.UTF8.GetString(decodedPayload);
+                
+                var payloadData = JsonSerializer.Deserialize<JsonElement>(payloadJson, _jsonOptions);
+                
+                // Extract expiration
+                if (payloadData.TryGetProperty("exp", out var expElement))
+                {
+                    var expirationTime = DateTimeOffset.FromUnixTimeSeconds(expElement.GetInt64());
+                    
+                    // Cache expiration and token hash for validation
+                    _cachedTokenExpiration = expirationTime;
+                    _cachedTokenHash = GetTokenHash(token);
+                    
+                    _logger.LogDebug("Token expiration cached: {Expiration}", expirationTime);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error caching token expiration");
+                // Clear cache on error
+                _cachedTokenExpiration = null;
+                _cachedTokenHash = null;
+            }
+        }
+
+        /// <summary>
+        /// Get simple hash of token for cache validation
+        /// </summary>
+        private string GetTokenHash(string token)
+        {
+            // Simple hash for cache validation - not for security
+            return Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes(token)));
+        }
+
+        /// <summary>
+        /// Get cached token expiration if available and valid
+        /// </summary>
+        public DateTimeOffset? GetCachedTokenExpiration(string currentToken)
+        {
+            try
+            {
+                if (_cachedTokenExpiration == null || _cachedTokenHash == null)
+                {
+                    return null;
+                }
+
+                // Validate that the cached expiration is for the current token
+                var currentTokenHash = GetTokenHash(currentToken);
+                if (currentTokenHash != _cachedTokenHash)
+                {
+                    _logger.LogDebug("Token hash mismatch, clearing cache");
+                    _cachedTokenExpiration = null;
+                    _cachedTokenHash = null;
+                    return null;
+                }
+
+                return _cachedTokenExpiration;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting cached token expiration");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Clear token expiration cache
+        /// </summary>
+        private void ClearTokenExpirationCache()
+        {
+            _cachedTokenExpiration = null;
+            _cachedTokenHash = null;
+            _logger.LogDebug("Token expiration cache cleared");
+        }
+
+        /// <summary>
         /// Create cookie options with security configuration
         /// </summary>
         private CookieOptions CreateCookieOptions(bool isSecure, SameSiteMode sameSite, DateTime expires)
@@ -156,7 +288,7 @@ namespace Client.MVC.Services
         /// <summary>
         /// Clear all user session data and cookies
         /// </summary>
-        public async Task ClearUserSessionAsync()
+        public async Task ClearUserSessionAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -164,7 +296,7 @@ namespace Client.MVC.Services
                 if (httpContext == null) return;
 
                 // First, try to invalidate refresh token on backend
-                await InvalidateRefreshTokenOnBackendAsync();
+                await InvalidateRefreshTokenOnBackendAsync(cancellationToken);
 
                 // Then clear local session and cookies
                 var session = httpContext.Session;
@@ -177,22 +309,48 @@ namespace Client.MVC.Services
                 response.Cookies.Delete("jwt_token");
                 response.Cookies.Delete("refresh_token");
 
-                _logger.LogInformation("User session and cookies cleared");
+                // ✅ Clear token expiration cache
+                ClearTokenExpirationCache();
+
+                _logger.LogInformation("User session cleared successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error clearing user session");
-                // Don't throw - we still want to clear local data even if backend call fails
+                throw;
             }
         }
 
         /// <summary>
-        /// Clear all user session data and cookies (synchronous version for backward compatibility)
+        /// Clear user session data (synchronous version for backward compatibility)
         /// </summary>
         public void ClearUserSession()
         {
-            // Call async method synchronously
-            ClearUserSessionAsync().GetAwaiter().GetResult();
+            try
+            {
+                var httpContext = _httpContextAccessor.HttpContext;
+                if (httpContext == null) return;
+
+                var session = httpContext.Session;
+                var response = httpContext.Response;
+
+                // Clear session
+                session.Clear();
+
+                // Clear cookies
+                response.Cookies.Delete("jwt_token");
+                response.Cookies.Delete("refresh_token");
+
+                // ✅ Clear token expiration cache
+                ClearTokenExpirationCache();
+
+                _logger.LogInformation("User session cleared successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error clearing user session");
+                throw;
+            }
         }
 
         /// <summary>
@@ -520,6 +678,9 @@ namespace Client.MVC.Services
                 );
                 response.Cookies.Append("jwt_token", newToken, jwtCookieOptions);
 
+                // ✅ Cache new token expiration for optimization
+                CacheTokenExpiration(newToken);
+
                 _logger.LogDebug("JWT token refreshed in cookie with SameSite: {SameSite}", 
                     _cookieConfig.JwtTokenSameSite);
             }
@@ -533,7 +694,7 @@ namespace Client.MVC.Services
         /// <summary>
         /// Invalidate refresh token on backend
         /// </summary>
-        private async Task InvalidateRefreshTokenOnBackendAsync()
+        private async Task InvalidateRefreshTokenOnBackendAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -545,9 +706,21 @@ namespace Client.MVC.Services
                 }
 
                 var logoutDto = GetLogoutDto();
-                await _authApiClient.LogoutAsync(logoutDto);
+                var result = await _authApiClient.LogoutAsync(logoutDto, cancellationToken);
                 
-                _logger.LogDebug("Refresh token invalidated on backend");
+                if (result.IsSuccess)
+                {
+                    _logger.LogDebug("Refresh token invalidated on backend");
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to invalidate refresh token on backend. Error: {Error}", result.ErrorMessage);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogDebug("Refresh token invalidation was cancelled");
+                // Don't throw - cancellation is expected
             }
             catch (Exception ex)
             {
@@ -560,12 +733,15 @@ namespace Client.MVC.Services
         /// Logout user with options
         /// </summary>
         /// <param name="logoutFromAllDevices">Whether to logout from all devices</param>
-        /// <returns>True if logout was successful, false otherwise</returns>
-        public async Task<bool> LogoutAsync(bool logoutFromAllDevices = false)
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Logout result with success status and details</returns>
+        public async Task<ApiResponse<LogoutResultDto>> LogoutAsync(bool logoutFromAllDevices = false, CancellationToken cancellationToken = default)
         {
             try
             {
                 var refreshToken = GetRefreshToken();
+                ApiResponse<LogoutResultDto>? backendResult = null;
+
                 if (!string.IsNullOrEmpty(refreshToken))
                 {
                     var logoutDto = new LogoutDto
@@ -574,20 +750,43 @@ namespace Client.MVC.Services
                         LogoutFromAllDevices = logoutFromAllDevices
                     };
 
-                    await _authApiClient.LogoutAsync(logoutDto);
-                    _logger.LogInformation("User logged out from backend. LogoutFromAllDevices: {LogoutFromAllDevices}", logoutFromAllDevices);
+                    backendResult = await _authApiClient.LogoutAsync(logoutDto, cancellationToken);
+                    _logger.LogInformation("User logout from backend completed. Success: {Success}, LogoutFromAllDevices: {LogoutFromAllDevices}", 
+                        backendResult.IsSuccess, logoutFromAllDevices);
                 }
 
                 // Always clear local session and cookies
-                await ClearUserSessionAsync();
-                return true;
+                await ClearUserSessionAsync(cancellationToken);
+
+                // Return backend result if available, otherwise create success result
+                if (backendResult != null)
+                {
+                    return backendResult;
+                }
+
+                var logoutResult = new LogoutResultDto
+                {
+                    IsSuccess = true,
+                    StatusCode = 200,
+                    LogoutTime = DateTime.UtcNow
+                };
+                return ApiResponse<LogoutResultDto>.Success(logoutResult);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("User logout was cancelled");
+                // Still clear local data even if cancelled
+                await ClearUserSessionAsync(cancellationToken);
+                
+                return ApiResponse<LogoutResultDto>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during logout");
                 // Still clear local data even if backend call fails
-                await ClearUserSessionAsync();
-                return false;
+                await ClearUserSessionAsync(cancellationToken);
+                
+                return ApiResponse<LogoutResultDto>.Error("An error occurred during logout", 500);
             }
         }
     }

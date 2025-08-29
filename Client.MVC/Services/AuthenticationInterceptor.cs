@@ -15,15 +15,25 @@ namespace Client.MVC.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<AuthenticationInterceptor> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
+        private readonly ResiliencePolicyService _resiliencePolicyService;
+        
+        // Thread-safety for token refresh operations
+        private static readonly SemaphoreSlim _refreshLock = new(1, 1);
+        private static readonly object _refreshStateLock = new();
+        private static bool _isRefreshing = false;
+        private static DateTime _lastRefreshAttempt = DateTime.MinValue;
+        private static readonly TimeSpan _refreshCooldown = TimeSpan.FromSeconds(5);
 
-            public AuthenticationInterceptor(
+        public AuthenticationInterceptor(
         IUserSessionService userSessionService,
         IHttpClientFactory httpClientFactory,
-        ILogger<AuthenticationInterceptor> logger)
+        ILogger<AuthenticationInterceptor> logger,
+        ResiliencePolicyService resiliencePolicyService)
         {
             _userSessionService = userSessionService ?? throw new ArgumentNullException(nameof(userSessionService));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _resiliencePolicyService = resiliencePolicyService ?? throw new ArgumentNullException(nameof(resiliencePolicyService));
             
             _jsonOptions = new JsonSerializerOptions
             {
@@ -90,9 +100,8 @@ namespace Client.MVC.Services
                     }
                     else
                     {
-                        _logger.LogWarning("Failed to refresh token after 401 error");
-                        // Clear invalid session
-                        _userSessionService.ClearUserSession();
+                        _logger.LogWarning("Failed to refresh token after 401 error - session cleared");
+                        // Session is already cleared by RefreshTokenIfNeededAsync
                         return false;
                     }
                 }
@@ -112,16 +121,39 @@ namespace Client.MVC.Services
         }
 
         /// <summary>
-        /// Refresh token if needed
+        /// Refresh token if needed with thread-safety and resilience policies
         /// </summary>
         public async Task<bool> RefreshTokenIfNeededAsync()
         {
+            // Check if we're already refreshing or recently attempted
+            lock (_refreshStateLock)
+            {
+                if (_isRefreshing)
+                {
+                    _logger.LogDebug("Token refresh already in progress, waiting for completion");
+                    return false; // Let the caller handle this case
+                }
+                
+                if (DateTime.UtcNow - _lastRefreshAttempt < _refreshCooldown)
+                {
+                    _logger.LogDebug("Token refresh attempted too recently, skipping");
+                    return false;
+                }
+                
+                _isRefreshing = true;
+                _lastRefreshAttempt = DateTime.UtcNow;
+            }
+
+            await _refreshLock.WaitAsync();
             try
             {
+                _logger.LogInformation("Starting token refresh operation");
+                
                 var refreshToken = _userSessionService.GetRefreshToken();
                 if (string.IsNullOrEmpty(refreshToken))
                 {
                     _logger.LogWarning("No refresh token available");
+                    ClearSessionAndNotifyLogout();
                     return false;
                 }
 
@@ -132,9 +164,20 @@ namespace Client.MVC.Services
                 var json = JsonSerializer.Serialize(request, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                // Make direct HTTP request to refresh token endpoint
+                // Use resilience policy for refresh token endpoint
                 var httpClient = _httpClientFactory.CreateClient("ApiClient");
-                var response = await httpClient.PostAsync("api/Auth/refresh-token", content);
+                var policy = _resiliencePolicyService.CreateAuthPolicy(); // Use auth policy for refresh
+                
+                var response = await policy.ExecuteAsync(async (context) =>
+                {
+                    var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/Auth/refresh-token")
+                    {
+                        Content = content
+                    };
+                    
+                    _logger.LogDebug("Sending refresh token request with resilience policy");
+                    return await httpClient.SendAsync(httpRequest);
+                }, new Polly.Context("refresh-token"));
                 
                 if (response.IsSuccessStatusCode)
                 {
@@ -151,6 +194,7 @@ namespace Client.MVC.Services
                     else
                     {
                         _logger.LogWarning("Token refresh failed: {Error}", result?.ErrorMessage);
+                        ClearSessionAndNotifyLogout();
                         return false;
                     }
                 }
@@ -159,14 +203,57 @@ namespace Client.MVC.Services
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("Token refresh failed with status {StatusCode}: {Error}", 
                         response.StatusCode, errorContent);
+                    
+                    // Clear session on refresh failure to prevent infinite loops
+                    ClearSessionAndNotifyLogout();
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error refreshing token");
+                ClearSessionAndNotifyLogout();
                 return false;
             }
+            finally
+            {
+                _refreshLock.Release();
+                
+                // Reset refresh state
+                lock (_refreshStateLock)
+                {
+                    _isRefreshing = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Wait for ongoing refresh operation to complete
+        /// </summary>
+        public async Task<bool> WaitForRefreshCompletionAsync(TimeSpan timeout = default)
+        {
+            if (timeout == default)
+            {
+                timeout = TimeSpan.FromSeconds(30); // Default timeout
+            }
+
+            var startTime = DateTime.UtcNow;
+            
+            while (DateTime.UtcNow - startTime < timeout)
+            {
+                lock (_refreshStateLock)
+                {
+                    if (!_isRefreshing)
+                    {
+                        return true; // Refresh completed or not in progress
+                    }
+                }
+                
+                await Task.Delay(100); // Wait 100ms before checking again
+            }
+            
+            _logger.LogWarning("Timeout waiting for token refresh completion");
+            return false;
         }
 
         /// <summary>
@@ -182,6 +269,27 @@ namespace Client.MVC.Services
                     return false;
                 }
 
+                // ✅ Use cached token expiration for optimization
+                var cachedExpiration = _userSessionService.GetCachedTokenExpiration(token);
+                if (cachedExpiration.HasValue)
+                {
+                    var currentTime = DateTimeOffset.UtcNow;
+                    
+                    // Token is valid if it expires in more than 5 minutes
+                    var isValid = cachedExpiration.Value > currentTime.AddMinutes(5);
+                    
+                    if (!isValid)
+                    {
+                        _logger.LogDebug("Token is expired or expiring soon (cached). Expires: {Expiration}, Current: {Current}", 
+                            cachedExpiration.Value, currentTime);
+                    }
+                    
+                    return isValid;
+                }
+
+                // Fallback to manual decoding if cache is not available
+                _logger.LogDebug("No cached expiration available, falling back to manual decoding");
+                
                 // Parse JWT token to check expiration
                 var tokenParts = token.Split('.');
                 if (tokenParts.Length != 3)
@@ -208,7 +316,7 @@ namespace Client.MVC.Services
                     
                     if (!isValid)
                     {
-                        _logger.LogDebug("Token is expired or expiring soon. Expires: {Expiration}, Current: {Current}", 
+                        _logger.LogDebug("Token is expired or expiring soon (manual decode). Expires: {Expiration}, Current: {Current}", 
                             expirationTime, currentTime);
                     }
                     
@@ -231,5 +339,29 @@ namespace Client.MVC.Services
         {
             return _userSessionService.GetJwtToken();
         }
+
+        /// <summary>
+        /// Clear user session and notify logout to prevent infinite refresh loops
+        /// </summary>
+        private void ClearSessionAndNotifyLogout()
+        {
+            try
+            {
+                _logger.LogInformation("Clearing user session due to refresh token failure");
+                _userSessionService.ClearUserSession();
+                
+                // Trigger logout event if available
+                OnLogoutRequired?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error clearing user session");
+            }
+        }
+
+        /// <summary>
+        /// Event raised when logout is required due to refresh token failure
+        /// </summary>
+        public event EventHandler? OnLogoutRequired;
     }
 } 

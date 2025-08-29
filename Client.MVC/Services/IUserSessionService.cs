@@ -14,6 +14,12 @@ namespace Client.MVC.Services
         void SetUserSession(AuthResultDto result);
 
         /// <summary>
+        /// Set user session data from API response
+        /// </summary>
+        /// <param name="response">API response containing authentication result</param>
+        void SetUserSession(ApiResponse<AuthResultDto> response);
+
+        /// <summary>
         /// Clear all user session data
         /// </summary>
         void ClearUserSession();
@@ -21,14 +27,15 @@ namespace Client.MVC.Services
         /// <summary>
         /// Clear all user session data asynchronously (recommended)
         /// </summary>
-        Task ClearUserSessionAsync();
+        Task ClearUserSessionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Logout user with options
         /// </summary>
         /// <param name="logoutFromAllDevices">Whether to logout from all devices</param>
-        /// <returns>True if logout was successful, false otherwise</returns>
-        Task<bool> LogoutAsync(bool logoutFromAllDevices = false);
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Logout result with success status and details</returns>
+        Task<ApiResponse<LogoutResultDto>> LogoutAsync(bool logoutFromAllDevices = false, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get current user ID from session
@@ -78,6 +85,13 @@ namespace Client.MVC.Services
         /// </summary>
         /// <returns>Token expiration time if valid, null otherwise</returns>
         DateTime? GetTokenExpiration();
+
+        /// <summary>
+        /// Get cached token expiration if available and valid
+        /// </summary>
+        /// <param name="currentToken">Current JWT token to validate against cache</param>
+        /// <returns>Cached expiration time if valid, null otherwise</returns>
+        DateTimeOffset? GetCachedTokenExpiration(string currentToken);
 
         /// <summary>
         /// Check if refresh token exists and is valid

@@ -36,6 +36,9 @@ builder.Services.AddHttpClient("ApiClient", client =>
 // Register authentication interceptor
 builder.Services.AddScoped<Client.MVC.Services.IAuthenticationInterceptor, Client.MVC.Services.AuthenticationInterceptor>();
 
+// Register resilience policy service
+builder.Services.AddSingleton<Client.MVC.Services.ResiliencePolicyService>();
+
 // Register authenticated HTTP client
 builder.Services.AddScoped<Client.MVC.Services.IAuthenticatedHttpClient, Client.MVC.Services.AuthenticatedHttpClient>();
 

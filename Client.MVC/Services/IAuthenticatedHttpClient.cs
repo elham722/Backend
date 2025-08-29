@@ -3,38 +3,38 @@ using System.Text.Json;
 namespace Client.MVC.Services
 {
     /// <summary>
-    /// Interface for authenticated HTTP client with automatic token management
+    /// Interface for authenticated HTTP client with automatic token management and resilience policies
     /// </summary>
     public interface IAuthenticatedHttpClient
     {
         /// <summary>
-        /// Send GET request with automatic authentication
+        /// Send GET request with automatic authentication and resilience policies
         /// </summary>
-        Task<TResponse?> GetAsync<TResponse>(string endpoint) where TResponse : class;
+        Task<ApiResponse<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default) where TResponse : class;
 
         /// <summary>
-        /// Send POST request with automatic authentication
+        /// Send POST request with automatic authentication and resilience policies
         /// </summary>
-        Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest request) 
+        Task<ApiResponse<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken cancellationToken = default) 
             where TRequest : class 
             where TResponse : class;
 
         /// <summary>
-        /// Send PUT request with automatic authentication
+        /// Send PUT request with automatic authentication and resilience policies
         /// </summary>
-        Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest request) 
+        Task<ApiResponse<TResponse>> PutAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken cancellationToken = default) 
             where TRequest : class 
             where TResponse : class;
 
         /// <summary>
-        /// Send DELETE request with automatic authentication
+        /// Send DELETE request with automatic authentication and resilience policies
         /// </summary>
-        Task<bool> DeleteAsync(string endpoint);
+        Task<ApiResponse<bool>> DeleteAsync(string endpoint, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Send PATCH request with automatic authentication
+        /// Send PATCH request with automatic authentication and resilience policies
         /// </summary>
-        Task<TResponse?> PatchAsync<TRequest, TResponse>(string endpoint, TRequest request) 
+        Task<ApiResponse<TResponse>> PatchAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken cancellationToken = default) 
             where TRequest : class 
             where TResponse : class;
 

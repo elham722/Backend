@@ -27,18 +27,18 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Getting user profile");
                 
-                var result = await _httpClient.GetAsync<UserProfileDto>("api/User/profile");
+                var response = await _httpClient.GetAsync<UserProfileDto>("api/User/profile");
                 
-                if (result != null)
+                if (response.IsSuccess && response.Data != null)
                 {
                     _logger.LogDebug("User profile retrieved successfully");
+                    return response.Data;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to retrieve user profile");
+                    _logger.LogWarning("Failed to retrieve user profile: {Error}", response.ErrorMessage);
+                    return null;
                 }
-                
-                return result;
             }
             catch (Exception ex)
             {
@@ -56,18 +56,18 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Getting user by ID: {UserId}", userId);
                 
-                var result = await _httpClient.GetAsync<UserDto>($"api/User/{userId}");
+                var response = await _httpClient.GetAsync<UserDto>($"api/User/{userId}");
                 
-                if (result != null)
+                if (response.IsSuccess && response.Data != null)
                 {
                     _logger.LogDebug("User retrieved successfully: {UserId}", userId);
+                    return response.Data;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to retrieve user: {UserId}", userId);
+                    _logger.LogWarning("Failed to retrieve user: {UserId}, Error: {Error}", userId, response.ErrorMessage);
+                    return null;
                 }
-                
-                return result;
             }
             catch (Exception ex)
             {
@@ -85,18 +85,18 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Getting users with pagination: Page {Page}, Size {PageSize}", page, pageSize);
                 
-                var result = await _httpClient.GetAsync<PaginatedResult<UserDto>>($"api/User?page={page}&pageSize={pageSize}");
+                var response = await _httpClient.GetAsync<PaginatedResult<UserDto>>($"api/User?page={page}&pageSize={pageSize}");
                 
-                if (result != null)
+                if (response.IsSuccess && response.Data != null)
                 {
-                    _logger.LogDebug("Users retrieved successfully: {Count} users", result.TotalCount);
+                    _logger.LogDebug("Users retrieved successfully: {Count} users", response.Data.TotalCount);
+                    return response.Data;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to retrieve users");
+                    _logger.LogWarning("Failed to retrieve users: {Error}", response.ErrorMessage);
+                    return null;
                 }
-                
-                return result;
             }
             catch (Exception ex)
             {
@@ -106,26 +106,26 @@ namespace Client.MVC.Services
         }
 
         /// <summary>
-        /// Update user profile
+        /// Update user
         /// </summary>
-        public async Task<UserDto?> UpdateUserAsync(string userId, UpdateUserDto updateDto)
+        public async Task<UserDto?> UpdateUserAsync(string userId, UpdateUserDto updateUserDto)
         {
             try
             {
                 _logger.LogDebug("Updating user: {UserId}", userId);
                 
-                var result = await _httpClient.PutAsync<UpdateUserDto, UserDto>($"api/User/{userId}", updateDto);
+                var response = await _httpClient.PutAsync<UpdateUserDto, UserDto>($"api/User/{userId}", updateUserDto);
                 
-                if (result != null)
+                if (response.IsSuccess && response.Data != null)
                 {
                     _logger.LogInformation("User updated successfully: {UserId}", userId);
+                    return response.Data;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to update user: {UserId}", userId);
+                    _logger.LogWarning("Failed to update user: {UserId}, Error: {Error}", userId, response.ErrorMessage);
+                    return null;
                 }
-                
-                return result;
             }
             catch (Exception ex)
             {
@@ -143,16 +143,17 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Changing user password");
                 
-                var result = await _httpClient.PostAsync<ChangePasswordDto, AuthResultDto>("api/User/change-password", changePasswordDto);
+                var response = await _httpClient.PostAsync<ChangePasswordDto, AuthResultDto>("api/User/change-password", changePasswordDto);
                 
-                if (result?.IsSuccess == true)
+                if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
                     _logger.LogInformation("Password changed successfully");
                     return true;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to change password: {Error}", result?.ErrorMessage);
+                    var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "Password change failed";
+                    _logger.LogWarning("Failed to change password: {Error}", errorMessage);
                     return false;
                 }
             }
@@ -172,18 +173,18 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Deleting user: {UserId}", userId);
                 
-                var result = await _httpClient.DeleteAsync($"api/User/{userId}");
+                var response = await _httpClient.DeleteAsync($"api/User/{userId}");
                 
-                if (result)
+                if (response.IsSuccess && response.Data)
                 {
                     _logger.LogInformation("User deleted successfully: {UserId}", userId);
+                    return true;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to delete user: {UserId}", userId);
+                    _logger.LogWarning("Failed to delete user: {UserId}, Error: {Error}", userId, response.ErrorMessage);
+                    return false;
                 }
-                
-                return result;
             }
             catch (Exception ex)
             {
@@ -201,16 +202,17 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Activating user: {UserId}", userId);
                 
-                var result = await _httpClient.PostAsync<object, AuthResultDto>($"api/User/{userId}/activate", new { });
+                var response = await _httpClient.PostAsync<object, AuthResultDto>($"api/User/{userId}/activate", new { });
                 
-                if (result?.IsSuccess == true)
+                if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
                     _logger.LogInformation("User activated successfully: {UserId}", userId);
                     return true;
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to activate user: {UserId}. Error: {Error}", userId, result?.ErrorMessage);
+                    var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "User activation failed";
+                    _logger.LogWarning("Failed to activate user: {UserId}. Error: {Error}", userId, errorMessage);
                     return false;
                 }
             }

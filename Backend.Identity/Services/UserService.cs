@@ -867,8 +867,8 @@ public class UserService : IUserService
             var encodedToken = UrlEncoder.Default.Encode(token);
 
             // TODO: Implement email sending service
-            // For now, just log the token
-            _logger.LogInformation("Email confirmation token generated for user: {UserId}, Token: {Token}", userId, encodedToken);
+            // For now, just log that token was generated (without the actual token)
+            _logger.LogInformation("Email confirmation token generated for user: {UserId}", userId);
 
             return Result.Success();
         }
@@ -900,8 +900,8 @@ public class UserService : IUserService
             var encodedToken = UrlEncoder.Default.Encode(token);
 
             // TODO: Implement email sending service
-            // For now, just log the token
-            _logger.LogInformation("Password reset token generated for user: {UserId}, Token: {Token}", user.Id, encodedToken);
+            // For now, just log that token was generated (without the actual token)
+            _logger.LogInformation("Password reset token generated for user: {UserId}", user.Id);
 
             return Result.Success();
         }

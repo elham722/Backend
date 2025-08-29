@@ -1,11 +1,12 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Polly;
 
 namespace Client.MVC.Services
 {
     /// <summary>
-    /// Implementation of authenticated HTTP client with automatic token management
+    /// Implementation of authenticated HTTP client with automatic token management and resilience policies
     /// </summary>
     public class AuthenticatedHttpClient : IAuthenticatedHttpClient
     {
@@ -14,15 +15,18 @@ namespace Client.MVC.Services
         private readonly ILogger<AuthenticatedHttpClient> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly Dictionary<string, string> _customHeaders;
+        private readonly ResiliencePolicyService _resiliencePolicyService;
 
-            public AuthenticatedHttpClient(
-        IHttpClientFactory httpClientFactory,
-        IAuthenticationInterceptor authInterceptor,
-        ILogger<AuthenticatedHttpClient> logger)
+        public AuthenticatedHttpClient(
+            IHttpClientFactory httpClientFactory,
+            IAuthenticationInterceptor authInterceptor,
+            ILogger<AuthenticatedHttpClient> logger,
+            ResiliencePolicyService resiliencePolicyService)
         {
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _authInterceptor = authInterceptor ?? throw new ArgumentNullException(nameof(authInterceptor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _resiliencePolicyService = resiliencePolicyService ?? throw new ArgumentNullException(nameof(resiliencePolicyService));
             
             _jsonOptions = new JsonSerializerOptions
             {
@@ -31,56 +35,90 @@ namespace Client.MVC.Services
             };
             
             _customHeaders = new Dictionary<string, string>();
+
+            // Subscribe to logout required event
+            _authInterceptor.OnLogoutRequired += OnLogoutRequired;
         }
 
         /// <summary>
-        /// Send GET request with automatic authentication
+        /// Handle logout required event from authentication interceptor
         /// </summary>
-        public async Task<TResponse?> GetAsync<TResponse>(string endpoint) where TResponse : class
+        private void OnLogoutRequired(object? sender, EventArgs e)
+        {
+            _logger.LogWarning("Logout required due to refresh token failure");
+            
+            // Clear any custom headers that might be related to authentication
+            _customHeaders.Clear();
+            
+            // Additional cleanup can be added here
+            // For example, notify other components about the logout
+        }
+
+        /// <summary>
+        /// Send GET request with automatic authentication and resilience policies
+        /// </summary>
+        public async Task<ApiResponse<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken cancellationToken = default) where TResponse : class
         {
             try
             {
                 _logger.LogDebug("Sending GET request to: {Endpoint}", endpoint);
                 
                 var httpClient = _httpClientFactory.CreateClient("ApiClient");
-                var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+                var policy = _resiliencePolicyService.CreateReadOnlyPolicy();
                 
-                // Add authentication header
-                request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
-                
-                // Add custom headers
-                AddCustomHeadersToRequest(request);
-                
-                var response = await httpClient.SendAsync(request);
-                
-                // Handle authentication errors
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
-                    response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                var response = await policy.ExecuteAsync(async (context) =>
                 {
-                    var handled = await _authInterceptor.HandleAuthenticationErrorAsync(response);
-                    if (handled)
+                    var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+                    
+                    // Add authentication header
+                    request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
+                    
+                    // Add custom headers
+                    AddCustomHeadersToRequest(request);
+                    
+                    var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+                    
+                    // Handle authentication errors
+                    if (httpResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
+                        httpResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // Retry the request with new token
-                        request = new HttpRequestMessage(HttpMethod.Get, endpoint);
-                        request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
-                        AddCustomHeadersToRequest(request);
-                        response = await httpClient.SendAsync(request);
+                        var handled = await _authInterceptor.HandleAuthenticationErrorAsync(httpResponse);
+                        if (handled)
+                        {
+                            // Wait for refresh completion before retrying
+                            var refreshCompleted = await _authInterceptor.WaitForRefreshCompletionAsync();
+                            if (refreshCompleted)
+                            {
+                                // Retry the request with new token
+                                request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+                                request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
+                                AddCustomHeadersToRequest(request);
+                                httpResponse = await httpClient.SendAsync(request, cancellationToken);
+                            }
+                        }
                     }
-                }
+                    
+                    return httpResponse;
+                }, new Context(endpoint));
                 
                 return await HandleResponseAsync<TResponse>(response);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("GET request to {Endpoint} was cancelled", endpoint);
+                return ApiResponse<TResponse>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending GET request to: {Endpoint}", endpoint);
-                return null;
+                return ApiResponse<TResponse>.Error($"Error sending GET request: {ex.Message}", 500);
             }
         }
 
         /// <summary>
-        /// Send POST request with automatic authentication
+        /// Send POST request with automatic authentication and resilience policies
         /// </summary>
-        public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest request) 
+        public async Task<ApiResponse<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken cancellationToken = default) 
             where TRequest : class 
             where TResponse : class
         {
@@ -91,51 +129,77 @@ namespace Client.MVC.Services
                 var json = JsonSerializer.Serialize(request, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
-                {
-                    Content = content
-                };
-                
-                // Add authentication header
-                httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
-                
-                // Add custom headers
-                AddCustomHeadersToRequest(httpRequest);
-                
                 var httpClient = _httpClientFactory.CreateClient("ApiClient");
-                var response = await httpClient.SendAsync(httpRequest);
                 
-                // Handle authentication errors
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
-                    response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                // Use auth policy for sensitive operations like login/register
+                var isAuthOperation = endpoint.Contains("/auth/", StringComparison.OrdinalIgnoreCase) ||
+                                    endpoint.Contains("/login", StringComparison.OrdinalIgnoreCase) ||
+                                    endpoint.Contains("/register", StringComparison.OrdinalIgnoreCase) ||
+                                    endpoint.Contains("/refresh", StringComparison.OrdinalIgnoreCase);
+                
+                var policy = isAuthOperation 
+                    ? _resiliencePolicyService.CreateAuthPolicy() 
+                    : _resiliencePolicyService.CreateGeneralPolicy();
+                
+                var response = await policy.ExecuteAsync(async (context) =>
                 {
-                    var handled = await _authInterceptor.HandleAuthenticationErrorAsync(response);
-                    if (handled)
+                    var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
                     {
-                        // Retry the request with new token
-                        httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
+                        Content = content
+                    };
+                    
+                    // Add authentication header
+                    httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                    
+                    // Add custom headers
+                    AddCustomHeadersToRequest(httpRequest);
+                    
+                    var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+                    
+                    // Handle authentication errors
+                    if (httpResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
+                        httpResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        var handled = await _authInterceptor.HandleAuthenticationErrorAsync(httpResponse);
+                        if (handled)
                         {
-                            Content = content
-                        };
-                        httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
-                        AddCustomHeadersToRequest(httpRequest);
-                        response = await httpClient.SendAsync(httpRequest);
+                            // Wait for refresh completion before retrying
+                            var refreshCompleted = await _authInterceptor.WaitForRefreshCompletionAsync();
+                            if (refreshCompleted)
+                            {
+                                // Retry the request with new token
+                                httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
+                                {
+                                    Content = content
+                                };
+                                httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                                AddCustomHeadersToRequest(httpRequest);
+                                httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+                            }
+                        }
                     }
-                }
+                    
+                    return httpResponse;
+                }, new Context(endpoint));
                 
                 return await HandleResponseAsync<TResponse>(response);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("POST request to {Endpoint} was cancelled", endpoint);
+                return ApiResponse<TResponse>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending POST request to: {Endpoint}", endpoint);
-                return null;
+                return ApiResponse<TResponse>.Error($"Error sending POST request: {ex.Message}", 500);
             }
         }
 
         /// <summary>
-        /// Send PUT request with automatic authentication
+        /// Send PUT request with automatic authentication and resilience policies
         /// </summary>
-        public async Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest request) 
+        public async Task<ApiResponse<TResponse>> PutAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken cancellationToken = default) 
             where TRequest : class 
             where TResponse : class
         {
@@ -146,95 +210,139 @@ namespace Client.MVC.Services
                 var json = JsonSerializer.Serialize(request, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                var httpRequest = new HttpRequestMessage(HttpMethod.Put, endpoint)
-                {
-                    Content = content
-                };
-                
-                // Add authentication header
-                httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
-                
-                // Add custom headers
-                AddCustomHeadersToRequest(httpRequest);
-                
                 var httpClient = _httpClientFactory.CreateClient("ApiClient");
-                var response = await httpClient.SendAsync(httpRequest);
+                var policy = _resiliencePolicyService.CreateGeneralPolicy();
                 
-                // Handle authentication errors
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
-                    response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                var response = await policy.ExecuteAsync(async (context) =>
                 {
-                    var handled = await _authInterceptor.HandleAuthenticationErrorAsync(response);
-                    if (handled)
+                    var httpRequest = new HttpRequestMessage(HttpMethod.Put, endpoint)
                     {
-                        // Retry the request with new token
-                        httpRequest = new HttpRequestMessage(HttpMethod.Put, endpoint)
+                        Content = content
+                    };
+                    
+                    // Add authentication header
+                    httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                    
+                    // Add custom headers
+                    AddCustomHeadersToRequest(httpRequest);
+                    
+                    var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+                    
+                    // Handle authentication errors
+                    if (httpResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
+                        httpResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        var handled = await _authInterceptor.HandleAuthenticationErrorAsync(httpResponse);
+                        if (handled)
                         {
-                            Content = content
-                        };
-                        httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
-                        AddCustomHeadersToRequest(httpRequest);
-                        response = await httpClient.SendAsync(httpRequest);
+                            // Wait for refresh completion before retrying
+                            var refreshCompleted = await _authInterceptor.WaitForRefreshCompletionAsync();
+                            if (refreshCompleted)
+                            {
+                                // Retry the request with new token
+                                httpRequest = new HttpRequestMessage(HttpMethod.Put, endpoint)
+                                {
+                                    Content = content
+                                };
+                                httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                                AddCustomHeadersToRequest(httpRequest);
+                                httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+                            }
+                        }
                     }
-                }
+                    
+                    return httpResponse;
+                }, new Context(endpoint));
                 
                 return await HandleResponseAsync<TResponse>(response);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("PUT request to {Endpoint} was cancelled", endpoint);
+                return ApiResponse<TResponse>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending PUT request to: {Endpoint}", endpoint);
-                return null;
+                return ApiResponse<TResponse>.Error($"Error sending PUT request: {ex.Message}", 500);
             }
         }
 
         /// <summary>
-        /// Send DELETE request with automatic authentication
+        /// Send DELETE request with automatic authentication and resilience policies
         /// </summary>
-        public async Task<bool> DeleteAsync(string endpoint)
+        public async Task<ApiResponse<bool>> DeleteAsync(string endpoint, CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogDebug("Sending DELETE request to: {Endpoint}", endpoint);
                 
-                var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
-                
-                // Add authentication header
-                request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
-                
-                // Add custom headers
-                AddCustomHeadersToRequest(request);
-                
                 var httpClient = _httpClientFactory.CreateClient("ApiClient");
-                var response = await httpClient.SendAsync(request);
+                var policy = _resiliencePolicyService.CreateGeneralPolicy();
                 
-                // Handle authentication errors
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
-                    response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                var response = await policy.ExecuteAsync(async (context) =>
                 {
-                    var handled = await _authInterceptor.HandleAuthenticationErrorAsync(response);
-                    if (handled)
+                    var request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+                    
+                    // Add authentication header
+                    request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
+                    
+                    // Add custom headers
+                    AddCustomHeadersToRequest(request);
+                    
+                    var httpResponse = await httpClient.SendAsync(request, cancellationToken);
+                    
+                    // Handle authentication errors
+                    if (httpResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
+                        httpResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
                     {
-                        // Retry the request with new token
-                        request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
-                        request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
-                        AddCustomHeadersToRequest(request);
-                        response = await httpClient.SendAsync(request);
+                        var handled = await _authInterceptor.HandleAuthenticationErrorAsync(httpResponse);
+                        if (handled)
+                        {
+                            // Wait for refresh completion before retrying
+                            var refreshCompleted = await _authInterceptor.WaitForRefreshCompletionAsync();
+                            if (refreshCompleted)
+                            {
+                                // Retry the request with new token
+                                request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
+                                request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
+                                AddCustomHeadersToRequest(request);
+                                httpResponse = await httpClient.SendAsync(request, cancellationToken);
+                            }
+                        }
                     }
-                }
+                    
+                    return httpResponse;
+                }, new Context(endpoint));
                 
-                return response.IsSuccessStatusCode;
+                if (response.IsSuccessStatusCode)
+                {
+                    return ApiResponse<bool>.Success(true, (int)response.StatusCode);
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("DELETE request failed with status {StatusCode}: {Error}", 
+                        response.StatusCode, errorContent);
+                    return ApiResponse<bool>.Error($"DELETE request failed: {response.StatusCode}", (int)response.StatusCode);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("DELETE request to {Endpoint} was cancelled", endpoint);
+                return ApiResponse<bool>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending DELETE request to: {Endpoint}", endpoint);
-                return false;
+                return ApiResponse<bool>.Error($"Error sending DELETE request: {ex.Message}", 500);
             }
         }
 
         /// <summary>
-        /// Send PATCH request with automatic authentication
+        /// Send PATCH request with automatic authentication and resilience policies
         /// </summary>
-        public async Task<TResponse?> PatchAsync<TRequest, TResponse>(string endpoint, TRequest request) 
+        public async Task<ApiResponse<TResponse>> PatchAsync<TRequest, TResponse>(string endpoint, TRequest request, CancellationToken cancellationToken = default) 
             where TRequest : class 
             where TResponse : class
         {
@@ -245,44 +353,61 @@ namespace Client.MVC.Services
                 var json = JsonSerializer.Serialize(request, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                var httpRequest = new HttpRequestMessage(HttpMethod.Patch, endpoint)
-                {
-                    Content = content
-                };
-                
-                // Add authentication header
-                httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
-                
-                // Add custom headers
-                AddCustomHeadersToRequest(httpRequest);
-                
                 var httpClient = _httpClientFactory.CreateClient("ApiClient");
-                var response = await httpClient.SendAsync(httpRequest);
+                var policy = _resiliencePolicyService.CreateGeneralPolicy();
                 
-                // Handle authentication errors
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
-                    response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                var response = await policy.ExecuteAsync(async (context) =>
                 {
-                    var handled = await _authInterceptor.HandleAuthenticationErrorAsync(response);
-                    if (handled)
+                    var httpRequest = new HttpRequestMessage(HttpMethod.Patch, endpoint)
                     {
-                        // Retry the request with new token
-                        httpRequest = new HttpRequestMessage(HttpMethod.Patch, endpoint)
+                        Content = content
+                    };
+                    
+                    // Add authentication header
+                    httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                    
+                    // Add custom headers
+                    AddCustomHeadersToRequest(httpRequest);
+                    
+                    var httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+                    
+                    // Handle authentication errors
+                    if (httpResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
+                        httpResponse.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        var handled = await _authInterceptor.HandleAuthenticationErrorAsync(httpResponse);
+                        if (handled)
                         {
-                            Content = content
-                        };
-                        httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
-                        AddCustomHeadersToRequest(httpRequest);
-                        response = await httpClient.SendAsync(httpRequest);
+                            // Wait for refresh completion before retrying
+                            var refreshCompleted = await _authInterceptor.WaitForRefreshCompletionAsync();
+                            if (refreshCompleted)
+                            {
+                                // Retry the request with new token
+                                httpRequest = new HttpRequestMessage(HttpMethod.Patch, endpoint)
+                                {
+                                    Content = content
+                                };
+                                httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                                AddCustomHeadersToRequest(httpRequest);
+                                httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
+                            }
+                        }
                     }
-                }
+                    
+                    return httpResponse;
+                }, new Context(endpoint));
                 
                 return await HandleResponseAsync<TResponse>(response);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("PATCH request to {Endpoint} was cancelled", endpoint);
+                return ApiResponse<TResponse>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending PATCH request to: {Endpoint}", endpoint);
-                return null;
+                return ApiResponse<TResponse>.Error($"Error sending PATCH request: {ex.Message}", 500);
             }
         }
 
@@ -318,7 +443,7 @@ namespace Client.MVC.Services
         /// <summary>
         /// Handle HTTP response and deserialize to specified type
         /// </summary>
-        private async Task<TResponse?> HandleResponseAsync<TResponse>(HttpResponseMessage response) where TResponse : class
+        private async Task<ApiResponse<TResponse>> HandleResponseAsync<TResponse>(HttpResponseMessage response) where TResponse : class
         {
             try
             {
@@ -328,30 +453,31 @@ namespace Client.MVC.Services
                     
                     if (typeof(TResponse) == typeof(string))
                     {
-                        return content as TResponse;
+                        return ApiResponse<TResponse>.Success(content as TResponse, (int)response.StatusCode);
                     }
                     
                     if (string.IsNullOrEmpty(content))
                     {
-                        return null;
+                        // Return success with null data for empty responses
+                        return ApiResponse<TResponse>.Success(null!, (int)response.StatusCode);
                     }
                     
                     var result = JsonSerializer.Deserialize<TResponse>(content, _jsonOptions);
                     _logger.LogDebug("Successfully deserialized response to {Type}", typeof(TResponse).Name);
-                    return result;
+                    return ApiResponse<TResponse>.Success(result!, (int)response.StatusCode);
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogWarning("Request failed with status {StatusCode}: {Error}", 
                         response.StatusCode, errorContent);
-                    return null;
+                    return ApiResponse<TResponse>.Error($"Request failed: {response.StatusCode}", (int)response.StatusCode);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error handling response");
-                return null;
+                return ApiResponse<TResponse>.Error($"Error handling response: {ex.Message}", 500);
             }
         }
 

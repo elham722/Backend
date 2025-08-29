@@ -18,9 +18,14 @@ namespace Client.MVC.Services
         Task<bool> HandleAuthenticationErrorAsync(HttpResponseMessage response);
 
         /// <summary>
-        /// Refresh token if needed
+        /// Refresh token if needed with thread-safety
         /// </summary>
         Task<bool> RefreshTokenIfNeededAsync();
+
+        /// <summary>
+        /// Wait for ongoing refresh operation to complete
+        /// </summary>
+        Task<bool> WaitForRefreshCompletionAsync(TimeSpan timeout = default);
 
         /// <summary>
         /// Check if token is valid
@@ -31,5 +36,10 @@ namespace Client.MVC.Services
         /// Get current JWT token
         /// </summary>
         string? GetCurrentToken();
+
+        /// <summary>
+        /// Event raised when logout is required due to refresh token failure
+        /// </summary>
+        event EventHandler? OnLogoutRequired;
     }
 } 
