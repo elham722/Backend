@@ -16,17 +16,20 @@ namespace Client.MVC.Services
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly Dictionary<string, string> _customHeaders;
         private readonly ResiliencePolicyService _resiliencePolicyService;
+        private readonly IConcurrencyManager _concurrencyManager;
 
         public AuthenticatedHttpClient(
             IHttpClientFactory httpClientFactory,
             IAuthenticationInterceptor authInterceptor,
             ILogger<AuthenticatedHttpClient> logger,
-            ResiliencePolicyService resiliencePolicyService)
+            ResiliencePolicyService resiliencePolicyService,
+            IConcurrencyManager concurrencyManager)
         {
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _authInterceptor = authInterceptor ?? throw new ArgumentNullException(nameof(authInterceptor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _resiliencePolicyService = resiliencePolicyService ?? throw new ArgumentNullException(nameof(resiliencePolicyService));
+            _concurrencyManager = concurrencyManager ?? throw new ArgumentNullException(nameof(concurrencyManager));
             
             _jsonOptions = new JsonSerializerOptions
             {

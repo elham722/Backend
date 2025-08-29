@@ -11,8 +11,10 @@ namespace Client.MVC.Controllers
         public AuthController(
             IAuthApiClient authApiClient, 
             IUserSessionService userSessionService,
-            ILogger<AuthController> logger)
-            : base(userSessionService, logger)
+            ILogger<AuthController> logger,
+            IErrorHandlingService errorHandlingService,
+            ICacheService cacheService)
+            : base(userSessionService, logger, errorHandlingService, cacheService)
         {
             _authApiClient = authApiClient ?? throw new ArgumentNullException(nameof(authApiClient));
         }

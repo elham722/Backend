@@ -59,7 +59,7 @@ namespace Client.MVC.Services
         }
 
         /// <summary>
-        /// Create retry policy for authentication operations
+        /// Create retry policy for authentication operations with shorter backoff
         /// </summary>
         public AsyncRetryPolicy<HttpResponseMessage> CreateAuthRetryPolicy()
         {
@@ -71,7 +71,7 @@ namespace Client.MVC.Services
                 .WaitAndRetryAsync(
                     retryCount: _authConfig.RetryCount,
                     sleepDurationProvider: retryAttempt => 
-                        TimeSpan.FromSeconds(_authConfig.RetryDelaySeconds * Math.Pow(2, retryAttempt - 1)), // Exponential backoff
+                        TimeSpan.FromSeconds(_authConfig.RetryDelaySeconds * retryAttempt), // Linear backoff for faster response
                     onRetry: (outcome, timespan, retryAttempt, context) =>
                     {
                         _logger.LogWarning(
@@ -248,6 +248,58 @@ namespace Client.MVC.Services
                 CreateAuthCircuitBreakerPolicy(),
                 CreateAuthRetryPolicy()
             );
+        }
+
+        /// <summary>
+        /// Create optimized policy for critical auth operations (login/refresh)
+        /// with faster timeout and more aggressive circuit breaker
+        /// </summary>
+        public IAsyncPolicy<HttpResponseMessage> CreateCriticalAuthPolicy()
+        {
+            // Use even more aggressive settings for critical auth operations
+            var criticalTimeoutPolicy = CreateTimeoutPolicy(5); // 5 seconds timeout
+            var criticalCircuitBreaker = HttpPolicyExtensions
+                .HandleTransientHttpError()
+                .OrResult(response => response.StatusCode == HttpStatusCode.TooManyRequests)
+                .Or<SocketException>()
+                .Or<HttpRequestException>()
+                .CircuitBreakerAsync(
+                    handledEventsAllowedBeforeBreaking: 1, // Break after 1 failure
+                    durationOfBreak: TimeSpan.FromSeconds(10), // Short break duration
+                    onBreak: (outcome, timespan) =>
+                    {
+                        _logger.LogError(
+                            "Critical auth circuit breaker opened for {Duration}ms. " +
+                            "Status: {StatusCode}, Exception: {Exception}",
+                            timespan.TotalMilliseconds, outcome.Result?.StatusCode, outcome.Exception?.Message);
+                    },
+                    onReset: () =>
+                    {
+                        _logger.LogInformation("Critical auth circuit breaker reset");
+                    },
+                    onHalfOpen: () =>
+                    {
+                        _logger.LogInformation("Critical auth circuit breaker half-open");
+                    });
+
+            var criticalRetryPolicy = HttpPolicyExtensions
+                .HandleTransientHttpError()
+                .OrResult(response => response.StatusCode == HttpStatusCode.TooManyRequests)
+                .Or<SocketException>()
+                .Or<HttpRequestException>()
+                .WaitAndRetryAsync(
+                    retryCount: 1, // Only 1 retry for critical operations
+                    sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(0.5), // Very short delay
+                    onRetry: (outcome, timespan, retryAttempt, context) =>
+                    {
+                        _logger.LogWarning(
+                            "Critical auth retry {RetryAttempt} after {Delay}ms for {OperationKey}. " +
+                            "Status: {StatusCode}, Exception: {Exception}",
+                            retryAttempt, timespan.TotalMilliseconds, context.OperationKey,
+                            outcome.Result?.StatusCode, outcome.Exception?.Message);
+                    });
+
+            return Policy.WrapAsync(criticalTimeoutPolicy, criticalCircuitBreaker, criticalRetryPolicy);
         }
 
         /// <summary>

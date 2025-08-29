@@ -1,19 +1,31 @@
 using Client.MVC.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Configure forwarded headers for proxy scenarios
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // Add distributed cache for session support
 builder.Services.AddDistributedMemoryCache();
 
-// Add session support
+// Add session support with improved security
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.IdleTimeout = TimeSpan.FromMinutes(
+        builder.Configuration.GetValue<int>("CookieSecurity:ExpirationMinutes", 30));
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
 });
 
 // Add authentication services
@@ -25,36 +37,37 @@ builder.Services.AddAuthentication(options =>
 })
 .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, JwtAuthenticationHandler>("JwtBearer", options => { });
 
-// Add Typed HttpClient for API communication
+// Configure Typed HttpClient with settings from configuration
+var apiSettings = builder.Configuration.GetSection("ApiSettings");
 builder.Services.AddHttpClient("ApiClient", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7209/");
+    client.BaseAddress = new Uri(apiSettings["BaseUrl"] ?? "https://localhost:7209/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
-    client.Timeout = TimeSpan.FromSeconds(30);
+    client.Timeout = TimeSpan.FromSeconds(
+        apiSettings.GetValue<int>("TimeoutSeconds", 30));
 });
 
-// Register authentication interceptor
-builder.Services.AddScoped<Client.MVC.Services.IAuthenticationInterceptor, Client.MVC.Services.AuthenticationInterceptor>();
+// Register services with improved dependency injection
+builder.Services.AddScoped<IAuthenticationInterceptor, AuthenticationInterceptor>();
+builder.Services.AddSingleton<ResiliencePolicyService>();
+builder.Services.AddScoped<IAuthenticatedHttpClient, AuthenticatedHttpClient>();
+builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+builder.Services.AddScoped<IAuthApiClient, AuthApiClient>();
+builder.Services.AddScoped<IUserApiClient, UserApiClient>();
+builder.Services.AddScoped<IBackgroundJobAuthClient, BackgroundJobAuthClient>();
 
-// Register resilience policy service
-builder.Services.AddSingleton<Client.MVC.Services.ResiliencePolicyService>();
-
-// Register authenticated HTTP client
-builder.Services.AddScoped<Client.MVC.Services.IAuthenticatedHttpClient, Client.MVC.Services.AuthenticatedHttpClient>();
-
-// Register session management service
-builder.Services.AddScoped<Client.MVC.Services.IUserSessionService, Client.MVC.Services.UserSessionService>();
-
-// Register AuthApiClient
-builder.Services.AddScoped<Client.MVC.Services.IAuthApiClient, Client.MVC.Services.AuthApiClient>();
-
-// Register UserApiClient
-builder.Services.AddScoped<Client.MVC.Services.IUserApiClient, Client.MVC.Services.UserApiClient>();
-
-// Register BackgroundJobAuthClient for background jobs and external services
-builder.Services.AddScoped<Client.MVC.Services.IBackgroundJobAuthClient, Client.MVC.Services.BackgroundJobAuthClient>();
+// Register new services
+builder.Services.AddScoped<IErrorHandlingService, ErrorHandlingService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddSingleton<LogSanitizer>();
+builder.Services.AddSingleton<IConcurrencyManager, ConcurrencyManager>();
+builder.Services.AddScoped<ITokenManager, TokenManager>();
 
 builder.Services.AddHttpContextAccessor();
+
+// Add health checks
+builder.Services.AddHealthChecks()
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
 
 var app = builder.Build();
 
@@ -62,12 +75,51 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    
+    // Enable HSTS if configured
+    if (builder.Configuration.GetValue<bool>("Security:EnableHsts", true))
+    {
+        app.UseHsts();
+    }
 }
+
+// Use forwarded headers
+app.UseForwardedHeaders();
+
+// Global exception handling is handled by the built-in error handling
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// Add security headers
+if (builder.Configuration.GetValue<bool>("Security:EnableCsp", true))
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Add("Content-Security-Policy", 
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';");
+        await next();
+    });
+}
+
+if (builder.Configuration.GetValue<bool>("Security:EnableXssProtection", true))
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+        await next();
+    });
+}
+
+if (builder.Configuration.GetValue<bool>("Security:EnableFrameOptions", true))
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Add("X-Frame-Options", "DENY");
+        await next();
+    });
+}
+
 app.UseRouting();
 
 // Use session
@@ -75,8 +127,10 @@ app.UseSession();
 
 // Use authentication (must come before authorization)
 app.UseAuthentication();
-
 app.UseAuthorization();
+
+// Add health check endpoint
+app.MapHealthChecks("/health");
 
 app.MapControllerRoute(
     name: "default",

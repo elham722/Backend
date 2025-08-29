@@ -8,8 +8,8 @@ namespace Client.MVC.Controllers
 {
     public class HomeController : BaseController
     {
-        public HomeController(IUserSessionService userSessionService, ILogger<HomeController> logger)
-            : base(userSessionService, logger)
+        public HomeController(IUserSessionService userSessionService, ILogger<HomeController> logger, IErrorHandlingService errorHandlingService, ICacheService cacheService)
+            : base(userSessionService, logger, errorHandlingService, cacheService)
         {
         }
         

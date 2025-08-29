@@ -8,6 +8,7 @@ namespace Client.MVC.Services
 {
     /// <summary>
     /// Implementation of authentication interceptor for automatic JWT token management
+    /// with concurrency-safe refresh token handling
     /// </summary>
     public class AuthenticationInterceptor : IAuthenticationInterceptor
     {
@@ -17,12 +18,14 @@ namespace Client.MVC.Services
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly ResiliencePolicyService _resiliencePolicyService;
         
-        // Thread-safety for token refresh operations
+        // Concurrency-safe refresh token management
         private static readonly SemaphoreSlim _refreshLock = new(1, 1);
         private static readonly object _refreshStateLock = new();
         private static bool _isRefreshing = false;
         private static DateTime _lastRefreshAttempt = DateTime.MinValue;
         private static readonly TimeSpan _refreshCooldown = TimeSpan.FromSeconds(5);
+        private static Task<bool>? _currentRefreshTask = null;
+        private static readonly TimeSpan _refreshTimeout = TimeSpan.FromSeconds(30);
 
         public AuthenticationInterceptor(
         IUserSessionService userSessionService,
@@ -42,7 +45,7 @@ namespace Client.MVC.Services
         }
 
         /// <summary>
-        /// Add authentication header to the request
+        /// Add authentication header to the request with concurrency-safe token refresh
         /// </summary>
         public async Task<HttpRequestMessage> AddAuthenticationHeaderAsync(HttpRequestMessage request)
         {
@@ -82,7 +85,7 @@ namespace Client.MVC.Services
         }
 
         /// <summary>
-        /// Handle authentication errors (401, 403)
+        /// Handle authentication errors (401, 403) with concurrency-safe refresh
         /// </summary>
         public async Task<bool> HandleAuthenticationErrorAsync(HttpResponseMessage response)
         {
@@ -121,30 +124,77 @@ namespace Client.MVC.Services
         }
 
         /// <summary>
-        /// Refresh token if needed with thread-safety and resilience policies
+        /// Concurrency-safe token refresh with proper state management
         /// </summary>
         public async Task<bool> RefreshTokenIfNeededAsync()
         {
-            // Check if we're already refreshing or recently attempted
+            // Check if we're already refreshing
+            Task<bool>? existingTask = null;
             lock (_refreshStateLock)
             {
-                if (_isRefreshing)
+                if (_isRefreshing && _currentRefreshTask != null)
                 {
-                    _logger.LogDebug("Token refresh already in progress, waiting for completion");
-                    return false; // Let the caller handle this case
+                    _logger.LogDebug("Token refresh already in progress, waiting for existing task");
+                    // Return the existing refresh task result
+                    existingTask = _currentRefreshTask;
                 }
                 
-                if (DateTime.UtcNow - _lastRefreshAttempt < _refreshCooldown)
+                if (existingTask == null && DateTime.UtcNow - _lastRefreshAttempt < _refreshCooldown)
                 {
                     _logger.LogDebug("Token refresh attempted too recently, skipping");
                     return false;
                 }
-                
-                _isRefreshing = true;
-                _lastRefreshAttempt = DateTime.UtcNow;
             }
 
-            await _refreshLock.WaitAsync();
+            if (existingTask != null)
+            {
+                return await existingTask;
+            }
+
+            // Acquire the refresh lock
+            if (!await _refreshLock.WaitAsync(_refreshTimeout))
+            {
+                _logger.LogWarning("Timeout waiting for refresh lock");
+                return false;
+            }
+
+            try
+            {
+                // Double-check if another thread started refreshing while we were waiting
+                Task<bool>? doubleCheckTask = null;
+                lock (_refreshStateLock)
+                {
+                    if (_isRefreshing && _currentRefreshTask != null)
+                    {
+                        _logger.LogDebug("Another thread started refresh while waiting for lock");
+                        doubleCheckTask = _currentRefreshTask;
+                    }
+                    else
+                    {
+                        _isRefreshing = true;
+                        _lastRefreshAttempt = DateTime.UtcNow;
+                        _currentRefreshTask = PerformRefreshAsync();
+                    }
+                }
+
+                if (doubleCheckTask != null)
+                {
+                    return await doubleCheckTask;
+                }
+
+                return await _currentRefreshTask;
+            }
+            finally
+            {
+                _refreshLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Perform the actual token refresh operation
+        /// </summary>
+        private async Task<bool> PerformRefreshAsync()
+        {
             try
             {
                 _logger.LogInformation("Starting token refresh operation");
@@ -164,9 +214,9 @@ namespace Client.MVC.Services
                 var json = JsonSerializer.Serialize(request, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                // Use resilience policy for refresh token endpoint
+                // Use critical resilience policy for refresh token endpoint
                 var httpClient = _httpClientFactory.CreateClient("ApiClient");
-                var policy = _resiliencePolicyService.CreateAuthPolicy(); // Use auth policy for refresh
+                var policy = _resiliencePolicyService.CreateCriticalAuthPolicy();
                 
                 var response = await policy.ExecuteAsync(async (context) =>
                 {
@@ -217,12 +267,11 @@ namespace Client.MVC.Services
             }
             finally
             {
-                _refreshLock.Release();
-                
                 // Reset refresh state
                 lock (_refreshStateLock)
                 {
                     _isRefreshing = false;
+                    _currentRefreshTask = null;
                 }
             }
         }
@@ -234,7 +283,7 @@ namespace Client.MVC.Services
         {
             if (timeout == default)
             {
-                timeout = TimeSpan.FromSeconds(30); // Default timeout
+                timeout = TimeSpan.FromSeconds(30);
             }
 
             var startTime = DateTime.UtcNow;
@@ -243,7 +292,7 @@ namespace Client.MVC.Services
             {
                 lock (_refreshStateLock)
                 {
-                    if (!_isRefreshing)
+                    if (!_isRefreshing && _currentRefreshTask == null)
                     {
                         return true; // Refresh completed or not in progress
                     }

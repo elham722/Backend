@@ -7,13 +7,15 @@ namespace Client.MVC.Services
     /// </summary>
     public static class SecureLoggingExtensions
     {
+        private static readonly LogSanitizer _logSanitizer = new();
+
         /// <summary>
         /// Log user authentication operation securely
         /// </summary>
         public static void LogUserAuthentication(this ILogger logger, string operation, string email, bool success, string? errorMessage = null)
         {
-            var userInfo = LogSanitizer.GetSafeUserInfo(email, null);
-            var operationStatus = LogSanitizer.GetSafeOperationStatus(operation, success, errorMessage);
+            var userInfo = _logSanitizer.GetSafeUserInfo(email, null);
+            var operationStatus = _logSanitizer.GetSafeOperationStatus(operation, success, errorMessage);
             
             if (success)
             {
@@ -30,8 +32,8 @@ namespace Client.MVC.Services
         /// </summary>
         public static void LogUserOperation(this ILogger logger, string operation, string email, string? userId, bool success, string? errorMessage = null)
         {
-            var userInfo = LogSanitizer.GetSafeUserInfo(email, userId);
-            var operationStatus = LogSanitizer.GetSafeOperationStatus(operation, success, errorMessage);
+            var userInfo = _logSanitizer.GetSafeUserInfo(email, userId);
+            var operationStatus = _logSanitizer.GetSafeOperationStatus(operation, success, errorMessage);
             
             if (success)
             {
@@ -48,8 +50,8 @@ namespace Client.MVC.Services
         /// </summary>
         public static void LogTokenOperation(this ILogger logger, string operation, string? userId, bool success, string? errorMessage = null)
         {
-            var userInfo = LogSanitizer.GetSafeUserInfo(null, userId);
-            var operationStatus = LogSanitizer.GetSafeOperationStatus($"Token{operation}", success, errorMessage);
+            var userInfo = _logSanitizer.GetSafeUserInfo(null, userId);
+            var operationStatus = _logSanitizer.GetSafeOperationStatus($"Token{operation}", success, errorMessage);
             
             if (success)
             {
@@ -66,8 +68,8 @@ namespace Client.MVC.Services
         /// </summary>
         public static void LogApiRequest(this ILogger logger, string method, string endpoint, string? userId, bool success, string? errorMessage = null)
         {
-            var userInfo = LogSanitizer.GetSafeUserInfo(null, userId);
-            var operationStatus = LogSanitizer.GetSafeOperationStatus($"API{method}", success, errorMessage);
+            var userInfo = _logSanitizer.GetSafeUserInfo(null, userId);
+            var operationStatus = _logSanitizer.GetSafeOperationStatus($"API{method}", success, errorMessage);
             
             if (success)
             {
@@ -84,8 +86,8 @@ namespace Client.MVC.Services
         /// </summary>
         public static void LogSecurityEvent(this ILogger logger, string eventType, string? userId, string? ipAddress, string? userAgent, string? details = null)
         {
-            var userInfo = LogSanitizer.GetSafeUserInfo(null, userId);
-            var sanitizedDetails = LogSanitizer.Sanitize(details ?? "");
+            var userInfo = _logSanitizer.GetSafeUserInfo(null, userId);
+            var sanitizedDetails = _logSanitizer.Sanitize(details ?? "");
             
             logger.LogWarning("Security event: {EventType}, {UserInfo}, IP={IpAddress}, UserAgent={UserAgent}, Details={Details}", 
                 eventType, userInfo, ipAddress ?? "Unknown", userAgent ?? "Unknown", sanitizedDetails);
@@ -96,51 +98,59 @@ namespace Client.MVC.Services
         /// </summary>
         public static void LogErrorSecurely(this ILogger logger, Exception exception, string operation, string? userId, string? additionalInfo = null)
         {
-            var userInfo = LogSanitizer.GetSafeUserInfo(null, userId);
-            var sanitizedInfo = LogSanitizer.Sanitize(additionalInfo ?? "");
+            var userInfo = _logSanitizer.GetSafeUserInfo(null, userId);
+            var sanitizedInfo = _logSanitizer.Sanitize(additionalInfo ?? "");
             
-            logger.LogError(exception, "Error during {Operation}: {UserInfo}, AdditionalInfo={AdditionalInfo}", 
+            logger.LogError(exception, "Error in {Operation}: {UserInfo}, AdditionalInfo={AdditionalInfo}", 
                 operation, userInfo, sanitizedInfo);
         }
 
         /// <summary>
-        /// Log debug information securely (development only)
+        /// Log object securely (sanitizing sensitive data)
         /// </summary>
-        public static void LogDebugSecurely(this ILogger logger, string message, object? data = null)
+        public static void LogObjectSecurely(this ILogger logger, object obj, string operation, string? userId)
         {
-            if (data != null)
+            var userInfo = _logSanitizer.GetSafeUserInfo(null, userId);
+            var sanitizedObject = _logSanitizer.SanitizeObject(obj);
+            
+            logger.LogInformation("Object logged for {Operation}: {UserInfo}, Object={Object}", 
+                operation, userInfo, sanitizedObject);
+        }
+
+        /// <summary>
+        /// Log user session operation securely
+        /// </summary>
+        public static void LogUserSessionOperation(this ILogger logger, string operation, string? userId, bool success, string? errorMessage = null)
+        {
+            var userInfo = _logSanitizer.GetSafeUserInfo(null, userId);
+            var operationStatus = _logSanitizer.GetSafeOperationStatus($"Session{operation}", success, errorMessage);
+            
+            if (success)
             {
-                var sanitizedData = LogSanitizer.SanitizeObject(data);
-                logger.LogDebug("{Message}: {Data}", message, sanitizedData);
+                logger.LogInformation("User session {OperationStatus}: {UserInfo}", operationStatus, userInfo);
             }
             else
             {
-                logger.LogDebug("{Message}", message);
+                logger.LogWarning("User session {OperationStatus}: {UserInfo}", operationStatus, userInfo);
             }
         }
 
         /// <summary>
-        /// Log performance information securely
+        /// Log cache operation securely
         /// </summary>
-        public static void LogPerformance(this ILogger logger, string operation, TimeSpan duration, string? userId = null, bool success = true)
+        public static void LogCacheOperation(this ILogger logger, string operation, string? userId, bool success, string? errorMessage = null)
         {
-            var userInfo = LogSanitizer.GetSafeUserInfo(null, userId);
-            var status = success ? "completed" : "failed";
+            var userInfo = _logSanitizer.GetSafeUserInfo(null, userId);
+            var operationStatus = _logSanitizer.GetSafeOperationStatus($"Cache{operation}", success, errorMessage);
             
-            logger.LogInformation("Performance: {Operation} {Status} in {Duration}ms: {UserInfo}", 
-                operation, status, duration.TotalMilliseconds, userInfo);
-        }
-
-        /// <summary>
-        /// Log audit trail securely
-        /// </summary>
-        public static void LogAuditTrail(this ILogger logger, string action, string resource, string? userId, string? details = null)
-        {
-            var userInfo = LogSanitizer.GetSafeUserInfo(null, userId);
-            var sanitizedDetails = LogSanitizer.Sanitize(details ?? "");
-            
-            logger.LogInformation("Audit: {Action} on {Resource} by {UserInfo}, Details={Details}", 
-                action, resource, userInfo, sanitizedDetails);
+            if (success)
+            {
+                logger.LogInformation("Cache {OperationStatus}: {UserInfo}", operationStatus, userInfo);
+            }
+            else
+            {
+                logger.LogWarning("Cache {OperationStatus}: {UserInfo}", operationStatus, userInfo);
+            }
         }
     }
 } 
