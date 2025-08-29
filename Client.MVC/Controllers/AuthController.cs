@@ -69,6 +69,18 @@ namespace Client.MVC.Controllers
             return View();
         }
 
+        [HttpGet]
+        public IActionResult ModernAuth()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult SplitAuth()
+        {
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> Login(LoginDto model)
         {

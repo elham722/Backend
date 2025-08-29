@@ -8,50 +8,91 @@
 <div class="auth-container">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card auth-card">
-                    <div class="card-header text-white text-center">
-                        <h3><i class="fas fa-sign-in-alt me-2"></i>ورود</h3>
+            <div class="col-md-6 col-lg-5 col-xl-4">
+                <div class="auth-card">
+                    <div class="card-header">
+                        <h3>
+                            <i class="fas fa-sign-in-alt auth-icon"></i>
+                            ورود به سیستم
+                        </h3>
+                        <p class="text-white-50 mb-0">خوش آمدید! لطفاً اطلاعات خود را وارد کنید</p>
                     </div>
+                    
                     <div class="card-body">
                         <form id="loginForm" asp-action="Login" asp-controller="Auth" method="post">
                             @Html.AntiForgeryToken()
                             <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
                             
-                            <div class="form-group mb-3">
-                                <label asp-for="EmailOrUsername" class="form-label"></label>
-                                <input asp-for="EmailOrUsername" class="form-control" placeholder="example@email.com" />
-                                <span asp-validation-for="EmailOrUsername" class="text-danger"></span>
+                            <div class="form-group">
+                                <label asp-for="EmailOrUsername" class="form-label">
+                                    <i class="fas fa-user me-1"></i>ایمیل یا نام کاربری
+                                </label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-envelope input-icon"></i>
+                                    <input asp-for="EmailOrUsername" 
+                                           class="form-control" 
+                                           placeholder="example@email.com یا نام کاربری"
+                                           data-val="true"
+                                           data-val-required="این فیلد الزامی است" />
+                                </div>
+                                <span asp-validation-for="EmailOrUsername" class="field-validation-error"></span>
                             </div>
 
-                            <div class="form-group mb-3">
-                                <label asp-for="Password" class="form-label"></label>
-                                <input asp-for="Password" class="form-control" placeholder="رمز عبور" />
-                                <span asp-validation-for="Password" class="text-danger"></span>
+                            <div class="form-group">
+                                <label asp-for="Password" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>رمز عبور
+                                </label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input asp-for="Password" 
+                                           class="form-control" 
+                                           placeholder="رمز عبور خود را وارد کنید"
+                                           data-val="true"
+                                           data-val-required="این فیلد الزامی است" />
+                                </div>
+                                <span asp-validation-for="Password" class="field-validation-error"></span>
                             </div>
 
-                            <div class="form-group mb-3" id="twoFactorSection" style="display: none;">
-                                <label asp-for="TwoFactorCode" class="form-label">کد تایید دو مرحله‌ای</label>
-                                <input asp-for="TwoFactorCode" class="form-control" placeholder="کد 6 رقمی" />
-                                <span asp-validation-for="TwoFactorCode" class="text-danger"></span>
+                            <div class="form-group" id="twoFactorSection" style="display: none;">
+                                <label asp-for="TwoFactorCode" class="form-label">
+                                    <i class="fas fa-shield-alt me-1"></i>کد تایید دو مرحله‌ای
+                                </label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-key input-icon"></i>
+                                    <input asp-for="TwoFactorCode" 
+                                           class="form-control" 
+                                           placeholder="کد 6 رقمی را وارد کنید"
+                                           data-val="true"
+                                           data-val-required="کد تایید الزامی است" />
+                                </div>
+                                <span asp-validation-for="TwoFactorCode" class="field-validation-error"></span>
                             </div>
 
-                            <div class="form-check mb-3">
-                                <input asp-for="RememberMe" class="form-check-input" />
-                                <label asp-for="RememberMe" class="form-check-label">مرا به خاطر بسپار</label>
+                            <div class="form-check">
+                                <input asp-for="RememberMe" class="form-check-input" id="rememberMe" />
+                                <label asp-for="RememberMe" class="form-check-label" for="rememberMe">
+                                    <i class="fas fa-clock me-1"></i>مرا به خاطر بسپار
+                                </label>
                             </div>
 
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success btn-auth">
-                                    <i class="fas fa-sign-in-alt me-2"></i>ورود
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-auth btn-login">
+                                    <span class="btn-text">
+                                        <i class="fas fa-sign-in-alt me-2"></i>ورود
+                                    </span>
+                                    <div class="spinner"></div>
                                 </button>
                             </div>
                         </form>
                     </div>
-                    <div class="card-footer text-center">
+                    
+                    <div class="card-footer">
                         <p class="mb-0">
+                            <i class="fas fa-user-plus me-1"></i>
                             حساب کاربری ندارید؟ 
-                            <a asp-action="Register" class="text-decoration-none">ثبت نام</a>
+                            <a asp-action="Register" class="text-decoration-none">
+                                <i class="fas fa-arrow-left me-1"></i>ثبت نام کنید
+                            </a>
                         </p>
                     </div>
                 </div>
@@ -61,11 +102,14 @@
 </div>
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/modern-auth.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth-animations.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.css" />
 }
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-    <script src="~/js/no-validation.js" asp-append-version="true"></script>
-    <script src="~/js/auth.js" asp-append-version="true"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.js"></script>
+    <script src="~/js/modern-auth.js" asp-append-version="true"></script>
+    <script src="~/js/auth-enhancements.js" asp-append-version="true"></script>
 } 

@@ -1,0 +1,386 @@
+/* Advanced Authentication Effects */
+
+/* Enhanced Card Style with Glass Morphism */
+.auth-card {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(25px) saturate(200%);
+    -webkit-backdrop-filter: blur(25px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 28px;
+    box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.08),
+        0 6px 20px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.auth-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        rgba(255, 255, 255, 0.05) 100%);
+    border-radius: 24px;
+    pointer-events: none;
+}
+
+.auth-card:hover {
+    transform: translateY(-12px) scale(1.02);
+    box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.12),
+        0 12px 30px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced Background with Blur Effect */
+.auth-container {
+    min-height: 100vh;
+    background: 
+        linear-gradient(135deg, 
+            rgba(102, 126, 234, 0.85) 0%, 
+            rgba(118, 75, 162, 0.85) 25%,
+            rgba(102, 126, 234, 0.85) 50%,
+            rgba(118, 75, 162, 0.85) 75%,
+            rgba(102, 126, 234, 0.85) 100%),
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx="50%" cy="50%"><stop offset="0%" stop-color="%23ffffff" stop-opacity="0.15"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="120" fill="url(%23a)"/><circle cx="800" cy="300" r="180" fill="url(%23a)"/><circle cx="400" cy="700" r="140" fill="url(%23a)"/><circle cx="900" cy="800" r="100" fill="url(%23a)"/><circle cx="300" cy="400" r="80" fill="url(%23a)"/><circle cx="700" cy="600" r="90" fill="url(%23a)"/></svg>');
+    background-size: cover, 100% 100%;
+    background-position: center;
+    background-attachment: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 60% 60%, rgba(255, 219, 120, 0.3) 0%, transparent 50%);
+    animation: backgroundFloat 25s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes backgroundFloat {
+    0%, 100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    25% {
+        transform: translate(-10px, -10px) rotate(1deg);
+    }
+    50% {
+        transform: translate(10px, -5px) rotate(-1deg);
+    }
+    75% {
+        transform: translate(-5px, 10px) rotate(0.5deg);
+    }
+}
+
+/* Form Switch Animation Container */
+.auth-forms-container {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    perspective: 1000px;
+}
+
+.auth-form {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transform: rotateY(90deg);
+    transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.auth-form.active {
+    opacity: 1;
+    visibility: visible;
+    transform: rotateY(0deg);
+    position: relative;
+}
+
+.auth-form.slide-out {
+    transform: rotateY(-90deg);
+    opacity: 0;
+}
+
+/* Switch Button Styles */
+.form-switch-btn {
+    position: absolute;
+    top: -70px;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 60px;
+    padding: 14px 28px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 
+        0 8px 24px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.3px;
+}
+
+.form-switch-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 32px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+.form-switch-btn:active {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.form-switch-btn i {
+    transition: transform 0.3s ease;
+}
+
+.form-switch-btn:hover i {
+    transform: translateX(3px);
+}
+
+/* Enhanced Card Header */
+.auth-card .card-header {
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 0.95) 0%, 
+        rgba(118, 75, 162, 0.95) 50%,
+        rgba(102, 126, 234, 0.95) 100%);
+    backdrop-filter: blur(15px);
+    border: none;
+    border-radius: 28px 28px 0 0;
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-card .card-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.auth-card .card-header h3 {
+    color: white;
+    font-weight: 900;
+    font-size: 2.2rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.5px;
+}
+
+.auth-card .card-header .auth-icon {
+    font-size: 2.8rem;
+    opacity: 0.98;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.15));
+    animation: iconFloat 3s ease-in-out infinite;
+}
+
+@keyframes iconFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Enhanced Form Elements */
+.form-group input {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 18px;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    font-size: 1rem;
+    padding: 1.2rem 1rem 1.2rem 3rem;
+}
+
+.form-group input:focus {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: var(--primary-color);
+    box-shadow: 
+        0 0 0 6px rgba(102, 126, 234, 0.08),
+        0 12px 32px rgba(102, 126, 234, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px) scale(1.02);
+}
+
+/* Enhanced Buttons */
+.btn-auth {
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 0.95) 0%, 
+        rgba(118, 75, 162, 0.95) 100%);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 20px;
+    box-shadow: 
+        0 12px 32px rgba(102, 126, 234, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 1.2rem;
+}
+
+.btn-auth:hover {
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 1) 0%, 
+        rgba(118, 75, 162, 1) 100%);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 
+        0 16px 40px rgba(102, 126, 234, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.btn-auth:active {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 
+        0 8px 24px rgba(102, 126, 234, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* Loading Animation Enhancement */
+.spinner {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Success Animation Enhancement */
+.success-checkmark {
+    background: rgba(72, 187, 120, 0.1);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(72, 187, 120, 0.3);
+}
+
+/* Dark Mode Enhancements */
+@media (prefers-color-scheme: dark) {
+    .auth-card {
+        background: rgba(26, 32, 44, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .form-group input {
+        background: rgba(45, 55, 72, 0.8);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #f7fafc;
+    }
+    
+    .form-group input:focus {
+        background: rgba(45, 55, 72, 0.95);
+        border-color: var(--primary-color);
+    }
+    
+    .form-switch-btn {
+        background: rgba(45, 55, 72, 0.9);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #f7fafc;
+    }
+    
+    .form-switch-btn:hover {
+        background: rgba(45, 55, 72, 1);
+        color: var(--primary-color);
+    }
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+    .auth-card {
+        border-radius: 20px;
+        margin: 0 1rem;
+    }
+    
+    .auth-card .card-header {
+        border-radius: 20px 20px 0 0;
+        padding: 2rem 1.5rem 1.5rem;
+    }
+    
+    .auth-card .card-header h3 {
+        font-size: 1.75rem;
+    }
+    
+    .form-switch-btn {
+        position: relative;
+        top: 0;
+        right: 0;
+        margin: 1rem auto;
+        display: inline-flex;
+    }
+}
+
+/* Animation Performance Optimizations */
+@media (prefers-reduced-motion: reduce) {
+    .auth-container::before {
+        animation: none;
+    }
+    
+    .auth-card {
+        transition: none;
+    }
+    
+    .auth-card:hover {
+        transform: none;
+    }
+    
+    .form-group input:focus {
+        transform: none;
+    }
+    
+    .btn-auth:hover {
+        transform: none;
+    }
+    
+    .form-switch-btn:hover {
+        transform: none;
+    }
+} 

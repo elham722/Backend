@@ -1,0 +1,129 @@
+/* Font Awesome Fallback Icons */
+
+/* User Circle Icon */
+.fas.fa-user-circle::before {
+    content: "👤";
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* Arrow Right Icon */
+.fas.fa-arrow-right::before {
+    content: "→";
+    font-family: "Segoe UI Symbol", sans-serif;
+}
+
+/* Spinner Icon */
+.fas.fa-spinner::before {
+    content: "⏳";
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* Social Media Icons */
+.fab.fa-google::before {
+    content: "G";
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #ea4335;
+}
+
+.fab.fa-github::before {
+    content: "G";
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.fab.fa-facebook-f::before {
+    content: "f";
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #1877f2;
+}
+
+/* Additional Icons */
+.fas.fa-envelope::before {
+    content: "✉";
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.fas.fa-lock::before {
+    content: "🔒";
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.fas.fa-eye::before {
+    content: "👁";
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.fas.fa-eye-slash::before {
+    content: "👁‍🗨";
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* Loading Spinner Animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.fas.fa-spinner.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Icon Sizing */
+.fas, .fab {
+    display: inline-block;
+    text-align: center;
+    line-height: 1;
+}
+
+/* Social Button Icons */
+.auth-social-btn .fab {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+/* Main Icon */
+.auth-illustration-placeholder .fas.fa-user-circle {
+    font-size: 8rem;
+    opacity: 0.8;
+    margin-bottom: 1rem;
+    animation: iconFloat 3s ease-in-out infinite;
+}
+
+@keyframes iconFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Responsive Icon Sizes */
+@media (max-width: 768px) {
+    .auth-illustration-placeholder .fas.fa-user-circle {
+        font-size: 3.5rem;
+    }
+    
+    .auth-social-btn .fab {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-illustration-placeholder .fas.fa-user-circle {
+        font-size: 3rem;
+    }
+    
+    .auth-social-btn .fab {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .auth-illustration-placeholder .fas.fa-user-circle {
+        font-size: 2.5rem;
+    }
+    
+    .auth-social-btn .fab {
+        font-size: 0.8rem;
+    }
+} 
