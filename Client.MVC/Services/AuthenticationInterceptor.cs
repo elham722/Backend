@@ -1,6 +1,7 @@
 using Backend.Application.Features.UserManagement.DTOs;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 
 namespace Client.MVC.Services
@@ -11,17 +12,17 @@ namespace Client.MVC.Services
     public class AuthenticationInterceptor : IAuthenticationInterceptor
     {
         private readonly IUserSessionService _userSessionService;
-        private readonly IAuthApiClient _authApiClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<AuthenticationInterceptor> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public AuthenticationInterceptor(
-            IUserSessionService userSessionService,
-            IAuthApiClient authApiClient,
-            ILogger<AuthenticationInterceptor> logger)
+            public AuthenticationInterceptor(
+        IUserSessionService userSessionService,
+        IHttpClientFactory httpClientFactory,
+        ILogger<AuthenticationInterceptor> logger)
         {
             _userSessionService = userSessionService ?? throw new ArgumentNullException(nameof(userSessionService));
-            _authApiClient = authApiClient ?? throw new ArgumentNullException(nameof(authApiClient));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             
             _jsonOptions = new JsonSerializerOptions
@@ -126,17 +127,38 @@ namespace Client.MVC.Services
 
                 _logger.LogInformation("Attempting to refresh access token");
                 
-                var result = await _authApiClient.RefreshTokenAsync(refreshToken);
+                // Create refresh token request
+                var request = new RefreshTokenDto { RefreshToken = refreshToken };
+                var json = JsonSerializer.Serialize(request, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                if (result?.IsSuccess == true && !string.IsNullOrEmpty(result.AccessToken))
+                // Make direct HTTP request to refresh token endpoint
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                var response = await httpClient.PostAsync("api/Auth/refresh-token", content);
+                
+                if (response.IsSuccessStatusCode)
                 {
-                    _userSessionService.SetUserSession(result);
-                    _logger.LogInformation("Token refreshed successfully");
-                    return true;
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var result = JsonSerializer.Deserialize<AuthResultDto>(responseContent, _jsonOptions);
+                    
+                    if (result?.IsSuccess == true && !string.IsNullOrEmpty(result.AccessToken))
+                    {
+                        // Use RefreshJwtToken for better performance (only updates JWT token, not full session)
+                        _userSessionService.RefreshJwtToken(result.AccessToken, result.ExpiresAt);
+                        _logger.LogInformation("Token refreshed successfully");
+                        return true;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Token refresh failed: {Error}", result?.ErrorMessage);
+                        return false;
+                    }
                 }
                 else
                 {
-                    _logger.LogWarning("Token refresh failed: {Error}", result?.ErrorMessage);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Token refresh failed with status {StatusCode}: {Error}", 
+                        response.StatusCode, errorContent);
                     return false;
                 }
             }

@@ -9,18 +9,18 @@ namespace Client.MVC.Services
     /// </summary>
     public class AuthenticatedHttpClient : IAuthenticatedHttpClient
     {
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly IAuthenticationInterceptor _authInterceptor;
         private readonly ILogger<AuthenticatedHttpClient> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly Dictionary<string, string> _customHeaders;
 
-        public AuthenticatedHttpClient(
-            HttpClient httpClient,
-            IAuthenticationInterceptor authInterceptor,
-            ILogger<AuthenticatedHttpClient> logger)
+            public AuthenticatedHttpClient(
+        IHttpClientFactory httpClientFactory,
+        IAuthenticationInterceptor authInterceptor,
+        ILogger<AuthenticatedHttpClient> logger)
         {
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _authInterceptor = authInterceptor ?? throw new ArgumentNullException(nameof(authInterceptor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             
@@ -42,6 +42,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Sending GET request to: {Endpoint}", endpoint);
                 
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
                 var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
                 
                 // Add authentication header
@@ -50,7 +51,7 @@ namespace Client.MVC.Services
                 // Add custom headers
                 AddCustomHeadersToRequest(request);
                 
-                var response = await _httpClient.SendAsync(request);
+                var response = await httpClient.SendAsync(request);
                 
                 // Handle authentication errors
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
@@ -63,7 +64,7 @@ namespace Client.MVC.Services
                         request = new HttpRequestMessage(HttpMethod.Get, endpoint);
                         request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
                         AddCustomHeadersToRequest(request);
-                        response = await _httpClient.SendAsync(request);
+                        response = await httpClient.SendAsync(request);
                     }
                 }
                 
@@ -101,7 +102,8 @@ namespace Client.MVC.Services
                 // Add custom headers
                 AddCustomHeadersToRequest(httpRequest);
                 
-                var response = await _httpClient.SendAsync(httpRequest);
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                var response = await httpClient.SendAsync(httpRequest);
                 
                 // Handle authentication errors
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
@@ -117,7 +119,7 @@ namespace Client.MVC.Services
                         };
                         httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
                         AddCustomHeadersToRequest(httpRequest);
-                        response = await _httpClient.SendAsync(httpRequest);
+                        response = await httpClient.SendAsync(httpRequest);
                     }
                 }
                 
@@ -155,7 +157,8 @@ namespace Client.MVC.Services
                 // Add custom headers
                 AddCustomHeadersToRequest(httpRequest);
                 
-                var response = await _httpClient.SendAsync(httpRequest);
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                var response = await httpClient.SendAsync(httpRequest);
                 
                 // Handle authentication errors
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
@@ -171,7 +174,7 @@ namespace Client.MVC.Services
                         };
                         httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
                         AddCustomHeadersToRequest(httpRequest);
-                        response = await _httpClient.SendAsync(httpRequest);
+                        response = await httpClient.SendAsync(httpRequest);
                     }
                 }
                 
@@ -201,7 +204,8 @@ namespace Client.MVC.Services
                 // Add custom headers
                 AddCustomHeadersToRequest(request);
                 
-                var response = await _httpClient.SendAsync(request);
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                var response = await httpClient.SendAsync(request);
                 
                 // Handle authentication errors
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
@@ -214,7 +218,7 @@ namespace Client.MVC.Services
                         request = new HttpRequestMessage(HttpMethod.Delete, endpoint);
                         request = await _authInterceptor.AddAuthenticationHeaderAsync(request);
                         AddCustomHeadersToRequest(request);
-                        response = await _httpClient.SendAsync(request);
+                        response = await httpClient.SendAsync(request);
                     }
                 }
                 
@@ -252,7 +256,8 @@ namespace Client.MVC.Services
                 // Add custom headers
                 AddCustomHeadersToRequest(httpRequest);
                 
-                var response = await _httpClient.SendAsync(httpRequest);
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                var response = await httpClient.SendAsync(httpRequest);
                 
                 // Handle authentication errors
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized || 
@@ -268,7 +273,7 @@ namespace Client.MVC.Services
                         };
                         httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
                         AddCustomHeadersToRequest(httpRequest);
-                        response = await _httpClient.SendAsync(httpRequest);
+                        response = await httpClient.SendAsync(httpRequest);
                     }
                 }
                 

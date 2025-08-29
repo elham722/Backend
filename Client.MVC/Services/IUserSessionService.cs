@@ -37,13 +37,13 @@ namespace Client.MVC.Services
         string? GetUserEmail();
 
         /// <summary>
-        /// Get JWT token from session
+        /// Get JWT token from HttpOnly cookie (fallback to session)
         /// </summary>
         /// <returns>JWT token if exists, null otherwise</returns>
         string? GetJwtToken();
 
         /// <summary>
-        /// Get refresh token from session
+        /// Get refresh token from HttpOnly cookie (fallback to session)
         /// </summary>
         /// <returns>Refresh token if exists, null otherwise</returns>
         string? GetRefreshToken();
@@ -59,5 +59,12 @@ namespace Client.MVC.Services
         /// </summary>
         /// <returns>Logout DTO with refresh token if available</returns>
         LogoutDto GetLogoutDto();
+
+        /// <summary>
+        /// Refresh JWT token cookie (called after token refresh)
+        /// </summary>
+        /// <param name="newToken">New JWT token</param>
+        /// <param name="expiresAt">Token expiration time</param>
+        void RefreshJwtToken(string newToken, DateTime? expiresAt = null);
     }
 } 

@@ -426,9 +426,17 @@ public class UserService : IUserService
                 var roles = await _userManager.GetRolesAsync(user);
                 var userDto = _userMapper.MapToUserDto(user, roles.ToList());
 
+                // Generate JWT tokens
+                var claims = await _accountManagementService.GetUserClaimsAsync(user);
+                var accessToken = _accountManagementService.GenerateAccessToken(claims);
+                var refreshToken = _accountManagementService.GenerateRefreshToken();
+
                 var authResult = new AuthResultDto
                 {
                     IsSuccess = true,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(60), // Configure from settings
                     User = userDto,
                     RequiresEmailConfirmation = !user.EmailConfirmed,
                     RequiresPasswordChange = user.RequiresPasswordChange()
@@ -931,6 +939,76 @@ public class UserService : IUserService
         {
             _logger.LogError(ex, "Error resetting password with token for email: {Email}", email);
             return Result.Failure("An error occurred while resetting the password", "PasswordResetError");
+        }
+    }
+
+    public async Task<Result<AuthResultDto>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Validate refresh token
+            if (string.IsNullOrEmpty(refreshTokenDto.RefreshToken))
+            {
+                return Result<AuthResultDto>.Failure("Invalid refresh token", "InvalidRefreshToken");
+            }
+
+            // TODO: Implement proper refresh token validation
+            // For now, we'll return an error indicating refresh token functionality is not fully implemented
+            return Result<AuthResultDto>.Failure("Refresh token functionality is not fully implemented", "RefreshTokenNotImplemented");
+
+            // Note: The code below is commented out until proper refresh token validation is implemented
+            /*
+            // Find user by refresh token (you might need to implement this based on your token storage strategy)
+            var user = await _userManager.FindByIdAsync(refreshTokenDto.RefreshToken);
+            if (user == null)
+            {
+                return Result<AuthResultDto>.Failure("Invalid refresh token", "InvalidRefreshToken");
+            }
+
+            // Check if user can login
+            if (!user.CanLogin())
+            {
+                if (user.IsAccountLocked)
+                {
+                    return Result<AuthResultDto>.Failure("Account is locked", "AccountLocked");
+                }
+                if (!user.IsActive)
+                {
+                    return Result<AuthResultDto>.Failure("Account is deactivated", "AccountDeactivated");
+                }
+                return Result<AuthResultDto>.Failure("Account is not accessible", "AccountInaccessible");
+            }
+
+            // Generate new access token
+            var claims = await _accountManagementService.GetUserClaimsAsync(user);
+            var accessToken = _accountManagementService.GenerateAccessToken(claims);
+            var newRefreshToken = _accountManagementService.GenerateRefreshToken();
+
+            // Update last login
+            await _accountManagementService.UpdateLastLoginAsync(user);
+
+            // Get user roles for mapping
+            var roles = await _userManager.GetRolesAsync(user);
+            var userDto = _userMapper.MapToUserDto(user, roles.ToList());
+
+            // Create auth result
+            var authResult = new AuthResultDto
+            {
+                IsSuccess = true,
+                AccessToken = accessToken,
+                RefreshToken = newRefreshToken,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(60), // Configure from settings
+                User = userDto
+            };
+
+            _logger.LogInformation("Token refreshed successfully for user: {UserId}", user.Id);
+            return Result<AuthResultDto>.Success(authResult);
+            */
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing token");
+            return Result<AuthResultDto>.Failure("An error occurred while refreshing the token", "RefreshTokenError");
         }
     }
 

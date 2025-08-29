@@ -1,3 +1,5 @@
+using Client.MVC.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -15,7 +17,7 @@ builder.Services.AddSession(options =>
 });
 
 // Add Typed HttpClient for API communication
-builder.Services.AddHttpClient<HttpClient>(client =>
+builder.Services.AddHttpClient("ApiClient", client =>
 {
     client.BaseAddress = new Uri("https://localhost:7209/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");

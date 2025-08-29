@@ -114,4 +114,9 @@ public interface IUserService
     /// Resets password using token
     /// </summary>
     Task<Result> ResetPasswordWithTokenAsync(string email, string token, string newPassword, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Refreshes access token using refresh token
+    /// </summary>
+    Task<Result<AuthResultDto>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
 } 
