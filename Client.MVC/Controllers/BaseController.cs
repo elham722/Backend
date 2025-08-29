@@ -10,17 +10,20 @@ namespace Client.MVC.Controllers
         protected readonly ILogger Logger;
         protected readonly IErrorHandlingService ErrorHandlingService;
         protected readonly ICacheService CacheService;
+        protected readonly IAntiForgeryService AntiForgeryService;
 
         protected BaseController(
             IUserSessionService userSessionService, 
             ILogger logger,
             IErrorHandlingService errorHandlingService,
-            ICacheService cacheService)
+            ICacheService cacheService,
+            IAntiForgeryService antiForgeryService)
         {
             UserSessionService = userSessionService ?? throw new ArgumentNullException(nameof(userSessionService));
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             ErrorHandlingService = errorHandlingService ?? throw new ArgumentNullException(nameof(errorHandlingService));
             CacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
+            AntiForgeryService = antiForgeryService ?? throw new ArgumentNullException(nameof(antiForgeryService));
         }
 
         protected string? CurrentUserId => UserSessionService.GetUserId();
@@ -39,6 +42,10 @@ namespace Client.MVC.Controllers
             ViewBag.UserName = CurrentUserName;
             ViewBag.UserEmail = CurrentUserEmail;
             ViewBag.UserId = CurrentUserId;
+            
+            // Add Anti-Forgery token for AJAX requests
+            ViewBag.AntiForgeryToken = AntiForgeryService.GetToken();
+            ViewBag.AntiForgeryHeaderName = AntiForgeryService.GetTokenHeaderName();
         }
 
         protected async Task<IActionResult> ExecuteWithErrorHandlingAsync(Func<Task<IActionResult>> action, string context = "")
@@ -122,6 +129,51 @@ namespace Client.MVC.Controllers
         protected IActionResult JsonSuccess(object? data = null, string message = "عملیات با موفقیت انجام شد")
         {
             return Json(new { success = true, message, data });
+        }
+
+        /// <summary>
+        /// Validate Anti-Forgery token for AJAX requests
+        /// </summary>
+        protected bool ValidateAntiForgeryToken()
+        {
+            try
+            {
+                var token = Request.Headers[AntiForgeryService.GetTokenHeaderName()].FirstOrDefault();
+                if (string.IsNullOrEmpty(token))
+                {
+                    Logger.LogWarning("Anti-Forgery token header is missing");
+                    return false;
+                }
+
+                var isValid = AntiForgeryService.ValidateToken(token);
+                if (!isValid)
+                {
+                    Logger.LogWarning("Anti-Forgery token validation failed");
+                }
+
+                return isValid;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Error validating Anti-Forgery token");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Get Anti-Forgery token for AJAX requests
+        /// </summary>
+        protected string GetAntiForgeryToken()
+        {
+            return AntiForgeryService.GetToken();
+        }
+
+        /// <summary>
+        /// Set Anti-Forgery token in response cookie
+        /// </summary>
+        protected void SetAntiForgeryTokenInCookie()
+        {
+            AntiForgeryService.SetTokenInCookie(HttpContext);
         }
     }
 } 

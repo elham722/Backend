@@ -4,6 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Online Store</title>
+    
+    <!-- Anti-Forgery (CSRF) Token Meta Tags -->
+    @if (ViewBag.AntiForgeryToken != null)
+    {
+        <meta name="csrf-token" content="@ViewBag.AntiForgeryToken" />
+        <meta name="csrf-header" content="@ViewBag.AntiForgeryHeaderName" />
+    }
+    
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -164,6 +172,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/anti-forgery.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

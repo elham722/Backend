@@ -28,6 +28,17 @@ builder.Services.AddSession(options =>
     options.Cookie.SameSite = SameSiteMode.Strict;
 });
 
+// Add Anti-Forgery protection
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.Name = "CSRF-TOKEN";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.SuppressXFrameOptionsHeader = false;
+});
+
 // Add authentication services
 builder.Services.AddAuthentication(options =>
 {
@@ -62,6 +73,7 @@ builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddSingleton<LogSanitizer>();
 builder.Services.AddSingleton<IConcurrencyManager, ConcurrencyManager>();
 builder.Services.AddScoped<ITokenManager, TokenManager>();
+builder.Services.AddScoped<IAntiForgeryService, AntiForgeryService>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -124,6 +136,9 @@ app.UseRouting();
 
 // Use session
 app.UseSession();
+
+// Use Anti-Forgery protection
+app.UseAntiforgery();
 
 // Use authentication (must come before authorization)
 app.UseAuthentication();

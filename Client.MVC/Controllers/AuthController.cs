@@ -13,8 +13,9 @@ namespace Client.MVC.Controllers
             IUserSessionService userSessionService,
             ILogger<AuthController> logger,
             IErrorHandlingService errorHandlingService,
-            ICacheService cacheService)
-            : base(userSessionService, logger, errorHandlingService, cacheService)
+            ICacheService cacheService,
+            IAntiForgeryService antiForgeryService)
+            : base(userSessionService, logger, errorHandlingService, cacheService, antiForgeryService)
         {
             _authApiClient = authApiClient ?? throw new ArgumentNullException(nameof(authApiClient));
         }
