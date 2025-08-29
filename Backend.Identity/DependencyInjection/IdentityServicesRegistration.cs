@@ -165,6 +165,9 @@ namespace Backend.Identity.DependencyInjection
             // Register UserService
             services.AddScoped<IUserService, UserService>();
             
+            // Register RefreshTokenService
+            services.AddScoped<Backend.Domain.Interfaces.IRefreshTokenService, RefreshTokenService>();
+            
             // Register default date time service if not already registered
             services.AddScoped<IDateTimeService, DefaultDateTimeService>();
 

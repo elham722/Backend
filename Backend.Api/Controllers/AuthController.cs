@@ -1,6 +1,7 @@
 using Backend.Application.Features.UserManagement.Commands.Register;
 using Backend.Application.Features.UserManagement.Commands.Login;
 using Backend.Application.Features.UserManagement.Commands.RefreshToken;
+using Backend.Application.Features.UserManagement.Commands.Logout;
 using Backend.Application.Features.UserManagement.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -175,6 +176,57 @@ public class AuthController : ControllerBase
             {
                 Title = "Internal Server Error",
                 Detail = "An unexpected error occurred during token refresh",
+                Status = 500
+            });
+        }
+    }
+
+    /// <summary>
+    /// Logout user and invalidate refresh tokens
+    /// </summary>
+    /// <param name="logoutDto">Logout request</param>
+    /// <returns>Logout result</returns>
+    [HttpPost("logout")]
+    [ProducesResponseType(typeof(LogoutResultDto), 200)]
+    [ProducesResponseType(typeof(ProblemDetails), 400)]
+    [ProducesResponseType(typeof(ProblemDetails), 500)]
+    public async Task<IActionResult> Logout([FromBody] LogoutDto logoutDto)
+    {
+        try
+        {
+            // Create command from DTO
+            var command = new LogoutCommand
+            {
+                RefreshToken = logoutDto.RefreshToken,
+                LogoutFromAllDevices = logoutDto.LogoutFromAllDevices,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString(),
+                LogoutReason = "User initiated logout"
+            };
+
+            // Send command through mediator
+            var result = await _mediator.Send(command);
+
+            if (result.IsSuccess)
+            {
+                return Ok(result.Data);
+            }
+
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Logout Failed",
+                Detail = result.ErrorMessage,
+                Status = 400,
+                Extensions = { ["errorCode"] = result.ErrorCode }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error during logout");
+            return StatusCode(500, new ProblemDetails
+            {
+                Title = "Internal Server Error",
+                Detail = "An unexpected error occurred during logout",
                 Status = 500
             });
         }

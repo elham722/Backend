@@ -7,6 +7,7 @@ using Backend.Application.Features.UserManagement.Commands.CreateUser;
 using Backend.Application.Features.UserManagement.Commands.DeactivateUser;
 using Backend.Application.Features.UserManagement.Commands.DeleteUser;
 using Backend.Application.Features.UserManagement.Commands.Login;
+using Backend.Application.Features.UserManagement.Commands.Logout;
 using Backend.Application.Features.UserManagement.Commands.Register;
 using Backend.Application.Features.UserManagement.Commands.UpdateUser;
 using Backend.Application.Features.UserManagement.DTOs;
@@ -36,6 +37,7 @@ public static class UserManagementServiceRegistration
         services.AddTransient<IRequestHandler<DeleteUserCommand, Result>, DeleteUserCommandHandler>();
         services.AddTransient<IRequestHandler<LoginCommand, Result<AuthResultDto>>, LoginCommandHandler>();
         services.AddTransient<IRequestHandler<RegisterCommand, Result<AuthResultDto>>, RegisterCommandHandler>();
+        services.AddTransient<IRequestHandler<LogoutCommand, Result<LogoutResultDto>>, LogoutCommandHandler>();
         services.AddTransient<IRequestHandler<ChangePasswordCommand, Result>, ChangePasswordCommandHandler>();
         services.AddTransient<IRequestHandler<ActivateUserCommand, Result>, ActivateUserCommandHandler>();
         services.AddTransient<IRequestHandler<DeactivateUserCommand, Result>, DeactivateUserCommandHandler>();
@@ -51,6 +53,7 @@ public static class UserManagementServiceRegistration
         services.AddTransient<IValidator<UpdateUserCommand>, UpdateUserCommandValidator>();
         services.AddTransient<IValidator<LoginCommand>, LoginCommandValidator>();
         services.AddTransient<IValidator<RegisterCommand>, RegisterCommandValidator>();
+        services.AddTransient<IValidator<LogoutCommand>, LogoutCommandValidator>();
         services.AddTransient<IValidator<ChangePasswordCommand>, ChangePasswordCommandValidator>();
 
         return services;

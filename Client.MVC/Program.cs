@@ -75,6 +75,13 @@ builder.Services.AddSingleton<IConcurrencyManager, ConcurrencyManager>();
 builder.Services.AddScoped<ITokenManager, TokenManager>();
 builder.Services.AddScoped<IAntiForgeryService, AntiForgeryService>();
 
+// Register JWT Claims Extractor
+builder.Services.AddScoped<IJwtClaimsExtractor, JwtClaimsExtractor>();
+
+// Register Stateless User Session Service (alternative to current UserSessionService)
+// Uncomment the line below to use stateless approach instead of session-based
+// builder.Services.AddScoped<IUserSessionService, StatelessUserSessionService>();
+
 builder.Services.AddHttpContextAccessor();
 
 // Add health checks
