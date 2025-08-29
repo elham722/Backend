@@ -1,17 +1,15 @@
 // Auth Pages JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     
-    // Password strength indicator
-    const passwordInput = document.querySelector('input[type="password"]');
-    if (passwordInput) {
-        passwordInput.addEventListener('input', function() {
+    // Password strength indicator - فقط برای فرم رجیستر
+    const registerPasswordInput = document.querySelector('#registerForm input[name="Password"]');
+    if (registerPasswordInput) {
+        registerPasswordInput.addEventListener('input', function() {
             const password = this.value;
             const strength = calculatePasswordStrength(password);
             updatePasswordStrengthIndicator(strength);
         });
     }
-
-
 
     // Auto-hide alerts after 5 seconds
     const alerts = document.querySelectorAll('.alert');
@@ -36,16 +34,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Loading state for submit buttons - Fixed
-    const submitButtons = document.querySelectorAll('button[type="submit"]');
-    submitButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            console.log('Submit button clicked');
-            // Don't disable the button immediately, let the form submit first
-            setTimeout(() => {
-                this.disabled = true;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>در حال پردازش...';
-            }, 100);
+    // Phone number formatting
+    const phoneInputs = document.querySelectorAll('input[type="tel"], input[name*="Phone"]');
+    phoneInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            formatPhoneNumber(this);
         });
     });
 });
@@ -70,7 +63,7 @@ function updatePasswordStrengthIndicator(strength) {
     let strengthElement = document.getElementById('password-strength');
     
     if (!strengthElement) {
-        const passwordInput = document.querySelector('input[type="password"]');
+        const passwordInput = document.querySelector('#registerForm input[name="Password"]');
         if (passwordInput) {
             strengthElement = document.createElement('div');
             strengthElement.id = 'password-strength';
@@ -94,67 +87,6 @@ function updatePasswordStrengthIndicator(strength) {
         
         strengthElement.textContent = `قدرت رمز عبور: ${messages[strength]}`;
         strengthElement.style.color = colors[strength];
-    }
-}
-
-// Enhanced form validation
-function validateForm(form) {
-    let isValid = true;
-    const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-    
-    inputs.forEach(input => {
-        if (!input.value.trim()) {
-            isValid = false;
-            input.classList.add('is-invalid');
-        } else {
-            input.classList.remove('is-invalid');
-        }
-    });
-    
-    // Email validation
-    const emailInput = form.querySelector('input[type="email"]');
-    if (emailInput && emailInput.value) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(emailInput.value)) {
-            isValid = false;
-            emailInput.classList.add('is-invalid');
-        }
-    }
-    
-    // Password confirmation validation
-    const passwordInput = form.querySelector('input[name="Password"]');
-    const confirmPasswordInput = form.querySelector('input[name="ConfirmPassword"]');
-    
-    if (passwordInput && confirmPasswordInput) {
-        if (passwordInput.value !== confirmPasswordInput.value) {
-            isValid = false;
-            confirmPasswordInput.classList.add('is-invalid');
-        }
-    }
-    
-    return isValid;
-}
-
-// Show form errors
-function showFormErrors(form) {
-    const invalidInputs = form.querySelectorAll('.is-invalid');
-    
-    invalidInputs.forEach(input => {
-        const errorMessage = input.getAttribute('data-error') || 'این فیلد الزامی است';
-        
-        let errorElement = input.parentElement.querySelector('.invalid-feedback');
-        if (!errorElement) {
-            errorElement = document.createElement('div');
-            errorElement.className = 'invalid-feedback';
-            input.parentElement.appendChild(errorElement);
-        }
-        
-        errorElement.textContent = errorMessage;
-    });
-    
-    // Scroll to first error
-    if (invalidInputs.length > 0) {
-        invalidInputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 
@@ -210,12 +142,4 @@ function formatPhoneNumber(input) {
         }
     }
     input.value = value;
-}
-
-// Add phone number formatting
-const phoneInputs = document.querySelectorAll('input[type="tel"], input[name*="Phone"]');
-phoneInputs.forEach(input => {
-    input.addEventListener('input', function() {
-        formatPhoneNumber(this);
-    });
-}); 
+} 
