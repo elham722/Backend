@@ -55,7 +55,7 @@ namespace Client.MVC.Services
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<UserSessionService> _logger;
-        private readonly IAuthApiClient _authApiClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly CookieSecurityConfig _cookieConfig;
         private readonly JsonSerializerOptions _jsonOptions;
         
@@ -66,12 +66,12 @@ namespace Client.MVC.Services
         public UserSessionService(
             IHttpContextAccessor httpContextAccessor, 
             ILogger<UserSessionService> logger,
-            IAuthApiClient authApiClient,
+            IHttpClientFactory httpClientFactory,
             IConfiguration configuration)
         {
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _authApiClient = authApiClient ?? throw new ArgumentNullException(nameof(authApiClient));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _cookieConfig = CookieSecurityConfig.FromConfiguration(configuration);
             
             _jsonOptions = new JsonSerializerOptions
@@ -706,15 +706,23 @@ namespace Client.MVC.Services
                 }
 
                 var logoutDto = GetLogoutDto();
-                var result = await _authApiClient.LogoutAsync(logoutDto, cancellationToken);
                 
-                if (result.IsSuccess)
+                // Use HttpClientFactory to make direct API call
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                var json = JsonSerializer.Serialize(logoutDto, _jsonOptions);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                var response = await httpClient.PostAsync("api/Auth/logout", content, cancellationToken);
+                
+                if (response.IsSuccessStatusCode)
                 {
                     _logger.LogDebug("Refresh token invalidated on backend");
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to invalidate refresh token on backend. Error: {Error}", result.ErrorMessage);
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogWarning("Failed to invalidate refresh token on backend. Status: {StatusCode}, Error: {Error}", 
+                        response.StatusCode, errorContent);
                 }
             }
             catch (OperationCanceledException)
@@ -750,7 +758,25 @@ namespace Client.MVC.Services
                         LogoutFromAllDevices = logoutFromAllDevices
                     };
 
-                    backendResult = await _authApiClient.LogoutAsync(logoutDto, cancellationToken);
+                    // Use HttpClientFactory to make direct API call
+                    var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                    var json = JsonSerializer.Serialize(logoutDto, _jsonOptions);
+                    var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                    
+                    var response = await httpClient.PostAsync("api/Auth/logout", content, cancellationToken);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                        var result = JsonSerializer.Deserialize<LogoutResultDto>(responseContent, _jsonOptions);
+                        backendResult = ApiResponse<LogoutResultDto>.Success(result ?? new LogoutResultDto());
+                    }
+                    else
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                        backendResult = ApiResponse<LogoutResultDto>.Error($"Logout failed: {errorContent}", (int)response.StatusCode);
+                    }
+                    
                     _logger.LogInformation("User logout from backend completed. Success: {Success}, LogoutFromAllDevices: {LogoutFromAllDevices}", 
                         backendResult.IsSuccess, logoutFromAllDevices);
                 }
