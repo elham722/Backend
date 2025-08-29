@@ -125,5 +125,13 @@ namespace Client.MVC.Controllers
             TempData["SuccessMessage"] = "خروج با موفقیت انجام شد!";
             return RedirectToAction("Index", "Home");
         }
+
+        /// <summary>
+        /// Access denied page
+        /// </summary>
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
     }
 } 

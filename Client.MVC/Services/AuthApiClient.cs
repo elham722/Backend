@@ -153,33 +153,8 @@ namespace Client.MVC.Services
             }
         }
 
-        /// <summary>
-        /// Validate current token
-        /// </summary>
-        public async Task<bool> ValidateTokenAsync()
-        {
-            try
-            {
-                _logger.LogInformation("Attempting to validate token");
-                
-                var result = await _httpClient.GetAsync<ValidateTokenDto>("api/Auth/validate-token");
-                
-                if (result?.IsValid == true)
-                {
-                    _logger.LogInformation("Token validation successful");
-                    return true;
-                }
-                else
-                {
-                    _logger.LogWarning("Token validation failed. Error: {Error}", result?.ErrorMessage);
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during token validation");
-                return false;
-            }
-        }
+        // Note: ValidateTokenAsync method removed as it's not needed for regular requests
+        // JWT tokens are self-contained and validated by AuthenticationInterceptor
+        // This method was primarily useful for background jobs or external validations
     }
 } 

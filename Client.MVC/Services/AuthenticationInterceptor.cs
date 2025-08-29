@@ -143,8 +143,8 @@ namespace Client.MVC.Services
                     
                     if (result?.IsSuccess == true && !string.IsNullOrEmpty(result.AccessToken))
                     {
-                        // Use RefreshJwtToken for better performance (only updates JWT token, not full session)
-                        _userSessionService.RefreshJwtToken(result.AccessToken, result.ExpiresAt);
+                        // Update both JWT token and refresh token in session and cookies
+                        _userSessionService.SetUserSession(result);
                         _logger.LogInformation("Token refreshed successfully");
                         return true;
                     }

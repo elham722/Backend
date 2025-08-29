@@ -16,6 +16,15 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// Add authentication services
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "JwtBearer";
+    options.DefaultChallengeScheme = "JwtBearer";
+    options.DefaultSignInScheme = "JwtBearer";
+})
+.AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, JwtAuthenticationHandler>("JwtBearer", options => { });
+
 // Add Typed HttpClient for API communication
 builder.Services.AddHttpClient("ApiClient", client =>
 {
@@ -39,6 +48,9 @@ builder.Services.AddScoped<Client.MVC.Services.IAuthApiClient, Client.MVC.Servic
 // Register UserApiClient
 builder.Services.AddScoped<Client.MVC.Services.IUserApiClient, Client.MVC.Services.UserApiClient>();
 
+// Register BackgroundJobAuthClient for background jobs and external services
+builder.Services.AddScoped<Client.MVC.Services.IBackgroundJobAuthClient, Client.MVC.Services.BackgroundJobAuthClient>();
+
 builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
@@ -57,6 +69,9 @@ app.UseRouting();
 
 // Use session
 app.UseSession();
+
+// Use authentication (must come before authorization)
+app.UseAuthentication();
 
 app.UseAuthorization();
 

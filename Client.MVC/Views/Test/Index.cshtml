@@ -1,0 +1,186 @@
+@model dynamic
+
+@{
+    ViewData["Title"] = "Authentication Test";
+}
+
+<div class="container mt-4">
+    <h2>🔐 Authentication Status Test</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📊 Current Status</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Is Authenticated:</strong></td>
+                            <td>
+                                @if (Model.IsAuthenticated)
+                                {
+                                    <span class="badge bg-success">✅ Yes</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">❌ No</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Has JWT Token:</strong></td>
+                            <td>
+                                @if (Model.HasJwtToken)
+                                {
+                                    <span class="badge bg-success">✅ Yes (@Model.JwtTokenLength chars)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">❌ No</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Has Refresh Token:</strong></td>
+                            <td>
+                                @if (Model.HasRefreshToken)
+                                {
+                                    <span class="badge bg-success">✅ Yes (@Model.RefreshTokenLength chars)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">❌ No</span>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>User ID:</strong></td>
+                            <td>@(Model.UserId ?? "N/A")</td>
+                        </tr>
+                        <tr>
+                            <td><strong>User Name:</strong></td>
+                            <td>@(Model.UserName ?? "N/A")</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>🧪 Test Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button id="validateTokenBtn" class="btn btn-primary" onclick="validateToken()">
+                            🔍 Validate Current Token
+                        </button>
+                        <button id="clearSessionBtn" class="btn btn-warning" onclick="clearSession()">
+                            🗑️ Clear Session
+                        </button>
+                        <a href="/Auth/Login" class="btn btn-success">
+                            🔑 Go to Login
+                        </a>
+                    </div>
+                    
+                    <div id="testResults" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6>Test Results:</h6>
+                            <pre id="resultContent"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📋 Refresh Flow Explanation</h5>
+                </div>
+                <div class="card-body">
+                    <h6>🔄 How Refresh Flow Works:</h6>
+                    <ol>
+                        <li><strong>Token Expires:</strong> JWT token expires (checked by <code>IsTokenValid()</code>)</li>
+                        <li><strong>Auto Refresh:</strong> <code>AuthenticationInterceptor</code> calls <code>RefreshTokenIfNeededAsync()</code></li>
+                        <li><strong>API Call:</strong> Makes POST to <code>/api/Auth/refresh-token</code></li>
+                        <li><strong>Success:</strong> Calls <code>SetUserSession(result)</code> → Updates cookies</li>
+                        <li><strong>Failure:</strong> Calls <code>ClearUserSession()</code> → User must login again</li>
+                    </ol>
+                    
+                    <h6>🍪 Cookie Management:</h6>
+                    <ul>
+                        <li><strong>JWT Token:</strong> Stored in <code>jwt_token</code> cookie (HttpOnly, Secure)</li>
+                        <li><strong>Refresh Token:</strong> Stored in <code>refresh_token</code> cookie (HttpOnly, Secure)</li>
+                        <li><strong>Fallback:</strong> If cookies fail, falls back to session storage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function validateToken() {
+            const btn = document.getElementById('validateTokenBtn');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Validating...';
+            
+            fetch('/Test/ValidateToken', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('resultContent').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('testResults').style.display = 'block';
+                btn.innerHTML = '🔍 Validate Current Token';
+                btn.disabled = false;
+            })
+            .catch(error => {
+                document.getElementById('resultContent').textContent = 'Error: ' + error.message;
+                document.getElementById('testResults').style.display = 'block';
+                btn.innerHTML = '🔍 Validate Current Token';
+                btn.disabled = false;
+            });
+        }
+        
+        function clearSession() {
+            const btn = document.getElementById('clearSessionBtn');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Clearing...';
+            
+            fetch('/Test/ClearSession', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('resultContent').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('testResults').style.display = 'block';
+                btn.innerHTML = '🗑️ Clear Session';
+                btn.disabled = false;
+                
+                // Reload page after clearing session
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                document.getElementById('resultContent').textContent = 'Error: ' + error.message;
+                document.getElementById('testResults').style.display = 'block';
+                btn.innerHTML = '🗑️ Clear Session';
+                btn.disabled = false;
+            });
+        }
+    </script>
+} 

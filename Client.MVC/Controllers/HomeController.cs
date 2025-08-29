@@ -12,7 +12,7 @@ namespace Client.MVC.Controllers
             : base(userSessionService, logger)
         {
         }
-
+        
         public IActionResult Index()
         {
             // Set user information in view bag
@@ -20,7 +20,7 @@ namespace Client.MVC.Controllers
             
             return View();
         }
-        [Authorize]
+        
         public IActionResult Privacy()
         {
             return View();
