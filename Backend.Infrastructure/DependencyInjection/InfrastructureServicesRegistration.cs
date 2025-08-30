@@ -144,6 +144,11 @@ public static class InfrastructureServicesRegistration
             configuration.GetSection("TokenCleanup"));
         services.AddHostedService<TokenCleanupBackgroundService>();
 
+        // Configure and register CAPTCHA service
+        services.Configure<CaptchaSettings>(
+            configuration.GetSection("Captcha"));
+        services.AddScoped<ICaptchaService, SimpleCaptchaService>();
+
         return services;
     }
 

@@ -1,5 +1,6 @@
 using Backend.Application.Common.Commands;
 using Backend.Application.Common.Interfaces;
+using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
 using MediatR;
@@ -12,16 +13,29 @@ namespace Backend.Application.Features.UserManagement.Commands.Register;
 public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResultDto>>
 {
     private readonly IUserService _userService;
+    private readonly ICaptchaService _captchaService;
 
-    public RegisterCommandHandler(IUserService userService)
+    public RegisterCommandHandler(
+        IUserService userService,
+        ICaptchaService captchaService)
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        _captchaService = captchaService ?? throw new ArgumentNullException(nameof(captchaService));
     }
 
     public async Task<Result<AuthResultDto>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         try
         {
+            // Validate CAPTCHA first
+            var captchaResult = await _captchaService.ValidateAsync(request.CaptchaChallengeId, request.CaptchaAnswer, request.IpAddress);
+            if (!captchaResult.IsValid)
+            {
+                return Result<AuthResultDto>.Failure(
+                    $"CAPTCHA validation failed: {captchaResult.ErrorMessage ?? "Invalid CAPTCHA"}",
+                    "CaptchaValidationFailed");
+            }
+
             // Create DTO from command
             var registerDto = new RegisterDto
             {
@@ -32,6 +46,8 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
                 PhoneNumber = request.PhoneNumber,
                 AcceptTerms = request.AcceptTerms,
                 SubscribeToNewsletter = request.SubscribeToNewsletter,
+                CaptchaChallengeId = request.CaptchaChallengeId,
+                CaptchaAnswer = request.CaptchaAnswer,
                 IpAddress = request.IpAddress,
                 DeviceInfo = request.DeviceInfo
             };

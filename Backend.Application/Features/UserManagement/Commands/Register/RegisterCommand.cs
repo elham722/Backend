@@ -45,6 +45,16 @@ public class RegisterCommand : ICommand<Result<AuthResultDto>>
     public bool SubscribeToNewsletter { get; set; } = false;
     
     /// <summary>
+    /// CAPTCHA challenge ID for security validation
+    /// </summary>
+    public string CaptchaChallengeId { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// CAPTCHA answer for security validation
+    /// </summary>
+    public string CaptchaAnswer { get; set; } = string.Empty;
+    
+    /// <summary>
     /// IP address of the registration attempt (for security)
     /// </summary>
     public string? IpAddress { get; set; }

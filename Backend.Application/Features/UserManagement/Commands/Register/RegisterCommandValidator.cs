@@ -38,6 +38,14 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .WithMessage("Invalid phone number format");
 
         RuleFor(x => x.AcceptTerms)
-            .Equal(true).WithMessage("You must accept the terms and conditions");
+            .Equal(true).WithMessage("Terms and conditions must be accepted");
+
+        RuleFor(x => x.CaptchaChallengeId)
+            .NotEmpty().WithMessage("CAPTCHA challenge is required")
+            .MaximumLength(100).WithMessage("CAPTCHA challenge ID is too long");
+
+        RuleFor(x => x.CaptchaAnswer)
+            .NotEmpty().WithMessage("CAPTCHA answer is required")
+            .MaximumLength(10).WithMessage("CAPTCHA answer is too long");
     }
 } 

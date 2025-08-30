@@ -35,8 +35,16 @@ public class RegisterDto
     [Display(Name = "قوانین و شرایط را می‌پذیرم")]
     public bool AcceptTerms { get; set; } = false;
     
-    [Display(Name = "عضویت در خبرنامه")]
+    [Display(Name = "اشتراک در خبرنامه")]
     public bool SubscribeToNewsletter { get; set; } = false;
+    
+    [Required(ErrorMessage = "تأیید CAPTCHA الزامی است")]
+    [Display(Name = "تأیید امنیتی")]
+    public string CaptchaChallengeId { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "پاسخ CAPTCHA الزامی است")]
+    [Display(Name = "پاسخ")]
+    public string CaptchaAnswer { get; set; } = string.Empty;
     
     /// <summary>
     /// IP address of the registration attempt (for security tracking)
