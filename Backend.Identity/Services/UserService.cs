@@ -426,10 +426,10 @@ public class UserService : IUserService
                 var roles = await _userManager.GetRolesAsync(user);
                 var userDto = _userMapper.MapToUserDto(user, roles.ToList());
 
-                // Generate JWT tokens
+                // Generate JWT tokens with caching
                 var claims = await _accountManagementService.GetUserClaimsAsync(user);
-                var accessToken = _accountManagementService.GenerateAccessToken(claims);
-                var refreshToken = _accountManagementService.GenerateRefreshToken();
+                var accessToken = await _accountManagementService.GenerateAccessTokenAsync(claims, user.Id);
+                var refreshToken = await _accountManagementService.GenerateRefreshTokenAsync(user.Id, loginDto.DeviceInfo, loginDto.IpAddress);
 
                 var authResult = new AuthResultDto
                 {

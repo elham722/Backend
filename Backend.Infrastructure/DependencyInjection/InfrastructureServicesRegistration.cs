@@ -4,6 +4,7 @@ using Backend.Application.DependencyInjection;
 using Backend.Infrastructure.Cache;
 using Backend.Infrastructure.Email;
 using Backend.Infrastructure.FileStorage;
+using Backend.Infrastructure.HealthChecks;
 using Backend.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -128,7 +129,20 @@ public static class InfrastructureServicesRegistration
 
         // Register cache services
         services.AddScoped<ICacheService, MemoryCacheService>();
-        services.AddScoped<IRedisCacheService, RedisCacheService>();
+        
+        // Register health checks
+        services.AddHealthChecks()
+            .AddCheck<RedisHealthCheck>("redis_cache", tags: new[] { "cache", "redis" });
+        
+        // Configure and register token cache service
+        services.Configure<TokenCacheConfiguration>(
+            configuration.GetSection("TokenCache"));
+        services.AddScoped<ITokenCacheService, TokenCacheService>();
+
+        // Configure and register token cleanup background service
+        services.Configure<TokenCleanupOptions>(
+            configuration.GetSection("TokenCleanup"));
+        services.AddHostedService<TokenCleanupBackgroundService>();
 
         return services;
     }

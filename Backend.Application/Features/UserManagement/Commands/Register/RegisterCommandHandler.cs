@@ -31,7 +31,9 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
                 ConfirmPassword = request.ConfirmPassword,
                 PhoneNumber = request.PhoneNumber,
                 AcceptTerms = request.AcceptTerms,
-                SubscribeToNewsletter = request.SubscribeToNewsletter
+                SubscribeToNewsletter = request.SubscribeToNewsletter,
+                IpAddress = request.IpAddress,
+                DeviceInfo = request.DeviceInfo
             };
 
             // Call service to register user

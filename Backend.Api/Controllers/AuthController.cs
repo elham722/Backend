@@ -48,8 +48,10 @@ public class AuthController : ControllerBase
                 PhoneNumber = registerDto.PhoneNumber,
                 AcceptTerms = registerDto.AcceptTerms,
                 SubscribeToNewsletter = registerDto.SubscribeToNewsletter,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString()
+                IpAddress = registerDto.IpAddress ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString(),
+                DeviceInfo = registerDto.DeviceInfo ??
+                             GetDeviceInfoFromUserAgent(HttpContext.Request.Headers["User-Agent"].ToString())
             };
 
             // Send command through mediator
@@ -100,8 +102,10 @@ public class AuthController : ControllerBase
                 Password = loginDto.Password,
                 RememberMe = loginDto.RememberMe,
                 TwoFactorCode = loginDto.TwoFactorCode,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString()
+                IpAddress = loginDto.IpAddress ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString(),
+                DeviceInfo = loginDto.DeviceInfo ??
+                             GetDeviceInfoFromUserAgent(HttpContext.Request.Headers["User-Agent"].ToString())
             };
 
             // Send command through mediator
@@ -231,4 +235,56 @@ public class AuthController : ControllerBase
             });
         }
     }
-} 
+
+    /// <summary>
+        /// Extract device information from User-Agent string
+        /// </summary>
+        private string GetDeviceInfoFromUserAgent(string userAgent)
+        {
+            if (string.IsNullOrEmpty(userAgent))
+                return "Unknown Device";
+
+            try
+            {
+                var deviceInfo = new List<string>();
+
+                // Check for mobile devices
+                if (userAgent.Contains("Mobile") || userAgent.Contains("Android") || userAgent.Contains("iPhone"))
+                    deviceInfo.Add("Mobile");
+                else if (userAgent.Contains("Tablet") || userAgent.Contains("iPad"))
+                    deviceInfo.Add("Tablet");
+                else
+                    deviceInfo.Add("Desktop");
+
+                // Check for operating system
+                if (userAgent.Contains("Windows"))
+                    deviceInfo.Add("Windows");
+                else if (userAgent.Contains("Mac OS"))
+                    deviceInfo.Add("macOS");
+                else if (userAgent.Contains("Linux"))
+                    deviceInfo.Add("Linux");
+                else if (userAgent.Contains("Android"))
+                    deviceInfo.Add("Android");
+                else if (userAgent.Contains("iOS"))
+                    deviceInfo.Add("iOS");
+
+                // Check for browser
+                if (userAgent.Contains("Chrome"))
+                    deviceInfo.Add("Chrome");
+                else if (userAgent.Contains("Firefox"))
+                    deviceInfo.Add("Firefox");
+                else if (userAgent.Contains("Safari"))
+                    deviceInfo.Add("Safari");
+                else if (userAgent.Contains("Edge"))
+                    deviceInfo.Add("Edge");
+
+                return string.Join(" | ", deviceInfo);
+            }
+            catch
+            {
+                return "Unknown Device";
+            }
+        }
+    }
+
+

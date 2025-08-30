@@ -53,4 +53,9 @@ public class RegisterCommand : ICommand<Result<AuthResultDto>>
     /// User agent string (for security)
     /// </summary>
     public string? UserAgent { get; set; }
+    
+    /// <summary>
+    /// Device information (browser, OS, device type)
+    /// </summary>
+    public string? DeviceInfo { get; set; }
 } 

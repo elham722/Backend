@@ -37,4 +37,16 @@ public class RegisterDto
     
     [Display(Name = "عضویت در خبرنامه")]
     public bool SubscribeToNewsletter { get; set; } = false;
+    
+    /// <summary>
+    /// IP address of the registration attempt (for security tracking)
+    /// </summary>
+    [Display(Name = "آدرس IP")]
+    public string? IpAddress { get; set; }
+    
+    /// <summary>
+    /// Device information (browser, OS, device type)
+    /// </summary>
+    [Display(Name = "اطلاعات دستگاه")]
+    public string? DeviceInfo { get; set; }
 } 

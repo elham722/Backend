@@ -17,4 +17,16 @@ public class LoginDto
   
     [Display(Name = "کد تایید دو مرحله‌ای")]
     public string? TwoFactorCode { get; set; }
+    
+    /// <summary>
+    /// IP address of the login attempt (for security tracking)
+    /// </summary>
+    [Display(Name = "آدرس IP")]
+    public string? IpAddress { get; set; }
+    
+    /// <summary>
+    /// Device information (browser, OS, device type)
+    /// </summary>
+    [Display(Name = "اطلاعات دستگاه")]
+    public string? DeviceInfo { get; set; }
 } 

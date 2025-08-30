@@ -16,6 +16,10 @@ namespace Client.MVC.Services
         DateTime? GetTokenExpiration(string? jwtToken);
         bool IsTokenValid(string? jwtToken);
         IDictionary<string, object> GetAllClaims(string? jwtToken);
+        
+        // ✅ New methods for generic claim extraction
+        string? GetClaimValue(string claimType, string? jwtToken = null);
+        IEnumerable<string> GetClaimValues(string claimType, string? jwtToken = null);
     }
 
     public class JwtClaimsExtractor : IJwtClaimsExtractor
@@ -190,6 +194,65 @@ namespace Client.MVC.Services
             {
                 _logger.LogError(ex, "Error extracting all claims from JWT token");
                 return new Dictionary<string, object>();
+            }
+        }
+
+        /// <summary>
+        /// ✅ Get a specific claim value by claim type
+        /// </summary>
+        public string? GetClaimValue(string claimType, string? jwtToken = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(claimType))
+                    return null;
+
+                // If no JWT token provided, try to get from current context
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    // This method is designed to work with a provided JWT token
+                    // For context-based extraction, use the specific methods like GetUserId()
+                    return null;
+                }
+
+                var claims = ExtractClaims(jwtToken);
+                return claims.FirstOrDefault(c => c.Type.Equals(claimType, StringComparison.OrdinalIgnoreCase))?.Value;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting claim value for type {ClaimType}", claimType);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// ✅ Get multiple claim values by claim type (for array claims like roles)
+        /// </summary>
+        public IEnumerable<string> GetClaimValues(string claimType, string? jwtToken = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(claimType))
+                    return Enumerable.Empty<string>();
+
+                // If no JWT token provided, try to get from current context
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    // This method is designed to work with a provided JWT token
+                    // For context-based extraction, use the specific methods like GetUserRoles()
+                    return Enumerable.Empty<string>();
+                }
+
+                var claims = ExtractClaims(jwtToken);
+                return claims
+                    .Where(c => c.Type.Equals(claimType, StringComparison.OrdinalIgnoreCase))
+                    .Select(c => c.Value)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting claim values for type {ClaimType}", claimType);
+                return Enumerable.Empty<string>();
             }
         }
 

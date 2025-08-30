@@ -25,7 +25,9 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
             EmailOrUsername = request.EmailOrUsername,
             Password = request.Password,
             RememberMe = request.RememberMe,
-            TwoFactorCode = request.TwoFactorCode
+            TwoFactorCode = request.TwoFactorCode,
+            IpAddress = request.IpAddress,
+            DeviceInfo = request.DeviceInfo
         };
 
         return await _userService.LoginAsync(loginDto, request.IpAddress, request.UserAgent, cancellationToken);
