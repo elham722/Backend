@@ -22,10 +22,17 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required")
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters")
+            .MinimumLength(12).WithMessage("Password must be at least 12 characters")
             .MaximumLength(128).WithMessage("Password cannot exceed 128 characters")
             .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]")
-            .WithMessage("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character");
+            .WithMessage("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character")
+            .Must(password => 
+            {
+                if (string.IsNullOrEmpty(password)) return false;
+                var uniqueChars = password.Distinct().Count();
+                return uniqueChars >= 4;
+            })
+            .WithMessage("Password must contain at least 4 different character types");
 
         RuleFor(x => x.ConfirmPassword)
             .NotEmpty().WithMessage("Password confirmation is required")

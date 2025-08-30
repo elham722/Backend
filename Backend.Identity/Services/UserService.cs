@@ -23,6 +23,7 @@ public class UserService : IUserService
     private readonly IUserMapper _userMapper;
     private readonly IAccountManagementService _accountManagementService;
     private readonly IDateTimeService _dateTimeService;
+    private readonly IEmailConfirmationService _emailConfirmationService;
     private readonly ILogger<UserService> _logger;
 
     public UserService(
@@ -32,6 +33,7 @@ public class UserService : IUserService
         IUserMapper userMapper,
         IAccountManagementService accountManagementService,
         IDateTimeService dateTimeService,
+        IEmailConfirmationService emailConfirmationService,
         ILogger<UserService> logger)
     {
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
@@ -40,6 +42,7 @@ public class UserService : IUserService
         _userMapper = userMapper ?? throw new ArgumentNullException(nameof(userMapper));
         _accountManagementService = accountManagementService ?? throw new ArgumentNullException(nameof(accountManagementService));
         _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
+        _emailConfirmationService = emailConfirmationService ?? throw new ArgumentNullException(nameof(emailConfirmationService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -379,21 +382,27 @@ public class UserService : IUserService
     {
         try
         {
-            // Try to find user by email first, then by username
-            var user = await _userManager.FindByEmailAsync(loginDto.EmailOrUsername);
+            // Find user by email or username
+            var user = await _userManager.FindByEmailAsync(loginDto.EmailOrUsername) ??
+                      await _userManager.FindByNameAsync(loginDto.EmailOrUsername);
+
             if (user == null)
             {
-                user = await _userManager.FindByNameAsync(loginDto.EmailOrUsername);
-            }
-            if (user == null)
-            {
+                // Don't reveal if user exists or not
+                await Task.Delay(1000, cancellationToken); // Add delay to prevent timing attacks
                 return Result<AuthResultDto>.Failure("Invalid email or password", "InvalidCredentials");
             }
 
-            // Check if user can login
-            if (!user.CanLogin())
+            // Check if email is confirmed
+            if (!user.EmailConfirmed)
             {
-                if (user.IsAccountLocked)
+                return Result<AuthResultDto>.Failure("Please confirm your email address before logging in", "EmailNotConfirmed");
+            }
+
+            // Check if account is active
+            if (!user.IsActive)
+            {
+                if (user.IsLocked)
                 {
                     return Result<AuthResultDto>.Failure("Account is locked", "AccountLocked");
                 }
@@ -438,11 +447,12 @@ public class UserService : IUserService
                     RefreshToken = refreshToken,
                     ExpiresAt = DateTime.UtcNow.AddMinutes(60), // Configure from settings
                     User = userDto,
-                    RequiresEmailConfirmation = !user.EmailConfirmed,
+                    RequiresEmailConfirmation = false, // Email is already confirmed
                     RequiresPasswordChange = user.RequiresPasswordChange()
                 };
 
-                _logger.LogInformation("User logged in successfully: {UserId}, {Email}", user.Id, user.Email);
+                _logger.LogInformation("User logged in successfully: {UserId}, {Email}, IP: {IpAddress}", 
+                    user.Id, user.Email, ipAddress);
                 return Result<AuthResultDto>.Success(authResult);
             }
             else if (signInResult.IsLockedOut)
@@ -503,40 +513,48 @@ public class UserService : IUserService
                 user.PhoneNumber = registerDto.PhoneNumber;
             }
 
-            // Create user with password using helper method
+            // Create user with password
             var createResult = await CreateUserWithPasswordAsync(user, registerDto.Password);
             if (!createResult.IsSuccess)
             {
                 return Result<AuthResultDto>.Failure(createResult.ErrorMessage, createResult.ErrorCode);
             }
-            
+
             user = createResult.Data;
 
-            // Assign default role (you can customize this based on your requirements)
-            // For now, we'll assign a default "User" role if it exists
-            var defaultRole = "User";
-            if (await _roleManager.RoleExistsAsync(defaultRole))
+            // Assign default role (if configured)
+            var defaultRole = "User"; // This could come from configuration
+            if (!string.IsNullOrEmpty(defaultRole))
             {
                 var roleResult = await AssignRolesAsync(user.Id, new List<string> { defaultRole }, user.UserName, cancellationToken);
                 if (!roleResult.IsSuccess)
                 {
-                    _logger.LogWarning("User registered but role assignment failed: {UserId}, Error: {Error}", user.Id, roleResult.ErrorMessage);
+                    _logger.LogWarning("User registered but default role assignment failed: {UserId}, Error: {Error}", user.Id, roleResult.ErrorMessage);
                 }
             }
 
-            // Send confirmation email
-            await SendEmailConfirmationAsync(user.Id, cancellationToken);
+            // Send email confirmation
+            var callbackUrl = $"{GetBaseUrl()}/confirm-email";
+            var emailSent = await _emailConfirmationService.SendEmailConfirmationAsync(user, callbackUrl);
+            
+            if (!emailSent)
+            {
+                _logger.LogWarning("User registered but email confirmation failed to send: {UserId}", user.Id);
+            }
 
-            var userDto = _userMapper.MapToUserDto(user);
+            // Log registration
+            _logger.LogInformation("User registered successfully: {UserId}, {Email}, IP: {IpAddress}", 
+                user.Id, user.Email, ipAddress);
+
+            // Return success with email confirmation requirement
             var authResult = new AuthResultDto
             {
                 IsSuccess = true,
-                User = userDto,
                 RequiresEmailConfirmation = true,
-                ErrorMessage = "Registration successful. Please check your email to confirm your account."
+                Message = "Registration successful. Please check your email to confirm your account.",
+                User = _userMapper.MapToUserDto(user)
             };
 
-            _logger.LogInformation("User registered successfully: {UserId}, {Email}", user.Id, user.Email);
             return Result<AuthResultDto>.Success(authResult);
         }
         catch (Exception ex)
@@ -544,6 +562,14 @@ public class UserService : IUserService
             _logger.LogError(ex, "Error during registration for email: {Email}", registerDto.Email);
             return Result<AuthResultDto>.Failure("An error occurred during registration", "RegistrationError");
         }
+    }
+
+    /// <summary>
+    /// Get base URL for the application
+    /// </summary>
+    private string GetBaseUrl()
+    {
+        return _emailConfirmationService.GetBaseUrl();
     }
 
     public async Task<Result> ChangePasswordAsync(string? userId, string? currentPassword, string newPassword, string changedBy, bool requirePasswordChangeOnNextLogin = false, CancellationToken cancellationToken = default)

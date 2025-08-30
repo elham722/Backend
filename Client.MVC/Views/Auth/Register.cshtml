@@ -1,7 +1,7 @@
-@model Backend.Application.Features.UserManagement.DTOs.RegisterDto
+﻿@model Backend.Application.Features.UserManagement.DTOs.RegisterDto
 
 @{
-    ViewData["Title"] = "ثبت نام";
+    ViewData["Title"] = "Register";
     Layout = "_Layout";
 }
 
@@ -13,9 +13,9 @@
                     <div class="card-header">
                         <h3>
                             <i class="fas fa-user-plus auth-icon"></i>
-                            ثبت نام
+                            Register
                         </h3>
-                        <p class="text-white-50 mb-0">حساب کاربری جدید ایجاد کنید</p>
+                        <p class="text-white-50 mb-0">Create a new account</p>
                     </div>
                     
                     <div class="card-body">
@@ -25,7 +25,7 @@
                             
                             <div class="form-group">
                                 <label asp-for="Email" class="form-label">
-                                    <i class="fas fa-envelope me-1"></i>ایمیل
+                                    <i class="fas fa-envelope me-1"></i>Email
                                 </label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-envelope input-icon"></i>
@@ -33,24 +33,24 @@
                                            class="form-control" 
                                            placeholder="example@email.com"
                                            data-val="true"
-                                           data-val-required="این فیلد الزامی است"
-                                           data-val-email="لطفاً یک ایمیل معتبر وارد کنید" />
+                                           data-val-required="This field is required"
+                                           data-val-email="Please enter a valid email" />
                                 </div>
                                 <span asp-validation-for="Email" class="field-validation-error"></span>
                             </div>
 
                             <div class="form-group">
                                 <label asp-for="UserName" class="form-label">
-                                    <i class="fas fa-user me-1"></i>نام کاربری
+                                    <i class="fas fa-user me-1"></i>Username
                                 </label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-user input-icon"></i>
                                     <input asp-for="UserName" 
                                            class="form-control" 
-                                           placeholder="نام کاربری دلخواه"
+                                           placeholder="Choose username"
                                            data-val="true"
-                                           data-val-required="این فیلد الزامی است"
-                                           data-val-minlength="حداقل 3 کاراکتر"
+                                           data-val-required="This field is required"
+                                           data-val-minlength="Minimum 3 characters"
                                            data-val-minlength-min="3" />
                                 </div>
                                 <span asp-validation-for="UserName" class="field-validation-error"></span>
@@ -58,39 +58,50 @@
 
                             <div class="form-group">
                                 <label asp-for="Password" class="form-label">
-                                    <i class="fas fa-lock me-1"></i>رمز عبور
+                                    <i class="fas fa-lock me-1"></i>Password
                                 </label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-lock input-icon"></i>
                                     <input asp-for="Password" 
                                            class="form-control" 
-                                           placeholder="حداقل 8 کاراکتر"
+                                           placeholder="Minimum 12 characters"
                                            data-val="true"
-                                           data-val-required="این فیلد الزامی است"
-                                           data-val-minlength="حداقل 8 کاراکتر"
-                                           data-val-minlength-min="8" />
+                                           data-val-required="This field is required"
+                                           data-val-minlength="Minimum 12 characters"
+                                           data-val-minlength-min="12" />
+                                </div>
+                                <div class="password-requirements mt-2">
+                                    <small class="text-muted">
+                                        <strong>Password Requirements:</strong><br>
+                                        • Minimum 12 characters<br>
+                                        • At least one uppercase letter (A-Z)<br>
+                                        • At least one lowercase letter (a-z)<br>
+                                        • At least one number (0-9)<br>
+                                        • At least one special character (symbols)<br>
+                                        • At least 4 different character types
+                                    </small>
                                 </div>
                                 <span asp-validation-for="Password" class="field-validation-error"></span>
                             </div>
 
                             <div class="form-group">
                                 <label asp-for="ConfirmPassword" class="form-label">
-                                    <i class="fas fa-lock me-1"></i>تکرار رمز عبور
+                                    <i class="fas fa-lock me-1"></i>Confirm Password
                                 </label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-lock input-icon"></i>
                                     <input asp-for="ConfirmPassword" 
                                            class="form-control" 
-                                           placeholder="تکرار رمز عبور"
+                                           placeholder="Confirm password"
                                            data-val="true"
-                                           data-val-required="این فیلد الزامی است" />
+                                           data-val-required="This field is required" />
                                 </div>
                                 <span asp-validation-for="ConfirmPassword" class="field-validation-error"></span>
                             </div>
 
                             <div class="form-group">
                                 <label asp-for="PhoneNumber" class="form-label">
-                                    <i class="fas fa-phone me-1"></i>شماره تلفن
+                                    <i class="fas fa-phone me-1"></i>Phone Number
                                 </label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-phone input-icon"></i>
@@ -98,7 +109,7 @@
                                            class="form-control" 
                                            placeholder="09123456789"
                                            data-val="true"
-                                           data-val-required="این فیلد الزامی است" />
+                                           data-val-required="This field is required" />
                                 </div>
                                 <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
                             </div>
@@ -107,7 +118,7 @@
                                 <input asp-for="AcceptTerms" class="form-check-input" id="acceptTerms" />
                                 <label asp-for="AcceptTerms" class="form-check-label" for="acceptTerms">
                                     <i class="fas fa-check-circle me-1"></i>
-                                    <span>قوانین و شرایط استفاده را می‌پذیرم</span>
+                                    <span>I accept the terms and conditions</span>
                                 </label>
                                 <span asp-validation-for="AcceptTerms" class="field-validation-error"></span>
                             </div>
@@ -116,14 +127,14 @@
                                 <input asp-for="SubscribeToNewsletter" class="form-check-input" id="subscribeNewsletter" />
                                 <label asp-for="SubscribeToNewsletter" class="form-check-label" for="subscribeNewsletter">
                                     <i class="fas fa-bell me-1"></i>
-                                    <span>عضویت در خبرنامه</span>
+                                    <span>Subscribe to newsletter</span>
                                 </label>
                             </div>
 
                             <!-- CAPTCHA Field -->
                             <div class="form-group">
                                 <label class="form-label">
-                                    <i class="fas fa-shield-alt me-1"></i>تأیید امنیتی
+                                    <i class="fas fa-shield-alt me-1"></i>Security Verification
                                 </label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-shield-alt input-icon"></i>
@@ -133,25 +144,25 @@
                                     <div id="captchaContainer" class="captcha-container">
                                         <div class="captcha-info">
                                             <i class="fas fa-calculator me-2"></i>
-                                            <span>لطفاً پاسخ سوال زیر را وارد کنید:</span>
+                                            <span>Please answer the question below:</span>
                                         </div>
                                         <div class="captcha-question">
-                                            <strong id="captchaQuestion">در حال بارگذاری...</strong>
+                                            <strong id="captchaQuestion">Loading...</strong>
                                         </div>
                                         <div class="captcha-answer">
                                             <input asp-for="CaptchaAnswer" 
                                                    type="text" 
                                                    class="form-control" 
                                                    id="captchaAnswer"
-                                                   placeholder="پاسخ خود را وارد کنید"
+                                                   placeholder="Enter your answer"
                                                    maxlength="10" />
                                         </div>
                                         <div class="captcha-actions mt-2">
                                             <button type="button" id="refreshCaptcha" class="btn btn-outline-secondary btn-sm me-2">
-                                                <i class="fas fa-refresh me-1"></i>سوال جدید
+                                                <i class="fas fa-refresh me-1"></i>New Question
                                             </button>
                                             <button type="button" id="validateCaptcha" class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-check me-1"></i>تأیید
+                                                <i class="fas fa-check me-1"></i>Verify
                                             </button>
                                         </div>
                                     </div>
@@ -162,7 +173,7 @@
                             <div class="d-grid gap-2 mt-4">
                                 <button type="submit" class="btn btn-auth btn-register">
                                     <span class="btn-text">
-                                        <i class="fas fa-user-plus me-2"></i>ثبت نام
+                                        <i class="fas fa-user-plus me-2"></i>Register
                                     </span>
                                     <div class="spinner"></div>
                                 </button>
@@ -173,9 +184,9 @@
                     <div class="card-footer">
                         <p class="mb-0">
                             <i class="fas fa-sign-in-alt me-1"></i>
-                            قبلاً حساب کاربری دارید؟ 
+                            Already have an account? 
                             <a asp-action="Login" class="text-decoration-none">
-                                <i class="fas fa-arrow-left me-1"></i>ورود کنید
+                                <i class="fas fa-arrow-left me-1"></i>Sign in
                             </a>
                         </p>
                     </div>
@@ -199,4 +210,4 @@
     <script src="~/js/simple-captcha-integration.js" asp-append-version="true"></script>
     <script src="~/js/modern-auth.js" asp-append-version="true"></script>
     <script src="~/js/auth-enhancements.js" asp-append-version="true"></script>
-} 
+}

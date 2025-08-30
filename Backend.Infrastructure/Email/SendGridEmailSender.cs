@@ -19,42 +19,120 @@ namespace Backend.Infrastructure.Email
             _emailSettings = emailSettings.Value;
         }
 
-        public async Task<bool> SendEmailAsync(string to, string subject, string body, bool isHtml = false)
+        public async Task<EmailResult> SendEmailAsync(string to, string subject, string body, bool isHtml = false)
         {
-            var client = new SendGridClient(_emailSettings.ApiKey);
-            var from = new EmailAddress(_emailSettings.FromAddress, _emailSettings.FromName);
-            var toAddress = new EmailAddress(to);
-            var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, isHtml ? string.Empty : body, isHtml ? body : string.Empty);
-            
-            var response = await client.SendEmailAsync(msg);
-            return response.IsSuccessStatusCode;
-        }
-
-        public async Task<bool> SendEmailWithAttachmentsAsync(string to, string subject, string body, List<string> attachmentPaths, bool isHtml = false)
-        {
-            var client = new SendGridClient(_emailSettings.ApiKey);
-            var from = new EmailAddress(_emailSettings.FromAddress, _emailSettings.FromName);
-            var toAddress = new EmailAddress(to);
-            var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, isHtml ? string.Empty : body, isHtml ? body : string.Empty);
-
-            if (attachmentPaths != null && attachmentPaths.Any())
+            try
             {
-                foreach (var attachmentPath in attachmentPaths)
+                var client = new SendGridClient(_emailSettings.ApiKey);
+                
+                var from = new EmailAddress(_emailSettings.FromAddress, _emailSettings.FromName);
+                var toAddress = new EmailAddress(to);
+                var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, isHtml ? string.Empty : body, isHtml ? body : string.Empty);
+                
+                // Use CancellationToken for timeout
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_emailSettings.TimeoutSeconds));
+                var response = await client.SendEmailAsync(msg, cts.Token);
+                
+                if (response.IsSuccessStatusCode)
                 {
-                    if (File.Exists(attachmentPath))
-                    {
-                        var bytes = await File.ReadAllBytesAsync(attachmentPath);
-                        var fileName = Path.GetFileName(attachmentPath);
-                        var contentType = GetContentType(fileName);
-                        var disposition = "attachment";
-
-                        msg.AddAttachment(fileName, Convert.ToBase64String(bytes), contentType, disposition);
-                    }
+                    return new EmailResult 
+                    { 
+                        IsSuccess = true,
+                        MessageId = response.Headers.GetValues("X-Message-Id").FirstOrDefault()
+                    };
+                }
+                else
+                {
+                    var errorBody = await response.Body.ReadAsStringAsync();
+                    return new EmailResult 
+                    { 
+                        IsSuccess = false,
+                        ErrorMessage = $"SendGrid error: {response.StatusCode} - {errorBody}"
+                    };
                 }
             }
+            catch (OperationCanceledException)
+            {
+                return new EmailResult 
+                { 
+                    IsSuccess = false,
+                    ErrorMessage = $"SendGrid request timed out after {_emailSettings.TimeoutSeconds} seconds"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new EmailResult 
+                { 
+                    IsSuccess = false,
+                    ErrorMessage = $"Exception occurred: {ex.Message}"
+                };
+            }
+        }
 
-            var response = await client.SendEmailAsync(msg);
-            return response.IsSuccessStatusCode;
+        public async Task<EmailResult> SendEmailWithAttachmentsAsync(string to, string subject, string body, List<string> attachmentPaths, bool isHtml = false)
+        {
+            try
+            {
+                var client = new SendGridClient(_emailSettings.ApiKey);
+                
+                var from = new EmailAddress(_emailSettings.FromAddress, _emailSettings.FromName);
+                var toAddress = new EmailAddress(to);
+                var msg = MailHelper.CreateSingleEmail(from, toAddress, subject, isHtml ? string.Empty : body, isHtml ? body : string.Empty);
+
+                if (attachmentPaths != null && attachmentPaths.Any())
+                {
+                    foreach (var attachmentPath in attachmentPaths)
+                    {
+                        if (File.Exists(attachmentPath))
+                        {
+                            var bytes = await File.ReadAllBytesAsync(attachmentPath);
+                            var fileName = Path.GetFileName(attachmentPath);
+                            var contentType = GetContentType(fileName);
+                            var disposition = "attachment";
+
+                            msg.AddAttachment(fileName, Convert.ToBase64String(bytes), contentType, disposition);
+                        }
+                    }
+                }
+
+                // Use CancellationToken for timeout
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_emailSettings.TimeoutSeconds));
+                var response = await client.SendEmailAsync(msg, cts.Token);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    return new EmailResult 
+                    { 
+                        IsSuccess = true,
+                        MessageId = response.Headers.GetValues("X-Message-Id").FirstOrDefault()
+                    };
+                }
+                else
+                {
+                    var errorBody = await response.Body.ReadAsStringAsync();
+                    return new EmailResult 
+                    { 
+                        IsSuccess = false,
+                        ErrorMessage = $"SendGrid error: {response.StatusCode} - {errorBody}"
+                    };
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return new EmailResult 
+                { 
+                    IsSuccess = false,
+                    ErrorMessage = $"SendGrid request timed out after {_emailSettings.TimeoutSeconds} seconds"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new EmailResult 
+                { 
+                    IsSuccess = false,
+                    ErrorMessage = $"Exception occurred: {ex.Message}"
+                };
+            }
         }
 
         private string GetContentType(string fileName)

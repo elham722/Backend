@@ -31,9 +31,25 @@ $(document).ready(function() {
         return /^[a-zA-Z0-9_-]+$/.test(value);
     }, "نام کاربری فقط می‌تواند شامل حروف، اعداد، خط تیره و زیرخط باشد");
 
+    // Strong password rule - Enhanced security
     $.validator.addMethod("strongPassword", function(value, element) {
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(value);
-    }, "رمز عبور باید شامل حداقل یک حرف بزرگ، یک حرف کوچک، یک عدد و یک کاراکتر خاص باشد");
+        if (!value || value.length < 12) return false;
+        
+        // Check for different character types
+        var hasLower = /[a-z]/.test(value);
+        var hasUpper = /[A-Z]/.test(value);
+        var hasNumber = /\d/.test(value);
+        var hasSpecial = /[@$!%*?&]/.test(value);
+        
+        // Count unique character types
+        var uniqueTypes = 0;
+        if (hasLower) uniqueTypes++;
+        if (hasUpper) uniqueTypes++;
+        if (hasNumber) uniqueTypes++;
+        if (hasSpecial) uniqueTypes++;
+        
+        return uniqueTypes >= 4;
+    }, "رمز عبور باید حداقل 12 کاراکتر باشد و شامل حداقل 4 نوع کاراکتر مختلف (حروف بزرگ، حروف کوچک، اعداد و کاراکترهای خاص) باشد");
 
     // Configure validation for login form (ساده‌تر)
     $("#loginForm").validate({
@@ -115,8 +131,8 @@ $(document).ready(function() {
             },
             Password: {
                 required: true,
-                minlength: 8,
-                strongPassword: true  // فقط در رجیستر
+                minlength: 12, // ✅ Updated to match server-side
+                strongPassword: true  // ✅ Enhanced password validation
             },
             ConfirmPassword: {
                 required: true,
