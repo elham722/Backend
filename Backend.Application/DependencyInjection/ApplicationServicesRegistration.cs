@@ -11,6 +11,8 @@ using Mapster;
 using MapsterMapper;
 using System.Reflection;
 using FluentValidation;
+using Backend.Application.Common.Behaviors;
+using MediatR;
 
 namespace Backend.Application.DependencyInjection;
 
@@ -54,6 +56,8 @@ public static class ApplicationServicesRegistration
 
         // Register FluentValidation
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
 
         return services;
     }

@@ -20,16 +20,11 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, Result<
 
     public async Task<Result<UserDto>> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
-        try
-        {
-            // Call service to get user by ID
-            var result = await _userService.GetUserByIdAsync(request.UserId, request.IncludeRoles, cancellationToken);
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            return Result<UserDto>.Failure(ex.Message, "GetUserByIdError");
-        }
+        return await _userService.GetUserByIdAsync(
+            request.UserId,
+            request.IncludeRoles,
+            cancellationToken
+        );
     }
-} 
+
+}

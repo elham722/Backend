@@ -20,25 +20,15 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResu
 
     public async Task<Result<AuthResultDto>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        try
+        var loginDto = new LoginDto
         {
-            // Create DTO from command
-            var loginDto = new LoginDto
-            {
-                EmailOrUsername = request.EmailOrUsername,
-                Password = request.Password,
-                RememberMe = request.RememberMe,
-                TwoFactorCode = request.TwoFactorCode
-            };
+            EmailOrUsername = request.EmailOrUsername,
+            Password = request.Password,
+            RememberMe = request.RememberMe,
+            TwoFactorCode = request.TwoFactorCode
+        };
 
-            // Call service to authenticate user
-            var result = await _userService.LoginAsync(loginDto, request.IpAddress, request.UserAgent, cancellationToken);
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            return Result<AuthResultDto>.Failure(ex.Message, "LoginError");
-        }
+        return await _userService.LoginAsync(loginDto, request.IpAddress, request.UserAgent, cancellationToken);
     }
-} 
+
+}
