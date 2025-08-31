@@ -10,45 +10,45 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
     public RegisterCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required")
-            .EmailAddress().WithMessage("Invalid email format")
-            .MaximumLength(256).WithMessage("Email cannot exceed 256 characters");
+            .NotEmpty().WithMessage("ایمیل الزامی است")
+            .EmailAddress().WithMessage("فرمت ایمیل صحیح نیست")
+            .MaximumLength(256).WithMessage("ایمیل نمی‌تواند بیش از 256 کاراکتر باشد");
 
         RuleFor(x => x.UserName)
-            .NotEmpty().WithMessage("Username is required")
-            .MinimumLength(3).WithMessage("Username must be at least 3 characters")
-            .MaximumLength(50).WithMessage("Username cannot exceed 50 characters")
-            .Matches(@"^[a-zA-Z0-9_-]+$").WithMessage("Username can only contain letters, numbers, underscores, and hyphens");
+            .NotEmpty().WithMessage("نام کاربری الزامی است")
+            .MinimumLength(3).WithMessage("نام کاربری باید حداقل 3 کاراکتر باشد")
+            .MaximumLength(50).WithMessage("نام کاربری نمی‌تواند بیش از 50 کاراکتر باشد")
+            .Matches(@"^[a-zA-Z0-9_-]+$").WithMessage("نام کاربری فقط می‌تواند شامل حروف، اعداد، خط تیره و زیرخط باشد");
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required")
-            .MinimumLength(12).WithMessage("Password must be at least 12 characters")
-            .MaximumLength(128).WithMessage("Password cannot exceed 128 characters")
-            .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]")
-            .WithMessage("Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character")
+            .NotEmpty().WithMessage("رمز عبور الزامی است")
+            .MinimumLength(8).WithMessage("رمز عبور باید حداقل 8 کاراکتر باشد")
+            .MaximumLength(128).WithMessage("رمز عبور نمی‌تواند بیش از 128 کاراکتر باشد")
+            .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$")
+            .WithMessage("رمز عبور باید شامل حداقل یک حرف بزرگ، یک حرف کوچک، یک عدد و یک کاراکتر خاص باشد")
             .Must(password => 
             {
                 if (string.IsNullOrEmpty(password)) return false;
                 var uniqueChars = password.Distinct().Count();
                 return uniqueChars >= 4;
             })
-            .WithMessage("Password must contain at least 4 different character types");
+            .WithMessage("رمز عبور باید شامل حداقل 4 نوع کاراکتر مختلف باشد");
 
         RuleFor(x => x.ConfirmPassword)
-            .NotEmpty().WithMessage("Password confirmation is required")
-            .Equal(x => x.Password).WithMessage("Passwords do not match");
+            .NotEmpty().WithMessage("تکرار رمز عبور الزامی است")
+            .Equal(x => x.Password).WithMessage("رمز عبور و تکرار آن مطابقت ندارند");
 
         RuleFor(x => x.PhoneNumber)
             .MaximumLength(20).When(x => !string.IsNullOrEmpty(x.PhoneNumber))
-            .WithMessage("Phone number cannot exceed 20 characters")
+            .WithMessage("شماره تلفن نمی‌تواند بیش از 20 کاراکتر باشد")
             .Matches(@"^[\+]?[1-9][\d]{0,15}$").When(x => !string.IsNullOrEmpty(x.PhoneNumber))
-            .WithMessage("Invalid phone number format");
+            .WithMessage("فرمت شماره تلفن صحیح نیست");
 
         RuleFor(x => x.AcceptTerms)
-            .Equal(true).WithMessage("Terms and conditions must be accepted");
+            .Equal(true).WithMessage("قوانین و شرایط باید پذیرفته شوند");
 
         RuleFor(x => x.CaptchaToken)
-            .NotEmpty().WithMessage("CAPTCHA token is required")
-            .MaximumLength(1000).WithMessage("CAPTCHA token is too long");
+            .NotEmpty().WithMessage("تأیید CAPTCHA الزامی است")
+            .MaximumLength(1000).WithMessage("توکن CAPTCHA خیلی طولانی است");
     }
 } 

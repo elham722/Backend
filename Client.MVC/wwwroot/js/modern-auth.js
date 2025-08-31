@@ -83,9 +83,9 @@ class ModernAuth {
             phoneNumber: 'لطفاً شماره تلفن معتبر وارد کنید'
         };
 
-        // Add custom validation attributes
-        const inputs = document.querySelectorAll('input[data-val="true"]');
-        inputs.forEach(input => {
+        // Add custom validation attributes to all required fields
+        const requiredInputs = document.querySelectorAll('input[required], input[data-val="true"]');
+        requiredInputs.forEach(input => {
             input.addEventListener('blur', () => this.validateField(input));
             input.addEventListener('input', () => this.clearFieldError(input));
         });
@@ -112,7 +112,7 @@ class ModernAuth {
         // Password validation
         if (fieldName.includes('Password') && value && !this.isValidPassword(value)) {
             isValid = false;
-            errorMessage = 'رمز عبور باید حداقل 8 کاراکتر و شامل حروف و اعداد باشد';
+            errorMessage = 'رمز عبور باید حداقل 8 کاراکتر و شامل حروف بزرگ، حروف کوچک، اعداد و کاراکترهای خاص باشد';
         }
 
         // Phone number validation
@@ -140,7 +140,26 @@ class ModernAuth {
     }
 
     isValidPassword(password) {
-        return password.length >= 8 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
+        // Check minimum length
+        if (password.length < 8) return false;
+        
+        // Check for at least one lowercase letter
+        if (!/[a-z]/.test(password)) return false;
+        
+        // Check for at least one uppercase letter
+        if (!/[A-Z]/.test(password)) return false;
+        
+        // Check for at least one number
+        if (!/\d/.test(password)) return false;
+        
+        // Check for at least one special character
+        if (!/[@$!%*?&]/.test(password)) return false;
+        
+        // Check for at least 4 different character types
+        const uniqueChars = new Set(password).size;
+        if (uniqueChars < 4) return false;
+        
+        return true;
     }
 
     isValidPhoneNumber(phone) {
@@ -286,11 +305,11 @@ class ModernAuth {
         const submitButton = form.querySelector('.btn-auth');
         const formData = new FormData(form);
         
-        // Validate all fields
-        const inputs = form.querySelectorAll('input[data-val="true"]');
+        // Validate all required fields
+        const requiredInputs = form.querySelectorAll('input[required], input[data-val="true"]');
         let isValid = true;
         
-        inputs.forEach(input => {
+        requiredInputs.forEach(input => {
             if (!this.validateField(input)) {
                 isValid = false;
             }

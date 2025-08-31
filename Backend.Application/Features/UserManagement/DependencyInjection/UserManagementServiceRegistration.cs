@@ -63,23 +63,11 @@ public static class UserManagementServiceRegistration
             cfg.RegisterServicesFromAssemblyContaining<GetMfaMethodsQuery>();
         });
 
-        // Validators
-        services.AddValidatorsFromAssemblyContaining<CreateUserCommandValidator>();
-        services.AddValidatorsFromAssemblyContaining<LoginCommandValidator>();
-        services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
-        services.AddValidatorsFromAssemblyContaining<UpdateUserCommandValidator>();
-        services.AddValidatorsFromAssemblyContaining<ChangePasswordCommandValidator>();
-        services.AddValidatorsFromAssemblyContaining<LogoutCommandValidator>();
-        services.AddValidatorsFromAssemblyContaining<RefreshTokenCommandValidator>();
+        // Validators are already registered in ApplicationServicesRegistration
+        // No need to register them again here
 
-        // MFA Validators
-        services.AddValidatorsFromAssemblyContaining<SetupMfaCommandValidator>();
-        services.AddValidatorsFromAssemblyContaining<VerifyMfaCommandValidator>();
-
-        // Pipeline behaviors
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+        // Pipeline behaviors are already registered in ApplicationServicesRegistration
+        // No need to register them again here
 
         return services;
     }
