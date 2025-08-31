@@ -13,21 +13,29 @@ using Microsoft.Extensions.Logging;
 namespace Backend.Persistence.DependencyInjection;
 
 /// <summary>
-/// Dependency injection registration for Persistence layer
+/// Persistence services registration
 /// </summary>
 public static class PersistenceServicesRegistration
 {
-    /// <summary>
-    /// Registers all Persistence services using configuration
-    /// </summary>
-    public static IServiceCollection AddPersistenceServices(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddPersistenceServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DBConnection");
-        var enableSensitiveDataLogging = configuration.GetValue<bool>("EnableSensitiveDataLogging", false);
+        // Database context
+        services.AddDbContext<ApplicationDbContext>(options =>
+        {
+            options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
+            );
+        });
 
-        return services.AddPersistenceServices(connectionString, enableSensitiveDataLogging);
+        // Repositories
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IMfaMethodRepository, MfaMethodRepository>();
+
+        // Unit of Work
+        services.AddScoped<IUnitOfWork, Backend.Persistence.UnitOfWork.UnitOfWork>();
+
+        return services;
     }
 
     /// <summary>
@@ -63,9 +71,10 @@ public static class PersistenceServicesRegistration
 
         // Register Repositories
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IMfaMethodRepository, MfaMethodRepository>();
 
         // Register Unit of Work
-        services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
+        services.AddScoped<IUnitOfWork, Backend.Persistence.UnitOfWork.UnitOfWork>();
 
         // Register Repository Factory (if needed)
         services.AddScoped<IRepositoryFactory, RepositoryFactory>();
@@ -90,9 +99,10 @@ public static class PersistenceServicesRegistration
 
         // Register Repositories
         services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<IMfaMethodRepository, MfaMethodRepository>();
 
         // Register Unit of Work
-        services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
+        services.AddScoped<IUnitOfWork, Backend.Persistence.UnitOfWork.UnitOfWork>();
 
         // Register Repository Factory
         services.AddScoped<IRepositoryFactory, RepositoryFactory>();

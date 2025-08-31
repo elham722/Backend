@@ -59,6 +59,9 @@ builder.Services.ConfigureIdentityServices(builder.Configuration);
 // Register Application services
 builder.Services.ConfigureApplicationServices();
 
+// Register Persistence services
+builder.Services.AddPersistenceServices(builder.Configuration);
+
 // Register Infrastructure services
 builder.Services.ConfigureInfrastructureServices(builder.Configuration);
 

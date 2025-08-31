@@ -1,20 +1,22 @@
-using Backend.Application.Common.DTOs;
-using Backend.Application.Common.Results;
-using Backend.Application.Features.UserManagement.Commands.ActivateUser;
-using Backend.Application.Features.UserManagement.Commands.AssignRoles;
+using Backend.Application.Common.Behaviors;
+using Backend.Application.Common.Interfaces;
+using Backend.Application.Common.Interfaces.Infrastructure;
+using Backend.Application.Features.UserManagement.Commands;
 using Backend.Application.Features.UserManagement.Commands.ChangePassword;
 using Backend.Application.Features.UserManagement.Commands.CreateUser;
-using Backend.Application.Features.UserManagement.Commands.DeactivateUser;
 using Backend.Application.Features.UserManagement.Commands.DeleteUser;
 using Backend.Application.Features.UserManagement.Commands.Login;
 using Backend.Application.Features.UserManagement.Commands.Logout;
+using Backend.Application.Features.UserManagement.Commands.MFA;
+using Backend.Application.Features.UserManagement.Commands.RefreshToken;
 using Backend.Application.Features.UserManagement.Commands.Register;
 using Backend.Application.Features.UserManagement.Commands.UpdateUser;
-using Backend.Application.Features.UserManagement.DTOs;
-
+using Backend.Application.Features.UserManagement.Queries;
 using Backend.Application.Features.UserManagement.Queries.GetUserById;
 using Backend.Application.Features.UserManagement.Queries.GetUserProfile;
 using Backend.Application.Features.UserManagement.Queries.GetUsers;
+using Backend.Application.Features.UserManagement.Queries.MFA;
+using Backend.Application.Mappers.Profiles;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,39 +24,62 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Backend.Application.Features.UserManagement.DependencyInjection;
 
 /// <summary>
-/// Dependency injection registration for User Management module
+/// User Management services registration
 /// </summary>
 public static class UserManagementServiceRegistration
 {
-    /// <summary>
-    /// Registers all User Management services
-    /// </summary>
     public static IServiceCollection AddUserManagementServices(this IServiceCollection services)
     {
-        // Register Command Handlers
-        services.AddTransient<IRequestHandler<CreateUserCommand, Result<UserDto>>, CreateUserCommandHandler>();
-        services.AddTransient<IRequestHandler<UpdateUserCommand, Result<UserDto>>, UpdateUserCommandHandler>();
-        services.AddTransient<IRequestHandler<DeleteUserCommand, Result>, DeleteUserCommandHandler>();
-        services.AddTransient<IRequestHandler<LoginCommand, Result<AuthResultDto>>, LoginCommandHandler>();
-        services.AddTransient<IRequestHandler<RegisterCommand, Result<AuthResultDto>>, RegisterCommandHandler>();
-        services.AddTransient<IRequestHandler<LogoutCommand, Result<LogoutResultDto>>, LogoutCommandHandler>();
-        services.AddTransient<IRequestHandler<ChangePasswordCommand, Result>, ChangePasswordCommandHandler>();
-        services.AddTransient<IRequestHandler<ActivateUserCommand, Result>, ActivateUserCommandHandler>();
-        services.AddTransient<IRequestHandler<DeactivateUserCommand, Result>, DeactivateUserCommandHandler>();
-        services.AddTransient<IRequestHandler<AssignRolesCommand, Result>, AssignRolesCommandHandler>();
+        // AutoMapper profiles - only Application layer profiles
+        services.AddAutoMapper(cfg =>
+        {
+            cfg.AddProfile<MfaMappingProfile>();
+        });
 
-        // Register Query Handlers
-        services.AddTransient<IRequestHandler<GetUserByIdQuery, Result<UserDto>>, GetUserByIdQueryHandler>();
-        services.AddTransient<IRequestHandler<GetUsersQuery, Result<PaginationResponse<UserDto>>>, GetUsersQueryHandler>();
-        services.AddTransient<IRequestHandler<GetUserProfileQuery, Result<UserDto>>, GetUserProfileQueryHandler>();
+        // MediatR handlers
+        services.AddMediatR(cfg =>
+        {
+            // Commands
+            cfg.RegisterServicesFromAssemblyContaining<CreateUserCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<LoginCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<RegisterCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<UpdateUserCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<DeleteUserCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<ChangePasswordCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<LogoutCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<RefreshTokenCommand>();
 
-        // Register Validators
-        services.AddTransient<IValidator<CreateUserCommand>, CreateUserCommandValidator>();
-        services.AddTransient<IValidator<UpdateUserCommand>, UpdateUserCommandValidator>();
-        services.AddTransient<IValidator<LoginCommand>, LoginCommandValidator>();
-        services.AddTransient<IValidator<RegisterCommand>, RegisterCommandValidator>();
-        services.AddTransient<IValidator<LogoutCommand>, LogoutCommandValidator>();
-        services.AddTransient<IValidator<ChangePasswordCommand>, ChangePasswordCommandValidator>();
+            // MFA Commands
+            cfg.RegisterServicesFromAssemblyContaining<SetupMfaCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<VerifyMfaCommand>();
+            cfg.RegisterServicesFromAssemblyContaining<DisableMfaCommand>();
+
+            // Queries
+            cfg.RegisterServicesFromAssemblyContaining<GetUserByIdQuery>();
+            cfg.RegisterServicesFromAssemblyContaining<GetUsersQuery>();
+            cfg.RegisterServicesFromAssemblyContaining<GetUserProfileQuery>();
+
+            // MFA Queries
+            cfg.RegisterServicesFromAssemblyContaining<GetMfaMethodsQuery>();
+        });
+
+        // Validators
+        services.AddValidatorsFromAssemblyContaining<CreateUserCommandValidator>();
+        services.AddValidatorsFromAssemblyContaining<LoginCommandValidator>();
+        services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
+        services.AddValidatorsFromAssemblyContaining<UpdateUserCommandValidator>();
+        services.AddValidatorsFromAssemblyContaining<ChangePasswordCommandValidator>();
+        services.AddValidatorsFromAssemblyContaining<LogoutCommandValidator>();
+        services.AddValidatorsFromAssemblyContaining<RefreshTokenCommandValidator>();
+
+        // MFA Validators
+        services.AddValidatorsFromAssemblyContaining<SetupMfaCommandValidator>();
+        services.AddValidatorsFromAssemblyContaining<VerifyMfaCommandValidator>();
+
+        // Pipeline behaviors
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
 
         return services;
     }

@@ -3,6 +3,7 @@ using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.DependencyInjection;
 using Backend.Infrastructure.Cache;
 using Backend.Infrastructure.Email;
+using Backend.Infrastructure.Extensions;
 using Backend.Infrastructure.FileStorage;
 using Backend.Infrastructure.HealthChecks;
 using Backend.Infrastructure.Services;
@@ -34,6 +35,7 @@ public static class InfrastructureServicesRegistration
         services.AddEmailServices(configuration);
         services.AddCacheServices(configuration);
         services.AddFileStorageServices(configuration);
+        services.AddMfaServices(); // Add MFA services
 
         return services;
     }
@@ -169,6 +171,19 @@ public static class InfrastructureServicesRegistration
         return services;
     }
 
+    /// <summary>
+    /// Registers MFA services
+    /// </summary>
+    private static IServiceCollection AddMfaServices(this IServiceCollection services)
+    {
+        // TOTP service
+        services.AddScoped<ITotpService, TotpService>();
+
+        // SMS service
+        services.AddScoped<ISmsService, SmsService>();
+
+        return services;
+    }
 
 
     /// <summary>

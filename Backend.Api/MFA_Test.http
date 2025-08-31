@@ -1,0 +1,96 @@
+### MFA API Testing
+### این فایل برای تست MFA endpoints استفاده می‌شه
+
+### 1. ابتدا Login کنید تا Access Token بگیرید
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!@#",
+  "rememberMe": false
+}
+
+### 2. MFA Methods را دریافت کنید
+GET {{baseUrl}}/api/mfa
+Authorization: Bearer {{accessToken}}
+
+### 3. MFA Status را بررسی کنید
+GET {{baseUrl}}/api/mfa/status
+Authorization: Bearer {{accessToken}}
+
+### 4. TOTP MFA Setup
+POST {{baseUrl}}/api/mfa/setup
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": 0,
+  "phoneNumber": null
+}
+
+### 5. SMS MFA Setup
+POST {{baseUrl}}/api/mfa/setup
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": 1,
+  "phoneNumber": "+989123456789"
+}
+
+### 6. Backup Codes MFA Setup
+POST {{baseUrl}}/api/mfa/setup
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": 2,
+  "phoneNumber": null
+}
+
+### 7. TOTP MFA Verify
+POST {{baseUrl}}/api/mfa/verify
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": 0,
+  "code": "123456",
+  "rememberDevice": false
+}
+
+### 8. SMS MFA Verify
+POST {{baseUrl}}/api/mfa/verify
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": 1,
+  "code": "123456",
+  "rememberDevice": true
+}
+
+### 9. Backup Codes MFA Verify
+POST {{baseUrl}}/api/mfa/verify
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": 2,
+  "code": "ABC12345",
+  "rememberDevice": false
+}
+
+### 10. MFA Disable
+POST {{baseUrl}}/api/mfa/disable
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "type": 0
+}
+
+### Variables
+@baseUrl = http://localhost:5187
+@accessToken = YOUR_ACCESS_TOKEN_HERE 
