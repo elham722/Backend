@@ -5,6 +5,7 @@ using Backend.Application.Features.UserManagement.Commands.Logout;
 using Backend.Application.Features.UserManagement.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
 
 namespace Backend.Api.Controllers;
@@ -80,6 +81,36 @@ public class AuthController : ControllerBase
                 Detail = "An unexpected error occurred during registration",
                 Status = 500
             });
+        }
+    }
+
+    /// <summary>
+    /// Test CAPTCHA configuration
+    /// </summary>
+    /// <returns>Configuration status</returns>
+    [HttpGet("test-captcha")]
+    [ProducesResponseType(typeof(object), 200)]
+    public IActionResult TestCaptchaConfiguration()
+    {
+        try
+        {
+            var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
+            
+            var captchaConfig = new
+            {
+                SecretKey = configuration["GoogleReCaptcha:SecretKey"] ?? "NOT_FOUND",
+                SecretKeyLength = (configuration["GoogleReCaptcha:SecretKey"] ?? "").Length,
+                SiteKey = configuration["GoogleReCaptcha:SiteKey"] ?? "NOT_FOUND",
+                SiteKeyLength = (configuration["GoogleReCaptcha:SiteKey"] ?? "").Length,
+                ScoreThreshold = configuration["GoogleReCaptcha:ScoreThreshold"] ?? "NOT_FOUND",
+                AllKeys = configuration.GetSection("GoogleReCaptcha").GetChildren().Select(x => new { Key = x.Key, Value = x.Value }).ToList()
+            };
+            
+            return Ok(captchaConfig);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Error = ex.Message });
         }
     }
 

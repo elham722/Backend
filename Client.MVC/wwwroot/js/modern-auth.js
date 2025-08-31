@@ -130,6 +130,13 @@ class ModernAuth {
             }
         }
 
+        // CAPTCHA validation - automatic, no need for manual validation
+        if (fieldName.includes('CaptchaToken')) {
+            // CAPTCHA is handled automatically by Google reCAPTCHA v3
+            // No manual validation needed
+            return true;
+        }
+
         this.showFieldValidation(field, isValid, errorMessage);
         return isValid;
     }
@@ -163,7 +170,7 @@ class ModernAuth {
     }
 
     isValidPhoneNumber(phone) {
-        const phoneRegex = /^(\+98|0)?9\d{9}$/;
+        const phoneRegex = /^09\d{9}$/;
         return phoneRegex.test(phone);
     }
 
@@ -314,6 +321,9 @@ class ModernAuth {
                 isValid = false;
             }
         });
+
+        // CAPTCHA is handled automatically by Google reCAPTCHA v3
+        // No manual validation needed
 
         if (!isValid) {
             this.showError('لطفاً خطاهای فرم را برطرف کنید');

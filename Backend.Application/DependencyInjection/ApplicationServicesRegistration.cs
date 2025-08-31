@@ -57,6 +57,9 @@ public static class ApplicationServicesRegistration
         // Register FluentValidation
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        
+        // Register Pipeline Behaviors
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CaptchaBehavior<,>));
 
 
         return services;

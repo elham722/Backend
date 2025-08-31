@@ -1,9 +1,9 @@
 using Backend.Application.Common.Commands;
 using Backend.Application.Common.Interfaces;
-using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Application.Features.UserManagement.Commands.Register;
 
@@ -13,28 +13,22 @@ namespace Backend.Application.Features.UserManagement.Commands.Register;
 public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResultDto>>
 {
     private readonly IUserService _userService;
-    private readonly ICaptchaService _captchaService;
+    private readonly ILogger<RegisterCommandHandler> _logger;
 
     public RegisterCommandHandler(
         IUserService userService,
-        ICaptchaService captchaService)
+        ILogger<RegisterCommandHandler> logger)
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-        _captchaService = captchaService ?? throw new ArgumentNullException(nameof(captchaService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<Result<AuthResultDto>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         try
         {
-            // Validate CAPTCHA first using Google reCAPTCHA
-            var captchaResult = await _captchaService.ValidateAsync("google-recaptcha", request.CaptchaToken, request.IpAddress);
-            if (!captchaResult.IsValid)
-            {
-                return Result<AuthResultDto>.Failure(
-                    $"CAPTCHA validation failed: {captchaResult.ErrorMessage ?? "Invalid CAPTCHA"}",
-                    "CaptchaValidationFailed");
-            }
+            // CAPTCHA validation is handled by CaptchaBehavior pipeline
+            _logger.LogInformation("Processing registration request for user: {Email}", request.Email);
 
             // Create DTO from command
             var registerDto = new RegisterDto

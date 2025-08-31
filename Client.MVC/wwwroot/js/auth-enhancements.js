@@ -120,7 +120,7 @@ class AuthEnhancements {
     }
 
     isValidPhoneNumber(phone) {
-        const phoneRegex = /^(\+98|0)?9\d{9}$/;
+        const phoneRegex = /^09\d{9}$/;
         return phoneRegex.test(phone);
     }
 

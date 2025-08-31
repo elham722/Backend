@@ -41,14 +41,14 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
         RuleFor(x => x.PhoneNumber)
             .MaximumLength(20).When(x => !string.IsNullOrEmpty(x.PhoneNumber))
             .WithMessage("شماره تلفن نمی‌تواند بیش از 20 کاراکتر باشد")
-            .Matches(@"^[\+]?[1-9][\d]{0,15}$").When(x => !string.IsNullOrEmpty(x.PhoneNumber))
-            .WithMessage("فرمت شماره تلفن صحیح نیست");
+            .Matches(@"^09\d{9}$").When(x => !string.IsNullOrEmpty(x.PhoneNumber))
+            .WithMessage("شماره تلفن باید با 09 شروع شود و 11 رقم باشد");
 
         RuleFor(x => x.AcceptTerms)
             .Equal(true).WithMessage("قوانین و شرایط باید پذیرفته شوند");
 
         RuleFor(x => x.CaptchaToken)
             .NotEmpty().WithMessage("تأیید CAPTCHA الزامی است")
-            .MaximumLength(1000).WithMessage("توکن CAPTCHA خیلی طولانی است");
+            .MaximumLength(10000).WithMessage("توکن CAPTCHA خیلی طولانی است");
     }
 } 

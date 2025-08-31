@@ -113,12 +113,18 @@ app.UseStaticFiles();
 // Add security headers
 if (builder.Configuration.GetValue<bool>("Security:EnableCsp", true))
 {
-    app.Use(async (context, next) =>
-    {
-        context.Response.Headers.Add("Content-Security-Policy", 
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';");
-        await next();
-    });
+            app.Use(async (context, next) =>
+        {
+            context.Response.Headers.Add("Content-Security-Policy", 
+                "default-src 'self'; " +
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
+                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+                "img-src 'self' data: https:; " +
+                "font-src 'self' https://cdnjs.cloudflare.com; " +
+                "frame-src 'self' https://www.google.com https://www.gstatic.com; " +
+                "connect-src 'self' https://www.google.com https://www.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com http://localhost:* wss://localhost:*;");
+            await next();
+        });
 }
 
 if (builder.Configuration.GetValue<bool>("Security:EnableXssProtection", true))

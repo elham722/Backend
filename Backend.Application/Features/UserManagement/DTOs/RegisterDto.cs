@@ -28,6 +28,7 @@ public class RegisterDto
     public string ConfirmPassword { get; set; } = string.Empty;
     
     [Phone(ErrorMessage = "فرمت شماره تلفن صحیح نیست")]
+    [RegularExpression(@"^09\d{9}$", ErrorMessage = "شماره تلفن باید با 09 شروع شود و 11 رقم باشد")]
     [Display(Name = "شماره تلفن")]
     public string? PhoneNumber { get; set; }
     

@@ -1,5 +1,6 @@
 using Backend.Application.Common.Commands;
 using Backend.Application.Common.Results;
+using Backend.Application.Common.Security;
 using Backend.Application.Features.UserManagement.DTOs;
 
 namespace Backend.Application.Features.UserManagement.Commands.Register;
@@ -7,7 +8,7 @@ namespace Backend.Application.Features.UserManagement.Commands.Register;
 /// <summary>
 /// Command to register a new user
 /// </summary>
-public class RegisterCommand : ICommand<Result<AuthResultDto>>
+public class RegisterCommand : ICommand<Result<AuthResultDto>>, IRequireCaptcha
 {
     /// <summary>
     /// User's email address
@@ -48,6 +49,11 @@ public class RegisterCommand : ICommand<Result<AuthResultDto>>
     /// CAPTCHA token for security validation
     /// </summary>
     public string CaptchaToken { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// CAPTCHA action (for v3 or invisible)
+    /// </summary>
+    public string? CaptchaAction { get; set; } = "register";
     
     /// <summary>
     /// IP address of the registration attempt (for security)

@@ -19,7 +19,7 @@
                     </div>
                     
                     <div class="card-body">
-                        <form id="registerForm" asp-action="Register" asp-controller="Auth" method="post">
+                        <form id="register-form" asp-action="Register" asp-controller="Auth" method="post">
                             @Html.AntiForgeryToken()
                             <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
                             
@@ -111,49 +111,48 @@
                                     <i class="fas fa-phone input-icon"></i>
                                     <input asp-for="PhoneNumber" 
                                            class="form-control" 
-                                           placeholder="09123456789" />
+                                           placeholder="09123456789 (اختیاری)" />
                                 </div>
                                 <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
                             </div>
 
-                            <div class="form-check">
-                                <input asp-for="AcceptTerms" class="form-check-input" id="acceptTerms" required />
-                                <label asp-for="AcceptTerms" class="form-check-label" for="acceptTerms">
-                                    <i class="fas fa-check-circle me-1"></i>
-                                    <span>I accept the terms and conditions</span>
-                                </label>
-                                <span asp-validation-for="AcceptTerms" class="field-validation-error"></span>
-                            </div>
-
-                            <div class="form-check">
-                                <input asp-for="SubscribeToNewsletter" class="form-check-input" id="subscribeNewsletter" />
-                                <label asp-for="SubscribeToNewsletter" class="form-check-label" for="subscribeNewsletter">
-                                    <i class="fas fa-bell me-1"></i>
-                                    <span>Subscribe to newsletter</span>
-                                </label>
-                            </div>
-
-                            <!-- CAPTCHA Field -->
+                            <!-- Accept Terms -->
                             <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-shield-alt me-1"></i>
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-shield-alt input-icon"></i>
-                                    <input type="hidden" id="captchaToken" name="CaptchaToken" />
-                                    <!-- Google reCAPTCHA v3 - نامرئی -->
-                                    <div class="g-recaptcha" 
-                                         data-sitekey="6Leu9bgrAAAAAK4CRoviNVfx160-mRf8HoF7x4yD">
-                                    </div>
-                                    <div class="captcha-info mt-2">
-                                        <i class="fas fa-shield-alt me-2"></i>
-                                  
-                                    </div>
+                                <div class="form-check">
+                                    <input asp-for="AcceptTerms" class="form-check-input" required />
+                                    <label class="form-check-label" for="AcceptTerms">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        <span>قوانین و شرایط را می‌پذیرم</span>
+                                    </label>
                                 </div>
                             </div>
 
+                            <!-- Subscribe to Newsletter -->
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input asp-for="SubscribeToNewsletter" class="form-check-input" />
+                                    <label class="form-check-label" for="SubscribeToNewsletter">
+                                        <i class="fas fa-envelope me-1"></i>
+                                        <span>اشتراک در خبرنامه</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Hidden CAPTCHA field for automatic validation -->
+                            <input type="hidden" name="CaptchaToken" id="CaptchaToken" />
+                            
+                            <!-- CAPTCHA Status Indicator -->
+                            <div class="captcha-status mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    <span id="captchaStatus">در حال تأیید امنیتی...</span>
+                                </small>
+                            </div>
+
                             <div class="d-grid gap-2 mt-4">
-                                <button type="submit" class="btn btn-auth btn-register">
+                                <button type="button" 
+                                        class="btn btn-auth btn-register" 
+                                        id="registerBtn">
                                     <span class="btn-text">
                                         <i class="fas fa-user-plus me-2"></i>Register
                                     </span>
@@ -188,8 +187,136 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.js"></script>
-    <script src="~/js/captcha.js" asp-append-version="true"></script>
-    <script src="~/js/captcha-integration.js" asp-append-version="true"></script>
     <script src="~/js/modern-auth.js" asp-append-version="true"></script>
     <script src="~/js/auth-enhancements.js" asp-append-version="true"></script>
+    
+    <!-- Google reCAPTCHA v3 - Clean Architecture -->
+    <script>
+        let captchaTokenGenerated = false;
+        let captchaToken = null;
+        
+        // تابع لود کردن reCAPTCHA
+        function loadReCaptcha() {
+            console.log('🚀 Loading reCAPTCHA v3...');
+            
+            const script = document.createElement('script');
+            script.src = 'https://www.google.com/recaptcha/api.js?render=6Leu9bgrAAAAAK4CRoviNVfx160-mRf8HoF7x4yD';
+            script.async = true;
+            script.defer = true;
+            
+            script.onload = function() {
+                console.log('✅ Google reCAPTCHA loaded');
+                initializeReCaptcha();
+            };
+            
+            script.onerror = function() {
+                console.error('❌ Failed to load reCAPTCHA');
+                document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>خطا در بارگذاری CAPTCHA';
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        // تابع راه‌اندازی reCAPTCHA
+        function initializeReCaptcha() {
+            console.log('⚡ Initializing reCAPTCHA...');
+            
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.ready(function() {
+                    console.log('🎯 reCAPTCHA ready');
+                    document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>تأیید امنیتی آماده است';
+                });
+            } else {
+                console.error('❌ grecaptcha not available');
+            }
+        }
+        
+        // تابع اجرای reCAPTCHA
+        async function executeReCaptcha() {
+            try {
+                console.log('🔄 Executing reCAPTCHA...');
+                
+                // بررسی وجود فرم
+                const form = document.getElementById('register-form');
+                if (!form) {
+                    console.error('❌ Form not found! Looking for: register-form');
+                    document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>خطا: فرم پیدا نشد';
+                    return;
+                }
+                
+                // نمایش وضعیت
+                document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-spinner fa-spin text-info me-1"></i>در حال تأیید امنیتی...';
+                
+                // اجرای reCAPTCHA v3
+                const token = await grecaptcha.execute('6Leu9bgrAAAAAK4CRoviNVfx160-mRf8HoF7x4yD', {action: 'register'});
+                
+                console.log('✅ reCAPTCHA success! Token length:', token.length);
+                
+                // ذخیره token
+                captchaToken = token;
+                captchaTokenGenerated = true;
+                
+                // ذخیره در فیلد
+                const captchaField = document.getElementById("CaptchaToken");
+                if (captchaField) {
+                    captchaField.value = token;
+                } else {
+                    console.warn('⚠️ CaptchaToken field not found');
+                }
+                
+                // نمایش وضعیت
+                document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>تأیید امنیتی انجام شد';
+                
+                // ارسال فرم
+                console.log('📤 Submitting form...');
+                form.submit();
+                
+            } catch (error) {
+                console.error('❌ reCAPTCHA error:', error);
+                document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>خطا در تأیید امنیتی';
+            }
+        }
+        
+        // شروع لود کردن
+        window.addEventListener('load', function() {
+            console.log('🚀 Page loaded, starting reCAPTCHA...');
+            loadReCaptcha();
+        });
+        
+        // اضافه کردن event listener برای دکمه ثبت‌نام
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM Content Loaded');
+            
+            // بررسی وجود عناصر
+            const registerBtn = document.getElementById('registerBtn');
+            const form = document.getElementById('register-form');
+            const captchaField = document.getElementById('CaptchaToken');
+            
+            console.log('🔍 Elements check:');
+            console.log('- Register button:', registerBtn ? '✅ Found' : '❌ Not found');
+            console.log('- Form:', form ? '✅ Found' : '❌ Not found');
+            console.log('- Captcha field:', captchaField ? '✅ Found' : '❌ Not found');
+            
+            if (registerBtn) {
+                registerBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('📝 Register button clicked');
+                    
+                    if (captchaTokenGenerated) {
+                        console.log('✅ CAPTCHA already generated, submitting form...');
+                        if (form) {
+                            form.submit();
+                        } else {
+                            console.error('❌ Form not found for submission');
+                        }
+                    } else {
+                        console.log('🔄 Generating CAPTCHA...');
+                        executeReCaptcha();
+                    }
+                });
+            } else {
+                console.error('❌ Register button not found!');
+            }
+        });
+    </script>
 }

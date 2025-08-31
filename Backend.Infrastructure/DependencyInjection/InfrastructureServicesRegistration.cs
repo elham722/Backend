@@ -1,11 +1,13 @@
 using Backend.Application.Common.Interfaces;
 using Backend.Application.Common.Interfaces.Infrastructure;
+using Backend.Application.Common.Security;
 using Backend.Application.DependencyInjection;
 using Backend.Infrastructure.Cache;
 using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Extensions;
 using Backend.Infrastructure.FileStorage;
 using Backend.Infrastructure.HealthChecks;
+using Backend.Infrastructure.Security.Recaptcha;
 using Backend.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +38,7 @@ public static class InfrastructureServicesRegistration
         services.AddCacheServices(configuration);
         services.AddFileStorageServices(configuration);
         services.AddMfaServices(); // Add MFA services
+        services.AddRecaptchaServices(configuration); // Add reCAPTCHA services
 
         return services;
     }
@@ -146,29 +149,7 @@ public static class InfrastructureServicesRegistration
             configuration.GetSection("TokenCleanup"));
         services.AddHostedService<TokenCleanupBackgroundService>();
 
-        // Configure and register CAPTCHA service
-        services.Configure<CaptchaSettings>(
-            configuration.GetSection("Captcha"));
-        
-        // Register both CAPTCHA services
-        services.AddScoped<SimpleCaptchaService>();
-        services.AddScoped<GoogleReCaptchaService>();
-        
-        // Register CAPTCHA service factory
-        services.AddScoped<ICaptchaServiceFactory, CaptchaServiceFactory>();
-        
-        // Register default CAPTCHA service (will be created by factory)
-        services.AddScoped<ICaptchaService>(serviceProvider =>
-        {
-            var factory = serviceProvider.GetRequiredService<ICaptchaServiceFactory>();
-            return factory.CreateCaptchaService();
-        });
 
-        // Register HttpClient for Google reCAPTCHA API calls
-        services.AddHttpClient<GoogleReCaptchaService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
 
         return services;
     }
@@ -256,6 +237,23 @@ public static class InfrastructureServicesRegistration
         }
 
         services.AddScoped<EmailTemplateService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers reCAPTCHA services
+    /// </summary>
+    private static IServiceCollection AddRecaptchaServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Configure reCAPTCHA options
+        services.Configure<RecaptchaOptions>(
+            configuration.GetSection("Recaptcha"));
+
+        // Register typed HttpClient for reCAPTCHA
+        services.AddHttpClient<IHumanVerificationService, GoogleRecaptchaService>();
 
         return services;
     }
