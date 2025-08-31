@@ -134,40 +134,20 @@
                             <!-- CAPTCHA Field -->
                             <div class="form-group">
                                 <label class="form-label">
-                                    <i class="fas fa-shield-alt me-1"></i>Security Verification
+                                    <i class="fas fa-shield-alt me-1"></i>
                                 </label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-shield-alt input-icon"></i>
-                                    <input asp-for="CaptchaChallengeId" 
-                                           type="hidden" 
-                                           id="captchaChallengeId" />
-                                    <div id="captchaContainer" class="captcha-container">
-                                        <div class="captcha-info">
-                                            <i class="fas fa-calculator me-2"></i>
-                                            <span>Please answer the question below:</span>
-                                        </div>
-                                        <div class="captcha-question">
-                                            <strong id="captchaQuestion">Loading...</strong>
-                                        </div>
-                                        <div class="captcha-answer">
-                                            <input asp-for="CaptchaAnswer" 
-                                                   type="text" 
-                                                   class="form-control" 
-                                                   id="captchaAnswer"
-                                                   placeholder="Enter your answer"
-                                                   maxlength="10" />
-                                        </div>
-                                        <div class="captcha-actions mt-2">
-                                            <button type="button" id="refreshCaptcha" class="btn btn-outline-secondary btn-sm me-2">
-                                                <i class="fas fa-refresh me-1"></i>New Question
-                                            </button>
-                                            <button type="button" id="validateCaptcha" class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-check me-1"></i>Verify
-                                            </button>
-                                        </div>
+                                    <input type="hidden" id="captchaToken" name="CaptchaToken" />
+                                    <!-- Google reCAPTCHA v3 - نامرئی -->
+                                    <div class="g-recaptcha" 
+                                         data-sitekey="6Leu9bgrAAAAAK4CRoviNVfx160-mRf8HoF7x4yD">
+                                    </div>
+                                    <div class="captcha-info mt-2">
+                                        <i class="fas fa-shield-alt me-2"></i>
+                                  
                                     </div>
                                 </div>
-                                <span asp-validation-for="CaptchaAnswer" class="field-validation-error"></span>
                             </div>
 
                             <div class="d-grid gap-2 mt-4">
@@ -206,8 +186,8 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.js"></script>
-    <script src="~/js/simple-captcha.js" asp-append-version="true"></script>
-    <script src="~/js/simple-captcha-integration.js" asp-append-version="true"></script>
+    <script src="~/js/captcha.js" asp-append-version="true"></script>
+    <script src="~/js/captcha-integration.js" asp-append-version="true"></script>
     <script src="~/js/modern-auth.js" asp-append-version="true"></script>
     <script src="~/js/auth-enhancements.js" asp-append-version="true"></script>
 }

@@ -149,7 +149,26 @@ public static class InfrastructureServicesRegistration
         // Configure and register CAPTCHA service
         services.Configure<CaptchaSettings>(
             configuration.GetSection("Captcha"));
-        services.AddScoped<ICaptchaService, SimpleCaptchaService>();
+        
+        // Register both CAPTCHA services
+        services.AddScoped<SimpleCaptchaService>();
+        services.AddScoped<GoogleReCaptchaService>();
+        
+        // Register CAPTCHA service factory
+        services.AddScoped<ICaptchaServiceFactory, CaptchaServiceFactory>();
+        
+        // Register default CAPTCHA service (will be created by factory)
+        services.AddScoped<ICaptchaService>(serviceProvider =>
+        {
+            var factory = serviceProvider.GetRequiredService<ICaptchaServiceFactory>();
+            return factory.CreateCaptchaService();
+        });
+
+        // Register HttpClient for Google reCAPTCHA API calls
+        services.AddHttpClient<GoogleReCaptchaService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
 
         return services;
     }

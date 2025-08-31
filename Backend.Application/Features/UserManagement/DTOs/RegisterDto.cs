@@ -40,11 +40,7 @@ public class RegisterDto
     
     [Required(ErrorMessage = "تأیید CAPTCHA الزامی است")]
     [Display(Name = "تأیید امنیتی")]
-    public string CaptchaChallengeId { get; set; } = string.Empty;
-    
-    [Required(ErrorMessage = "پاسخ CAPTCHA الزامی است")]
-    [Display(Name = "پاسخ")]
-    public string CaptchaAnswer { get; set; } = string.Empty;
+    public string CaptchaToken { get; set; } = string.Empty;
     
     /// <summary>
     /// IP address of the registration attempt (for security tracking)

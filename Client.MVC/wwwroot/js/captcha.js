@@ -1,16 +1,15 @@
 /**
  * CAPTCHA functionality for Client.MVC
- * Uses Google reCAPTCHA v3
+ * Google reCAPTCHA v3 - Automatic and Invisible
  */
 
 class CaptchaService {
     constructor() {
         this.siteKey = '';
-        this.action = 'register';
-        this.threshold = 0.5;
         this.isEnabled = false;
         this.isLoaded = false;
-        this.init();
+        this.currentAction = 'default';
+        this.scoreThreshold = 0.5;
     }
 
     /**
@@ -18,18 +17,18 @@ class CaptchaService {
      */
     async init() {
         try {
-            // Load reCAPTCHA script
-            await this.loadRecaptchaScript();
-            
-            // Get configuration from API
+            // Load configuration from API
             await this.loadConfiguration();
             
-            // Initialize reCAPTCHA
             if (this.isEnabled) {
-                this.initializeRecaptcha();
+                // Load Google reCAPTCHA script
+                await this.loadRecaptchaScript();
+                console.log('CAPTCHA service initialized successfully');
+            } else {
+                console.log('CAPTCHA is disabled');
             }
         } catch (error) {
-            console.error('Error initializing CAPTCHA:', error);
+            console.error('Failed to initialize CAPTCHA service:', error);
         }
     }
 
@@ -39,6 +38,7 @@ class CaptchaService {
     loadRecaptchaScript() {
         return new Promise((resolve, reject) => {
             if (window.grecaptcha) {
+                this.isLoaded = true;
                 resolve();
                 return;
             }
@@ -68,57 +68,94 @@ class CaptchaService {
         try {
             const response = await fetch('/api/captcha/config');
             if (!response.ok) {
-                throw new Error('Failed to load CAPTCHA configuration');
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const config = await response.json();
             this.siteKey = config.siteKey;
-            this.action = config.action;
-            this.threshold = config.threshold;
             this.isEnabled = config.isEnabled;
+            this.scoreThreshold = config.threshold;
+            this.currentAction = config.action;
 
             console.log('CAPTCHA configuration loaded:', config);
         } catch (error) {
-            console.error('Error loading CAPTCHA configuration:', error);
+            console.error('Failed to load CAPTCHA configuration:', error);
             this.isEnabled = false;
         }
     }
 
     /**
-     * Initialize reCAPTCHA
+     * Execute reCAPTCHA for a specific action
+     * @param {string} action - The action being performed (e.g., 'register', 'login')
+     * @returns {Promise<string>} - The reCAPTCHA token
      */
-    initializeRecaptcha() {
-        if (!this.isLoaded || !this.isEnabled) {
-            return;
+    async execute(action = 'default') {
+        if (!this.isEnabled || !this.isLoaded) {
+            throw new Error('CAPTCHA service is not available');
         }
 
         try {
-            grecaptcha.ready(() => {
-                console.log('reCAPTCHA is ready');
-            });
+            this.currentAction = action;
+            
+            // Execute reCAPTCHA automatically
+            const token = await grecaptcha.execute(this.siteKey, { action: action });
+            
+            if (!token) {
+                throw new Error('Failed to get reCAPTCHA token');
+            }
+
+            console.log(`reCAPTCHA executed for action: ${action}`);
+            return token;
         } catch (error) {
-            console.error('Error initializing reCAPTCHA:', error);
+            console.error('reCAPTCHA execution failed:', error);
+            throw error;
         }
     }
 
     /**
-     * Execute CAPTCHA and get token
+     * Validate reCAPTCHA token with backend
+     * @param {string} token - The reCAPTCHA token
+     * @param {string} action - The action being performed
+     * @returns {Promise<Object>} - Validation result
      */
-    async execute(action = null) {
-        if (!this.isEnabled || !this.isLoaded) {
-            console.warn('CAPTCHA is not enabled or not loaded');
-            return null;
-        }
-
+    async validate(token, action = 'default') {
         try {
-            const actionName = action || this.action;
-            const token = await grecaptcha.execute(this.siteKey, { action: actionName });
-            
-            console.log('CAPTCHA executed successfully for action:', actionName);
-            return token;
+            const response = await fetch('/api/captcha/validate-google', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    token: token,
+                    action: action
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            return result;
         } catch (error) {
-            console.error('Error executing CAPTCHA:', error);
-            return null;
+            console.error('CAPTCHA validation failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Execute and validate reCAPTCHA in one step
+     * @param {string} action - The action being performed
+     * @returns {Promise<Object>} - Validation result
+     */
+    async executeAndValidate(action = 'default') {
+        try {
+            const token = await this.execute(action);
+            const result = await this.validate(token, action);
+            return result;
+        } catch (error) {
+            console.error('CAPTCHA execution and validation failed:', error);
+            throw error;
         }
     }
 
@@ -127,107 +164,37 @@ class CaptchaService {
      */
     async isRequired(action = 'default') {
         try {
-            const response = await fetch(`/api/captcha/required?action=${action}`);
+            const response = await fetch(`/api/captcha/config`);
             if (!response.ok) {
-                return true; // Default to requiring CAPTCHA on error
+                return false;
             }
 
-            const result = await response.json();
-            return result.isRequired;
+            const config = await response.json();
+            return config.isEnabled && config.action === action;
         } catch (error) {
             console.error('Error checking CAPTCHA requirement:', error);
-            return true; // Default to requiring CAPTCHA on error
+            return false;
         }
     }
 
     /**
-     * Validate CAPTCHA token
+     * Reset reCAPTCHA
      */
-    async validate(token) {
-        try {
-            const response = await fetch('/api/captcha/validate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token: token })
-            });
-
-            if (!response.ok) {
-                throw new Error('CAPTCHA validation failed');
-            }
-
-            const result = await response.json();
-            return result;
-        } catch (error) {
-            console.error('Error validating CAPTCHA:', error);
-            return {
-                isValid: false,
-                errorMessage: 'CAPTCHA validation failed'
-            };
+    reset() {
+        if (window.grecaptcha) {
+            grecaptcha.reset();
         }
-    }
-
-    /**
-     * Get CAPTCHA widget for forms
-     */
-    createWidget(containerId, options = {}) {
-        if (!this.isEnabled) {
-            return null;
-        }
-
-        const container = document.getElementById(containerId);
-        if (!container) {
-            console.error('Container not found:', containerId);
-            return null;
-        }
-
-        // Create invisible CAPTCHA widget
-        const widget = document.createElement('div');
-        widget.className = 'g-recaptcha';
-        widget.setAttribute('data-sitekey', this.siteKey);
-        widget.setAttribute('data-size', 'invisible');
-        widget.setAttribute('data-callback', options.callback || 'onCaptchaSuccess');
-        widget.setAttribute('data-expired-callback', options.expiredCallback || 'onCaptchaExpired');
-        widget.setAttribute('data-error-callback', options.errorCallback || 'onCaptchaError');
-
-        container.appendChild(widget);
-        return widget;
     }
 }
 
 // Global CAPTCHA service instance
 let captchaService;
 
-// Initialize CAPTCHA when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', async () => {
     captchaService = new CaptchaService();
+    await captchaService.init();
 });
-
-// Global callback functions for reCAPTCHA
-window.onCaptchaSuccess = function(token) {
-    console.log('CAPTCHA success, token:', token);
-    // Store token in form or handle as needed
-    if (window.currentCaptchaCallback) {
-        window.currentCaptchaCallback(token);
-    }
-};
-
-window.onCaptchaExpired = function() {
-    console.log('CAPTCHA expired');
-    // Handle expired CAPTCHA
-    if (window.currentCaptchaExpiredCallback) {
-        window.currentCaptchaExpiredCallback();
-    }
-};
-
-window.onCaptchaError = function() {
-    console.log('CAPTCHA error');
-    // Handle CAPTCHA error
-    if (window.currentCaptchaErrorCallback) {
-        window.currentCaptchaErrorCallback();
-    }
-};
 
 // Export for use in other scripts
 window.CaptchaService = CaptchaService; 

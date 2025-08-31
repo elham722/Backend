@@ -58,6 +58,7 @@ public class CaptchaConfiguration
     public string Action { get; set; } = "captcha";
     public double Threshold { get; set; } = 1.0;
     public bool IsEnabled { get; set; } = true;
+    public CaptchaType Type { get; set; } = CaptchaType.Simple;
 }
 
 /// <summary>
@@ -70,4 +71,36 @@ public class CaptchaChallenge
     public string Answer { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
+}
+
+/// <summary>
+/// CAPTCHA type enumeration
+/// </summary>
+public enum CaptchaType
+{
+    Simple,
+    GoogleReCaptcha
+}
+
+/// <summary>
+/// Google reCAPTCHA validation request
+/// </summary>
+public class GoogleReCaptchaValidationRequest
+{
+    public string Token { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public string? IpAddress { get; set; }
+}
+
+/// <summary>
+/// Google reCAPTCHA validation response
+/// </summary>
+public class GoogleReCaptchaValidationResponse
+{
+    public bool Success { get; set; }
+    public double Score { get; set; }
+    public string Action { get; set; } = string.Empty;
+    public DateTime ChallengeTime { get; set; }
+    public string Hostname { get; set; } = string.Empty;
+    public List<string> ErrorCodes { get; set; } = new();
 } 

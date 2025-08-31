@@ -27,8 +27,8 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
     {
         try
         {
-            // Validate CAPTCHA first
-            var captchaResult = await _captchaService.ValidateAsync(request.CaptchaChallengeId, request.CaptchaAnswer, request.IpAddress);
+            // Validate CAPTCHA first using Google reCAPTCHA
+            var captchaResult = await _captchaService.ValidateAsync("google-recaptcha", request.CaptchaToken, request.IpAddress);
             if (!captchaResult.IsValid)
             {
                 return Result<AuthResultDto>.Failure(
@@ -46,8 +46,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
                 PhoneNumber = request.PhoneNumber,
                 AcceptTerms = request.AcceptTerms,
                 SubscribeToNewsletter = request.SubscribeToNewsletter,
-                CaptchaChallengeId = request.CaptchaChallengeId,
-                CaptchaAnswer = request.CaptchaAnswer,
+                CaptchaToken = request.CaptchaToken,
                 IpAddress = request.IpAddress,
                 DeviceInfo = request.DeviceInfo
             };

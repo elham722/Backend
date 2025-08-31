@@ -47,12 +47,8 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
         RuleFor(x => x.AcceptTerms)
             .Equal(true).WithMessage("Terms and conditions must be accepted");
 
-        RuleFor(x => x.CaptchaChallengeId)
-            .NotEmpty().WithMessage("CAPTCHA challenge is required")
-            .MaximumLength(100).WithMessage("CAPTCHA challenge ID is too long");
-
-        RuleFor(x => x.CaptchaAnswer)
-            .NotEmpty().WithMessage("CAPTCHA answer is required")
-            .MaximumLength(10).WithMessage("CAPTCHA answer is too long");
+        RuleFor(x => x.CaptchaToken)
+            .NotEmpty().WithMessage("CAPTCHA token is required")
+            .MaximumLength(1000).WithMessage("CAPTCHA token is too long");
     }
 } 

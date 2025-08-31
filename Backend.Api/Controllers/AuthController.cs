@@ -48,8 +48,7 @@ public class AuthController : ControllerBase
                 PhoneNumber = registerDto.PhoneNumber,
                 AcceptTerms = registerDto.AcceptTerms,
                 SubscribeToNewsletter = registerDto.SubscribeToNewsletter,
-                CaptchaChallengeId = registerDto.CaptchaChallengeId,
-                CaptchaAnswer = registerDto.CaptchaAnswer,
+                CaptchaToken = registerDto.CaptchaToken,
                 IpAddress = registerDto.IpAddress ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = HttpContext.Request.Headers["User-Agent"].ToString(),
                 DeviceInfo = registerDto.DeviceInfo ??
