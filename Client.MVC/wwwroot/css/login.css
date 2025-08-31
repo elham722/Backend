@@ -1,0 +1,246 @@
+:root{
+  --bg-left: #0ea5a6;    /* teal-ish */
+  --bg-right: #d946ef;   /* pink/purple */
+  --card-bg: #ffffff;
+  --muted: #97a6b2;
+  --primary: #e98da6;    /* pink button */
+  --input-bg: #e6f4f9;
+  --shadow: 0 15px 40px rgba(12,16,28,0.15);
+  --radius: 28px;
+  font-family: Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:linear-gradient(90deg,var(--bg-left),var(--bg-right));}
+
+.page-root{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:36px;}
+
+.center-wrap{width:100%;max-width:1200px;}
+
+.auth-card{
+  display:flex;
+  background:var(--card-bg);
+  border-radius:var(--radius);
+  overflow:hidden;
+  box-shadow:var(--shadow);
+  min-height:520px;
+  width: 100%;
+}
+
+/* left column */
+.auth-left{
+  flex:1;
+  padding:48px 80px 56px 80px; /* از 56px به 80px افزایش یافت تا از چپ فاصله بگیرد */
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  max-width: 600px; /* حداکثر عرض برای جلوگیری از کشیدگی */
+}
+.logo{color:#e16b91;font-weight:700;font-size:20px;margin-bottom:4px;}
+.subtitle{color:var(--muted);font-size:13px;}
+.title{font-size:48px;margin:6px 0 18px 0;font-weight:800;color:#0b1220;}
+.field-label{display:block;font-size:13px;color:#223;}
+.input{display:block;width:100%;padding:12px 14px;border-radius:8px;border:1px solid rgba(15,20,30,0.04);background:var(--input-bg);margin:8px 0 16px 0;font-size:15px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4);}
+
+/* password row: label + forgot link */
+.password-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+.forgot-link{font-size:13px;color:#8aa; text-decoration:none;}
+.password-wrapper{position:relative;display:flex;}
+.eye-btn{position:absolute;right:10px;top:8px;border:none;background:transparent;cursor:pointer;font-size:16px;padding:6px;min-width:24px;min-height:24px;}
+.eye-btn.closed::before{content: "🙈"; display:block; font-size:18px; line-height:1;} /* چشم بسته (میمون) */
+.eye-btn.open::before{content: "🙉"; display:block; font-size:18px; line-height:1;} /* چشم باز (میمون) */
+
+/* primary button */
+.btn-primary{
+  margin-top:6px;
+  background:linear-gradient(180deg,var(--primary),#cf7fa2);
+  color:#fff;border:none;padding:12px 30px;border-radius:999px;font-weight:700;cursor:pointer;margin-bottom:18px;
+  box-shadow:0 6px 18px rgba(233,141,166,0.26);
+  transition: all 0.3s ease;
+  display: block; /* برای centering */
+  margin-left: auto; /* برای centering */
+  margin-right: auto; /* برای centering */
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(233,141,166,0.4);
+}
+
+/* divider */
+.divider{display:flex;align-items:center;gap:12px;color:#9aa; font-size:13px;margin:8px 0;}
+.divider:before,.divider:after{content:"";height:1px;background:#e9eef2;flex:1}
+
+/* socials */
+.socials{display:flex;gap:12px;margin-top:8px;flex-wrap: wrap;justify-content: center;}
+.social-btn{display:inline-flex;align-items:center;justify-content:center;padding:16px;border-radius:50%;border:1px solid #d7e6ef;background:#fff;cursor:pointer;transition: all 0.3s ease;width: 50px;height: 50px;min-width: auto;}
+.social-btn:hover{transform: translateY(-2px);box-shadow: 0 4px 12px rgba(0,0,0,0.15);}
+.social-btn svg{display:inline-block;width: 24px;height: 24px;}
+.social-btn span{display: none;} /* متن دکمه‌ها مخفی شد */
+.signup-msg{margin-top:18px;color:#000; font-size:13px;text-align: center;} /* رنگ مشکی شد */
+.signup-msg a{color: var(--primary); text-decoration: none;} /* صورتی و بدون خط زیر */
+
+/* right column - باریک‌تر و عکس روی فرم */
+.auth-right{
+  width: 28%; /* باریک‌تر */
+  background: transparent; /* پس‌زمینه آبی حذف شد */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-left: auto; /* قسمت آبی را به سمت راست ببرد */
+}
+
+/* پس‌زمینه آبی پشت عکس */
+.auth-right::before {
+  content: "";
+  position: absolute;
+  top: 0; 
+  bottom: 0; 
+  left: 0; 
+  right: 0;
+  background: #dff3fb;
+  border-radius: 28px; /* همه چهار طرف گرد شد */
+  z-index: 1;
+}
+
+.image-frame{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  position: relative;
+  z-index: 2; /* روی پس‌زمینه آبی */
+}
+
+.image-frame img{
+  max-width: 250%; /* از 220% به 250% افزایش یافت تا عالی‌تر بشه */
+  height:auto;
+  object-fit:contain;
+  border-radius:16px;
+  max-height: 800px; /* از 700px به 800px افزایش یافت */
+  position: relative;
+  left: -80px; /* از -60px به -80px افزایش یافت تا بیشتر به سمت چپ بره */
+  z-index: 3; /* بیاید جلوتر از کارت */
+}
+
+/* Input focus states */
+.input:focus{
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(233,141,166,0.1);
+  transform: translateY(-1px);
+}
+
+/* Social button specific colors */
+.social-btn.google:hover{border-color: #EA4335;color: #EA4335;}
+.social-btn.github:hover{border-color: #333;color: #333;}
+.social-btn.facebook:hover{border-color: #1877F2;color: #1877F2;}
+
+/* Image hover effect */
+.image-frame img:hover{
+  transform: scale(1.02);
+  transition: transform 0.3s ease;
+}
+
+/* Smooth transitions for all interactive elements */
+.auth-card, .input, .btn-primary, .social-btn, .forgot-link, .signup-msg a{
+  transition: all 0.3s ease;
+}
+
+/* Link hover effects */
+.forgot-link:hover{color: var(--primary);}
+.signup-msg a:hover{color: var(--primary);}
+
+/* Responsive Design - ساده و کاربردی */
+@media(max-width: 768px) {
+  .auth-card { 
+    flex-direction: column; 
+    min-height: auto;
+  }
+  
+  .auth-right { 
+    width: 100%; 
+    order: -1; /* بیاید بالا */
+    background: #dff3fb;
+    border-radius: 0 0 20px 20px;
+  }
+  
+  .auth-right::before {
+    display: none; /* پس‌زمینه اضافی حذف */
+  }
+  
+  .image-frame img { 
+    max-width: 60%; 
+    left: 0; 
+    z-index: 1;
+  }
+  
+  .auth-left {
+    padding: 20px;
+  }
+  
+  .title {
+    font-size: 32px;
+    text-align: center;
+  }
+  
+  .logo, .subtitle {
+    text-align: center;
+  }
+  
+  .input, .btn-primary {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px;
+  }
+  
+  .btn-primary {
+    padding: 12px 20px;
+  }
+  
+  .socials {
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .social-btn {
+    min-width: 100px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+@media(max-width: 480px) {
+  .page-root {
+    padding: 16px;
+  }
+  
+  .auth-left {
+    padding: 16px;
+  }
+  
+  .title {
+    font-size: 28px;
+  }
+  
+  .logo {
+    font-size: 18px;
+  }
+  
+  .subtitle {
+    font-size: 12px;
+  }
+  
+  .input, .btn-primary {
+    font-size: 13px;
+    padding: 8px;
+  }
+  
+  .social-btn {
+    min-width: 80px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+} 
