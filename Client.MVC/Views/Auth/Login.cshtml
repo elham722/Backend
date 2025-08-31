@@ -1,100 +1,105 @@
 @model Backend.Application.Features.UserManagement.DTOs.LoginDto
 
 @{
-    ViewData["Title"] = "ورود";
+    ViewData["Title"] = "احراز هویت";
     Layout = "_Layout";
 }
 
-<div class="auth-container">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5 col-xl-4">
-                <div class="auth-card">
-                    <div class="card-header">
-                        <h3>
-                            <i class="fas fa-sign-in-alt auth-icon"></i>
-                            ورود به سیستم
-                        </h3>
-                        <p class="text-white-50 mb-0">خوش آمدید! لطفاً اطلاعات خود را وارد کنید</p>
-                    </div>
-                    
-                    <div class="card-body">
-                        <form id="loginForm" asp-action="Login" asp-controller="Auth" method="post">
-                            @Html.AntiForgeryToken()
-                            <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
-                            
-                            <div class="form-group">
-                                <label asp-for="EmailOrUsername" class="form-label">
-                                    <i class="fas fa-user me-1"></i>ایمیل یا نام کاربری
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-envelope input-icon"></i>
-                                    <input asp-for="EmailOrUsername" 
-                                           class="form-control" 
-                                           placeholder="example@email.com یا نام کاربری"
-                                           data-val="true"
-                                           data-val-required="این فیلد الزامی است" />
-                                </div>
-                                <span asp-validation-for="EmailOrUsername" class="field-validation-error"></span>
-                            </div>
-
-                            <div class="form-group">
-                                <label asp-for="Password" class="form-label">
-                                    <i class="fas fa-lock me-1"></i>رمز عبور
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-lock input-icon"></i>
-                                    <input asp-for="Password" 
-                                           class="form-control" 
-                                           placeholder="رمز عبور خود را وارد کنید"
-                                           data-val="true"
-                                           data-val-required="این فیلد الزامی است" />
-                                </div>
-                                <span asp-validation-for="Password" class="field-validation-error"></span>
-                            </div>
-
-                            <div class="form-group" id="twoFactorSection" style="display: none;">
-                                <label asp-for="TwoFactorCode" class="form-label">
-                                    <i class="fas fa-shield-alt me-1"></i>کد تایید دو مرحله‌ای
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-key input-icon"></i>
-                                    <input asp-for="TwoFactorCode" 
-                                           class="form-control" 
-                                           placeholder="کد 6 رقمی را وارد کنید"
-                                           data-val="true"
-                                           data-val-required="کد تایید الزامی است" />
-                                </div>
-                                <span asp-validation-for="TwoFactorCode" class="field-validation-error"></span>
-                            </div>
-
-                            <div class="form-check">
-                                <input asp-for="RememberMe" class="form-check-input" id="rememberMe" />
-                                <label asp-for="RememberMe" class="form-check-label" for="rememberMe">
-                                    <i class="fas fa-clock me-1"></i>مرا به خاطر بسپار
-                                </label>
-                            </div>
-
-                            <div class="d-grid gap-2 mt-4">
-                                <button type="submit" class="btn btn-auth btn-login">
-                                    <span class="btn-text">
-                                        <i class="fas fa-sign-in-alt me-2"></i>ورود
-                                    </span>
-                                    <div class="spinner"></div>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <div class="card-footer">
-                        <p class="mb-0">
-                            <i class="fas fa-user-plus me-1"></i>
-                            حساب کاربری ندارید؟ 
-                            <a asp-action="Register" class="text-decoration-none">
-                                <i class="fas fa-arrow-left me-1"></i>ثبت نام کنید
-                            </a>
-                        </p>
-                    </div>
+<div class="auth-split-container">
+    <div class="auth-main-card">
+        <!-- Left Side - Form -->
+        <div class="auth-form-side">
+            <!-- Logo -->
+            <div class="auth-logo">
+                <h1>Logo Here</h1>
+                <p>Welcome back !!!</p>
+            </div>
+            
+            <!-- Form Title -->
+            <div class="auth-form-title">
+                <h2>Log In</h2>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" asp-action="Login" asp-controller="Auth" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+                
+                <!-- Email Field -->
+                <div class="auth-form-group">
+                    <label for="email">Email</label>
+                    <input type="email" 
+                           id="email" 
+                           name="EmailOrUsername" 
+                           placeholder="login@gmail.com"
+                           data-val="true"
+                           data-val-required="این فیلد الزامی است"
+                           data-val-email="لطفاً یک ایمیل معتبر وارد کنید" />
+                </div>
+                
+                <!-- Password Field -->
+                <div class="auth-form-group">
+                    <label for="password">Password</label>
+                    <input type="password" 
+                           id="password" 
+                           name="Password" 
+                           placeholder="***********"
+                           data-val="true"
+                           data-val-required="این فیلد الزامی است" />
+                </div>
+                
+                <!-- Remember Me Checkbox -->
+                <div class="auth-remember-me">
+                    <label class="auth-checkbox-label">
+                        <input type="checkbox" name="RememberMe" id="rememberMe" />
+                        <span class="auth-checkbox-custom"></span>
+                        Remember me
+                    </label>
+                </div>
+                
+                <!-- Forgot Password Link -->
+                <div class="auth-forgot-link">
+                    <a href="#" onclick="showForgotPassword()">Forgot Password?</a>
+                </div>
+                
+                <!-- Login Button -->
+                <button type="submit" class="auth-login-btn">
+                    <span>LOGIN</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            
+            <!-- Divider -->
+            <div class="auth-divider">
+                <span>or continue with</span>
+            </div>
+            
+            <!-- Social Login Buttons -->
+            <div class="auth-social-buttons">
+                <button class="auth-social-btn google" onclick="socialLogin('google')" title="Login with Google">
+                    <i class="fab fa-google"></i>
+                </button>
+                <button class="auth-social-btn github" onclick="socialLogin('github')" title="Login with GitHub">
+                    <i class="fab fa-github"></i>
+                </button>
+                <button class="auth-social-btn facebook" onclick="socialLogin('facebook')" title="Login with Facebook">
+                    <i class="fab fa-facebook-f"></i>
+                </button>
+            </div>
+            
+            <!-- Sign Up Link -->
+            <div class="auth-signup-link">
+                <p>Don't have an account yet? <a href="@Url.Action("Register", "Auth")">Sign up for free</a></p>
+            </div>
+        </div>
+        
+        <!-- Right Side - Illustration -->
+        <div class="auth-illustration-side">
+            <div class="auth-illustration-content">
+                <img src="~/images/tiny-man-holding-lock-women-with-key-hands.png" alt="Authentication Illustration" class="auth-illustration-image" />
+                <div class="auth-illustration-text">
+                    <h3>Welcome Back!</h3>
+                    <p>Sign in to continue your journey</p>
                 </div>
             </div>
         </div>
@@ -102,14 +107,167 @@
 </div>
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/modern-auth.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/auth-animations.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/font-awesome-fallback.css" asp-append-version="true" />
+    <!-- Font Awesome - Multiple CDN fallbacks -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.css" />
 }
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.js"></script>
-    <script src="~/js/modern-auth.js" asp-append-version="true"></script>
-    <script src="~/js/auth-enhancements.js" asp-append-version="true"></script>
+    
+    <script>
+        // Form submission handling
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('.auth-login-btn');
+            const originalText = submitBtn.innerHTML;
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ورود...';
+            submitBtn.disabled = true;
+            
+            // Submit form via AJAX
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'ورود موفق!',
+                        text: data.message || 'خوش آمدید!',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = data.redirectUrl || '/';
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'خطا در ورود',
+                        text: data.message || 'ایمیل یا رمز عبور اشتباه است'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطا در ارتباط',
+                    text: 'لطفاً دوباره تلاش کنید'
+                });
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+        
+        // Social login functions
+        function socialLogin(provider) {
+            Swal.fire({
+                icon: 'info',
+                title: 'ورود با ' + provider,
+                text: 'این ویژگی به زودی اضافه خواهد شد',
+                confirmButtonText: 'باشه'
+            });
+        }
+        
+        // Forgot password function
+        function showForgotPassword() {
+            Swal.fire({
+                icon: 'info',
+                title: 'فراموشی رمز عبور',
+                text: 'این ویژگی به زودی اضافه خواهد شد',
+                confirmButtonText: 'باشه'
+            });
+        }
+        
+        // Input focus effects
+        document.querySelectorAll('.auth-form-group input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    this.parentElement.classList.remove('focused');
+                }
+            });
+        });
+        
+        // Social button hover effects
+        document.querySelectorAll('.auth-social-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-3px) scale(1.05)';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+        
+        // Form validation
+        function validateForm() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            let isValid = true;
+            
+            // Email validation
+            if (!email) {
+                showFieldError('email', 'ایمیل الزامی است');
+                isValid = false;
+            } else {
+                clearFieldError('email');
+            }
+            
+            // Password validation
+            if (!password) {
+                showFieldError('password', 'رمز عبور الزامی است');
+                isValid = false;
+            } else {
+                clearFieldError('password');
+            }
+            
+            return isValid;
+        }
+        
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const errorElement = field.parentElement.querySelector('.field-error') || 
+                               document.createElement('div');
+            
+            errorElement.className = 'field-error';
+            errorElement.textContent = message;
+            errorElement.style.cssText = 'color: #ef4444; font-size: 0.8rem; margin-top: 0.25rem;';
+            
+            if (!field.parentElement.querySelector('.field-error')) {
+                field.parentElement.appendChild(errorElement);
+            }
+            
+            field.style.borderColor = '#ef4444';
+        }
+        
+        function clearFieldError(fieldId) {
+            const field = document.getElementById(fieldId);
+            const errorElement = field.parentElement.querySelector('.field-error');
+            
+            if (errorElement) {
+                errorElement.remove();
+            }
+            
+            field.style.borderColor = '#e5e7eb';
+        }
+    </script>
 } 
