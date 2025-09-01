@@ -53,6 +53,12 @@ public static class InfrastructureServicesRegistration
         // Register date time service
         services.AddScoped<IDateTimeService, DateTimeService>();
 
+        // HttpContext accessor for request-scoped services
+        services.AddHttpContextAccessor();
+
+        // Device info service
+        services.AddScoped<IDeviceInfoService, DeviceInfoService>();
+
         return services;
     }
 

@@ -6,6 +6,7 @@ using Backend.Application.Features.UserManagement.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Application.Common.Results;
+using Backend.Application.Common.Interfaces.Infrastructure;
 
 namespace Backend.Api.Controllers;
 
@@ -16,10 +17,12 @@ namespace Backend.Api.Controllers;
 public class AuthController : BaseApiController
 {
     private readonly IMediator _mediator;
+    private readonly IDeviceInfoService _deviceInfoService;
 
-    public AuthController(IMediator mediator, ILogger<AuthController> logger) : base(logger)
+    public AuthController(IMediator mediator, IDeviceInfoService deviceInfoService, ILogger<AuthController> logger) : base(logger)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        _deviceInfoService = deviceInfoService ?? throw new ArgumentNullException(nameof(deviceInfoService));
     }
 
     /// <summary>
@@ -43,10 +46,9 @@ public class AuthController : BaseApiController
                 AcceptTerms = registerDto.AcceptTerms,
                 SubscribeToNewsletter = registerDto.SubscribeToNewsletter,
                 CaptchaToken = registerDto.CaptchaToken,
-                IpAddress = registerDto.IpAddress ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString(),
-                DeviceInfo = registerDto.DeviceInfo ??
-                             GetDeviceInfoFromUserAgent(HttpContext.Request.Headers["User-Agent"].ToString())
+                IpAddress = registerDto.IpAddress ?? _deviceInfoService.GetIpAddress(),
+                UserAgent = _deviceInfoService.GetUserAgent(),
+                DeviceInfo = registerDto.DeviceInfo ?? _deviceInfoService.GetDeviceInfo()
             };
 
             var result = await _mediator.Send(command);
@@ -75,10 +77,9 @@ public class AuthController : BaseApiController
                 Password = loginDto.Password,
                 RememberMe = loginDto.RememberMe,
                 TwoFactorCode = loginDto.TwoFactorCode,
-                IpAddress = loginDto.IpAddress ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString(),
-                DeviceInfo = loginDto.DeviceInfo ??
-                             GetDeviceInfoFromUserAgent(HttpContext.Request.Headers["User-Agent"].ToString())
+                IpAddress = loginDto.IpAddress ?? _deviceInfoService.GetIpAddress(),
+                UserAgent = _deviceInfoService.GetUserAgent(),
+                DeviceInfo = loginDto.DeviceInfo ?? _deviceInfoService.GetDeviceInfo()
             };
 
             var result = await _mediator.Send(command);
@@ -104,8 +105,8 @@ public class AuthController : BaseApiController
             var command = new RefreshTokenCommand
             {
                 RefreshToken = refreshTokenDto.RefreshToken,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString()
+                IpAddress = _deviceInfoService.GetIpAddress(),
+                UserAgent = _deviceInfoService.GetUserAgent()
             };
 
             var result = await _mediator.Send(command);
@@ -132,8 +133,8 @@ public class AuthController : BaseApiController
             {
                 RefreshToken = logoutDto.RefreshToken,
                 LogoutFromAllDevices = logoutDto.LogoutFromAllDevices,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = HttpContext.Request.Headers["User-Agent"].ToString(),
+                IpAddress = _deviceInfoService.GetIpAddress(),
+                UserAgent = _deviceInfoService.GetUserAgent(),
                 LogoutReason = "User initiated logout"
             };
 
@@ -146,50 +147,5 @@ public class AuthController : BaseApiController
         }
     }
 
-    /// <summary>
-    /// Extract device information from User-Agent string
-    /// </summary>
-    private string GetDeviceInfoFromUserAgent(string userAgent)
-    {
-        if (string.IsNullOrEmpty(userAgent))
-            return "Unknown Device";
-
-        try
-        {
-            var deviceInfo = new List<string>();
-
-            if (userAgent.Contains("Mobile") || userAgent.Contains("Android") || userAgent.Contains("iPhone"))
-                deviceInfo.Add("Mobile");
-            else if (userAgent.Contains("Tablet") || userAgent.Contains("iPad"))
-                deviceInfo.Add("Tablet");
-            else
-                deviceInfo.Add("Desktop");
-
-            if (userAgent.Contains("Windows"))
-                deviceInfo.Add("Windows");
-            else if (userAgent.Contains("Mac OS"))
-                deviceInfo.Add("macOS");
-            else if (userAgent.Contains("Linux"))
-                deviceInfo.Add("Linux");
-            else if (userAgent.Contains("Android"))
-                deviceInfo.Add("Android");
-            else if (userAgent.Contains("iOS"))
-                deviceInfo.Add("iOS");
-
-            if (userAgent.Contains("Chrome"))
-                deviceInfo.Add("Chrome");
-            else if (userAgent.Contains("Firefox"))
-                deviceInfo.Add("Firefox");
-            else if (userAgent.Contains("Safari"))
-                deviceInfo.Add("Safari");
-            else if (userAgent.Contains("Edge"))
-                deviceInfo.Add("Edge");
-
-            return string.Join(" | ", deviceInfo);
-        }
-        catch
-        {
-            return "Unknown Device";
-        }
-    }
+    
 }
