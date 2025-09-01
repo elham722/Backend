@@ -1,3 +1,5 @@
+using Asp.Versioning;
+using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.Commands.MFA;
 using Backend.Application.Features.UserManagement.DTOs;
@@ -8,21 +10,27 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace Backend.Api.Controllers;
+namespace Backend.Api.Controllers.V1.Auth;
 
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/auth/mfa")]
 [Authorize]
-public class MfaController : BaseApiController
+public class MfaController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IDeviceInfoService _deviceInfoService;
+    private readonly ILogger<MfaController> _logger;
 
-    public MfaController(IMediator mediator, ILogger<MfaController> logger) : base(logger)
+    public MfaController(IMediator mediator, IDeviceInfoService deviceInfoService, ILogger<MfaController> logger)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        _deviceInfoService = deviceInfoService ?? throw new ArgumentNullException(nameof(deviceInfoService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     [HttpGet]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<MfaSetupDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 401)]
     [ProducesResponseType(typeof(ApiResponse), 500)]
@@ -41,11 +49,13 @@ public class MfaController : BaseApiController
         }
         catch (Exception ex)
         {
-            return InternalServerError(ex, "Error getting MFA methods");
+            _logger.LogError(ex, "Error getting MFA methods");
+            return StatusCode(500, ApiResponse.Error("Error getting MFA methods", 500, ex.GetType().Name));
         }
     }
 
     [HttpPost("setup")]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(ApiResponse<MfaSetupDto>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     [ProducesResponseType(typeof(ApiResponse), 401)]
@@ -63,8 +73,8 @@ public class MfaController : BaseApiController
                 UserId = userId,
                 Type = request.Type,
                 PhoneNumber = request.PhoneNumber,
-                IpAddress = GetClientIpAddress(),
-                DeviceInfo = GetUserAgent()
+                IpAddress = _deviceInfoService.GetIpAddress(),
+                DeviceInfo = _deviceInfoService.GetDeviceInfo()
             };
 
             var result = await _mediator.Send(command);
@@ -76,11 +86,13 @@ public class MfaController : BaseApiController
         }
         catch (Exception ex)
         {
-            return InternalServerError(ex, "Error setting up MFA");
+            _logger.LogError(ex, "Error setting up MFA");
+            return StatusCode(500, ApiResponse.Error("Error setting up MFA", 500, ex.GetType().Name));
         }
     }
 
     [HttpPost("verify")]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(ApiResponse<MfaVerificationResultDto>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     [ProducesResponseType(typeof(ApiResponse), 401)]
@@ -98,8 +110,8 @@ public class MfaController : BaseApiController
                 UserId = userId,
                 Type = request.Type,
                 Code = request.Code,
-                DeviceInfo = GetUserAgent(),
-                IpAddress = GetClientIpAddress(),
+                DeviceInfo = _deviceInfoService.GetDeviceInfo(),
+                IpAddress = _deviceInfoService.GetIpAddress(),
                 RememberDevice = request.RememberDevice
             };
 
@@ -111,11 +123,13 @@ public class MfaController : BaseApiController
         }
         catch (Exception ex)
         {
-            return InternalServerError(ex, "Error verifying MFA");
+            _logger.LogError(ex, "Error verifying MFA");
+            return StatusCode(500, ApiResponse.Error("Error verifying MFA", 500, ex.GetType().Name));
         }
     }
 
     [HttpPost("disable")]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 401)]
     [ProducesResponseType(typeof(ApiResponse), 500)]
@@ -131,8 +145,8 @@ public class MfaController : BaseApiController
             {
                 UserId = userId,
                 Type = request.Type,
-                IpAddress = GetClientIpAddress(),
-                DeviceInfo = GetUserAgent()
+                IpAddress = _deviceInfoService.GetIpAddress(),
+                DeviceInfo = _deviceInfoService.GetDeviceInfo()
             };
 
             var result = await _mediator.Send(command);
@@ -140,11 +154,13 @@ public class MfaController : BaseApiController
         }
         catch (Exception ex)
         {
-            return InternalServerError(ex, "Error disabling MFA");
+            _logger.LogError(ex, "Error disabling MFA");
+            return StatusCode(500, ApiResponse.Error("Error disabling MFA", 500, ex.GetType().Name));
         }
     }
 
     [HttpGet("status")]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(ApiResponse<MfaStatusDto>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 401)]
     [ProducesResponseType(typeof(ApiResponse), 500)]
@@ -171,19 +187,14 @@ public class MfaController : BaseApiController
         }
         catch (Exception ex)
         {
-            return InternalServerError(ex, "Error getting MFA status");
+            _logger.LogError(ex, "Error getting MFA status");
+            return StatusCode(500, ApiResponse.Error("Error getting MFA status", 500, ex.GetType().Name));
         }
     }
 
     #region Helpers
 
     private string? GetCurrentUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    private string GetClientIpAddress() =>
-        HttpContext.Connection.RemoteIpAddress?.ToString() ??
-        HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault() ??
-        "Unknown";
-    private string GetUserAgent() =>
-        HttpContext.Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown";
 
     #endregion
 }
@@ -212,4 +223,4 @@ public class MfaStatusDto
     public bool HasEnabledMfa { get; set; }
     public List<MfaType> EnabledMethods { get; set; } = new();
     public int TotalMethods { get; set; }
-}
+} 

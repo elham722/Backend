@@ -1,24 +1,28 @@
-using Backend.Application.Common.Interfaces.Infrastructure;
+using Asp.Versioning;
 using Backend.Application.Common.Results;
 using Backend.Identity.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Backend.Api.Controllers;
+namespace Backend.Api.Controllers.V1.Auth;
 
 [ApiController]
-[Route("api/[controller]")]
-public class EmailConfirmationController : BaseApiController
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/auth/email")]
+public class EmailConfirmationController : ControllerBase
 {
     private readonly IEmailConfirmationService _emailConfirmationService;
+    private readonly ILogger<EmailConfirmationController> _logger;
 
     public EmailConfirmationController(
         IEmailConfirmationService emailConfirmationService,
-        ILogger<EmailConfirmationController> logger) : base(logger)
+        ILogger<EmailConfirmationController> logger)
     {
         _emailConfirmationService = emailConfirmationService ?? throw new ArgumentNullException(nameof(emailConfirmationService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     [HttpGet("confirm")]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(ApiResponse), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     [ProducesResponseType(typeof(ApiResponse), 500)]
@@ -38,11 +42,13 @@ public class EmailConfirmationController : BaseApiController
         }
         catch (Exception ex)
         {
-            return InternalServerError(ex, "An unexpected error occurred while confirming email");
+            _logger.LogError(ex, "An unexpected error occurred while confirming email");
+            return StatusCode(500, ApiResponse.Error("An unexpected error occurred while confirming email", 500, ex.GetType().Name));
         }
     }
 
     [HttpPost("resend")]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(ApiResponse), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     [ProducesResponseType(typeof(ApiResponse), 500)]
@@ -62,11 +68,13 @@ public class EmailConfirmationController : BaseApiController
         }
         catch (Exception ex)
         {
-            return InternalServerError(ex, "An unexpected error occurred while resending email confirmation");
+            _logger.LogError(ex, "An unexpected error occurred while resending email confirmation");
+            return StatusCode(500, ApiResponse.Error("An unexpected error occurred while resending email confirmation", 500, ex.GetType().Name));
         }
     }
 
     [HttpGet("status/{userId}")]
+    [MapToApiVersion("1.0")]
     [ProducesResponseType(typeof(ApiResponse<object>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     [ProducesResponseType(typeof(ApiResponse), 500)]
@@ -87,7 +95,8 @@ public class EmailConfirmationController : BaseApiController
         }
         catch (Exception ex)
         {
-            return InternalServerError(ex, "An unexpected error occurred while checking email confirmation status");
+            _logger.LogError(ex, "An unexpected error occurred while checking email confirmation status");
+            return StatusCode(500, ApiResponse.Error("An unexpected error occurred while checking email confirmation status", 500, ex.GetType().Name));
         }
     }
 }
@@ -95,4 +104,4 @@ public class EmailConfirmationController : BaseApiController
 public class ResendEmailConfirmationRequest
 {
     public string Email { get; set; } = string.Empty;
-}
+} 
