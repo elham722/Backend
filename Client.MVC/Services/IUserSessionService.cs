@@ -1,4 +1,5 @@
 using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Common.Results;
 
 namespace Client.MVC.Services
 {

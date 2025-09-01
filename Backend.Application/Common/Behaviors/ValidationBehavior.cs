@@ -12,7 +12,7 @@ namespace Backend.Application.Common.Behaviors;
 /// <typeparam name="TResponse">Response type</typeparam>
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TResponse : IResult
+   
 {
     private readonly IEnumerable<FluentValidation.IValidator<TRequest>> _validators;
 

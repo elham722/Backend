@@ -1,6 +1,7 @@
 using Backend.Application.Features.UserManagement.DTOs;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
+using Backend.Application.Common.Results;
 
 namespace Client.MVC.Services
 {

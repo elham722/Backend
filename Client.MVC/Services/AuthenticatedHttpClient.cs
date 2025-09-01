@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Polly;
+using Backend.Application.Common.Results;
 
 namespace Client.MVC.Services
 {

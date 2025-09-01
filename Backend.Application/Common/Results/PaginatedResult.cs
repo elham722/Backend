@@ -4,7 +4,7 @@ namespace Backend.Application.Common.Results;
 /// Result class for paginated data
 /// </summary>
 /// <typeparam name="T">Type of the data items</typeparam>
-public class PaginatedResult<T> : IResult
+public class PaginatedResult<T> 
 {
     public bool IsSuccess { get; }
     public string? ErrorMessage { get; }

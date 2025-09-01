@@ -55,7 +55,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
     client.BaseAddress = new Uri(apiSettings["BaseUrl"] ?? "https://localhost:7209/");
     client.DefaultRequestHeaders.Add("Accept", "application/json");
     client.Timeout = TimeSpan.FromSeconds(
-        apiSettings.GetValue<int>("TimeoutSeconds", 30));
+        apiSettings.GetValue<int>("TimeoutSeconds", 100));
 });
 
 // Register services with improved dependency injection

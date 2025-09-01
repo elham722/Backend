@@ -7,6 +7,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
+using Backend.Application.Common.Results;
 
 namespace Backend.Api.Controllers;
 

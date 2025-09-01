@@ -11,7 +11,7 @@ namespace Backend.Application.Common.Behaviors;
 /// </summary>
 public class CaptchaBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TResponse : IResult
+    
 {
     private readonly IHumanVerificationService _captcha;
     private readonly IHttpContextAccessor _http;

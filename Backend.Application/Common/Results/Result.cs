@@ -1,9 +1,6 @@
 namespace Backend.Application.Common.Results;
 
-/// <summary>
-/// Base result class for operations that don't return data
-/// </summary>
-public class Result : IResult
+public class Result
 {
     public bool IsSuccess { get; }
     public string? ErrorMessage { get; }
@@ -16,20 +13,9 @@ public class Result : IResult
         ErrorCode = errorCode;
     }
 
-    /// <summary>
-    /// Creates a successful result
-    /// </summary>
     public static Result Success() => new(true);
-
-    /// <summary>
-    /// Creates a failed result
-    /// </summary>
-    public static Result Failure(string errorMessage, string? errorCode = null) => 
-        new(false, errorMessage, errorCode);
-
-    /// <summary>
-    /// Creates a failed result from an exception
-    /// </summary>
-    public static Result Failure(Exception exception) => 
-        new(false, exception.Message, exception.GetType().Name);
-} 
+    public static Result Failure(string errorMessage, string? errorCode = null)
+        => new(false, errorMessage, errorCode);
+    public static Result Failure(Exception ex)
+        => new(false, ex.Message, ex.GetType().Name);
+}
