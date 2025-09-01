@@ -3,20 +3,21 @@ using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 using Backend.Application.Common.Results;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Client.MVC.Services
 {
     public static class AuthResultExtensions
     {
-        public static ApiResponse<AuthResultDto> ToApiResponse(this AuthResultDto? result, int defaultStatusCode = 400)
+        public static ApiResponse<LoginResponse> ToApiResponse(this LoginResponse? result, int defaultStatusCode = 400)
         {
             if (result?.IsSuccess == true)
             {
-                return ApiResponse<AuthResultDto>.Success(result, 200);
+                return ApiResponse<LoginResponse>.Success(result, 200);
             }
             else
             {
-                return ApiResponse<AuthResultDto>.Error(result?.ErrorMessage ?? "Operation failed", defaultStatusCode);
+                return ApiResponse<LoginResponse>.Error(result?.ErrorMessage ?? "Operation failed", defaultStatusCode);
             }
         }
     }
@@ -41,70 +42,70 @@ namespace Client.MVC.Services
         /// <summary>
         /// Register a new user
         /// </summary>
-        public async Task<ApiResponse<AuthResultDto>> RegisterAsync(RegisterDto dto, CancellationToken cancellationToken = default)
+        public async Task<ApiResponse<LoginResponse>> RegisterAsync(RegisterDto dto, CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogUserAuthentication("Register", dto.Email, true);
                 
-                var response = await _httpClient.PostAsync<RegisterDto, AuthResultDto>("api/Auth/register", dto, cancellationToken);
+                var response = await _httpClient.PostAsync<RegisterDto, LoginResponse>("api/Auth/register", dto, cancellationToken);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
                     _logger.LogUserAuthentication("Register", dto.Email, true);
-                    return ApiResponse<AuthResultDto>.Success(response.Data);
+                    return ApiResponse<LoginResponse>.Success(response.Data);
                 }
                 else
                 {
                     var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "Registration failed";
                     _logger.LogUserAuthentication("Register", dto.Email, false, errorMessage);
-                    return ApiResponse<AuthResultDto>.Error(errorMessage, response.StatusCode ?? 400);
+                    return ApiResponse<LoginResponse>.Error(errorMessage, response.StatusCode ?? 400);
                 }
             }
             catch (OperationCanceledException)
             {
                 _logger.LogUserAuthentication("Register", dto.Email, false, "Operation was cancelled");
-                return ApiResponse<AuthResultDto>.Cancelled();
+                return ApiResponse<LoginResponse>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogErrorSecurely(ex, "Register", null, $"Email={dto.Email}");
-                return ApiResponse<AuthResultDto>.Error("An error occurred during registration", 500);
+                return ApiResponse<LoginResponse>.Error("An error occurred during registration", 500);
             }
         }
 
         /// <summary>
         /// Login user
         /// </summary>
-        public async Task<ApiResponse<AuthResultDto>> LoginAsync(LoginDto dto, CancellationToken cancellationToken = default)
+        public async Task<ApiResponse<LoginResponse>> LoginAsync(LoginRequest dto, CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogUserAuthentication("Login", dto.EmailOrUsername, true);
                 
-                var response = await _httpClient.PostAsync<LoginDto, AuthResultDto>("api/Auth/login", dto, cancellationToken);
+                var response = await _httpClient.PostAsync<LoginRequest, LoginResponse>("api/Auth/login", dto, cancellationToken);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
                     _logger.LogUserAuthentication("Login", dto.EmailOrUsername, true);
-                    return ApiResponse<AuthResultDto>.Success(response.Data);
+                    return ApiResponse<LoginResponse>.Success(response.Data);
                 }
                 else
                 {
                     var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "Login failed";
                     _logger.LogUserAuthentication("Login", dto.EmailOrUsername, false, errorMessage);
-                    return ApiResponse<AuthResultDto>.Error(errorMessage, response.StatusCode ?? 400);
+                    return ApiResponse<LoginResponse>.Error(errorMessage, response.StatusCode ?? 400);
                 }
             }
             catch (OperationCanceledException)
             {
                 _logger.LogUserAuthentication("Login", dto.EmailOrUsername, false, "Operation was cancelled");
-                return ApiResponse<AuthResultDto>.Cancelled();
+                return ApiResponse<LoginResponse>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogErrorSecurely(ex, "Login", null, $"Email={dto.EmailOrUsername}");
-                return ApiResponse<AuthResultDto>.Error("An error occurred during login", 500);
+                return ApiResponse<LoginResponse>.Error("An error occurred during login", 500);
             }
         }
 
@@ -117,7 +118,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogInformation("Attempting to logout user");
                 
-                var response = await _httpClient.PostAsync<LogoutDto, AuthResultDto>("api/Auth/logout", logoutDto ?? new LogoutDto(), cancellationToken);
+                var response = await _httpClient.PostAsync<LogoutDto, LoginResponse>("api/Auth/logout", logoutDto ?? new LogoutDto(), cancellationToken);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
@@ -159,36 +160,36 @@ namespace Client.MVC.Services
         /// <summary>
         /// Refresh access token
         /// </summary>
-        public async Task<ApiResponse<AuthResultDto>> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+        public async Task<ApiResponse<LoginResponse>> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             try
             {
                 _logger.LogInformation("Attempting to refresh token");
                 
                 var request = new RefreshTokenDto { RefreshToken = refreshToken };
-                var response = await _httpClient.PostAsync<RefreshTokenDto, AuthResultDto>("api/Auth/refresh-token", request, cancellationToken);
+                var response = await _httpClient.PostAsync<RefreshTokenDto, LoginResponse>("api/Auth/refresh-token", request, cancellationToken);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
                     _logger.LogInformation("Token refresh successful");
-                    return ApiResponse<AuthResultDto>.Success(response.Data);
+                    return ApiResponse<LoginResponse>.Success(response.Data);
                 }
                 else
                 {
                     var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "Token refresh failed";
                     _logger.LogWarning("Token refresh failed. Error: {Error}", errorMessage);
-                    return ApiResponse<AuthResultDto>.Error(errorMessage, response.StatusCode ?? 400);
+                    return ApiResponse<LoginResponse>.Error(errorMessage, response.StatusCode ?? 400);
                 }
             }
             catch (OperationCanceledException)
             {
                 _logger.LogInformation("Token refresh cancelled");
-                return ApiResponse<AuthResultDto>.Cancelled();
+                return ApiResponse<LoginResponse>.Cancelled();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during token refresh");
-                return ApiResponse<AuthResultDto>.Error("An error occurred during token refresh", 500);
+                return ApiResponse<LoginResponse>.Error("An error occurred during token refresh", 500);
             }
         }
 

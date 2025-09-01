@@ -1,5 +1,6 @@
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 using Microsoft.Extensions.Logging;
 
 namespace Client.MVC.Services
@@ -143,7 +144,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Changing user password");
                 
-                var response = await _httpClient.PostAsync<ChangePasswordDto, AuthResultDto>("api/User/change-password", changePasswordDto);
+                var response = await _httpClient.PostAsync<ChangePasswordDto, LoginResponse>("api/User/change-password", changePasswordDto);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
@@ -202,7 +203,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Activating user: {UserId}", userId);
                 
-                var response = await _httpClient.PostAsync<object, AuthResultDto>($"api/User/{userId}/activate", new { });
+                var response = await _httpClient.PostAsync<object, LoginResponse>($"api/User/{userId}/activate", new { });
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
@@ -232,7 +233,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Deactivating user: {UserId}", userId);
                 
-                var result = await _httpClient.PostAsync<object, AuthResultDto>($"api/User/{userId}/deactivate", new { });
+                var result = await _httpClient.PostAsync<object, LoginResponse>($"api/User/{userId}/deactivate", new { });
                 
                 if (result?.IsSuccess == true)
                 {

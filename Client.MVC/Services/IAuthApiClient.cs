@@ -1,5 +1,6 @@
 using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Application.Common.Results;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Client.MVC.Services
 {
@@ -11,12 +12,12 @@ namespace Client.MVC.Services
         /// <summary>
         /// Register a new user
         /// </summary>
-        Task<ApiResponse<AuthResultDto>> RegisterAsync(RegisterDto dto, CancellationToken cancellationToken = default);
+        Task<ApiResponse<LoginResponse>> RegisterAsync(RegisterDto dto, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Login user
         /// </summary>
-        Task<ApiResponse<AuthResultDto>> LoginAsync(LoginDto dto, CancellationToken cancellationToken = default);
+        Task<ApiResponse<LoginResponse>> LoginAsync(LoginRequest dto, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Logout user
@@ -26,6 +27,6 @@ namespace Client.MVC.Services
         /// <summary>
         /// Refresh access token
         /// </summary>
-        Task<ApiResponse<AuthResultDto>> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
+        Task<ApiResponse<LoginResponse>> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
     }
 } 

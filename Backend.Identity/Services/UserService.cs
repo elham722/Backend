@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using System.Linq;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Backend.Identity.Services;
 
@@ -378,7 +379,7 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<Result<AuthResultDto>> LoginAsync(LoginDto loginDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
+    public async Task<Result<LoginResponse>> LoginAsync(LoginRequest loginDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -390,13 +391,13 @@ public class UserService : IUserService
             {
                 // Don't reveal if user exists or not
                 await Task.Delay(1000, cancellationToken); // Add delay to prevent timing attacks
-                return Result<AuthResultDto>.Failure("Invalid email or password", "InvalidCredentials");
+                return Result<LoginResponse>.Failure("Invalid email or password", "InvalidCredentials");
             }
 
             // Check if email is confirmed
             if (!user.EmailConfirmed)
             {
-                return Result<AuthResultDto>.Failure("Please confirm your email address before logging in", "EmailNotConfirmed");
+                return Result<LoginResponse>.Failure("Please confirm your email address before logging in", "EmailNotConfirmed");
             }
 
             // Check if account is active
@@ -404,13 +405,13 @@ public class UserService : IUserService
             {
                 if (user.IsLocked)
                 {
-                    return Result<AuthResultDto>.Failure("Account is locked", "AccountLocked");
+                    return Result<LoginResponse>.Failure("Account is locked", "AccountLocked");
                 }
                 if (!user.IsActive)
                 {
-                    return Result<AuthResultDto>.Failure("Account is deactivated", "AccountDeactivated");
+                    return Result<LoginResponse>.Failure("Account is deactivated", "AccountDeactivated");
                 }
-                return Result<AuthResultDto>.Failure("Account is not accessible", "AccountInaccessible");
+                return Result<LoginResponse>.Failure("Account is not accessible", "AccountInaccessible");
             }
 
             // Attempt sign in
@@ -440,7 +441,7 @@ public class UserService : IUserService
                 var accessToken = await _accountManagementService.GenerateAccessTokenAsync(claims, user.Id);
                 var refreshToken = await _accountManagementService.GenerateRefreshTokenAsync(user.Id, loginDto.DeviceInfo, loginDto.IpAddress);
 
-                var authResult = new AuthResultDto
+                var authResult = new LoginResponse
                 {
                     IsSuccess = true,
                     AccessToken = accessToken,
@@ -453,37 +454,37 @@ public class UserService : IUserService
 
                 _logger.LogInformation("User logged in successfully: {UserId}, {Email}, IP: {IpAddress}", 
                     user.Id, user.Email, ipAddress);
-                return Result<AuthResultDto>.Success(authResult);
+                return Result<LoginResponse>.Success(authResult);
             }
             else if (signInResult.IsLockedOut)
             {
                 await _accountManagementService.IncrementLoginAttemptsAsync(user);
-                return Result<AuthResultDto>.Failure("Account is temporarily locked due to multiple failed login attempts", "AccountLockedOut");
+                return Result<LoginResponse>.Failure("Account is temporarily locked due to multiple failed login attempts", "AccountLockedOut");
             }
             else if (signInResult.RequiresTwoFactor)
             {
-                var authResult = new AuthResultDto
+                var authResult = new LoginResponse
                 {
                     IsSuccess = false,
                     RequiresTwoFactor = true,
                     ErrorMessage = "Two-factor authentication is required"
                 };
-                return Result<AuthResultDto>.Success(authResult);
+                return Result<LoginResponse>.Success(authResult);
             }
             else
             {
                 await _accountManagementService.IncrementLoginAttemptsAsync(user);
-                return Result<AuthResultDto>.Failure("Invalid email or password", "InvalidCredentials");
+                return Result<LoginResponse>.Failure("Invalid email or password", "InvalidCredentials");
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during login for email: {Email}", loginDto.EmailOrUsername);
-            return Result<AuthResultDto>.Failure("An error occurred during login", "LoginError");
+            return Result<LoginResponse>.Failure("An error occurred during login", "LoginError");
         }
     }
 
-    public async Task<Result<AuthResultDto>> RegisterAsync(RegisterDto registerDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
+    public async Task<Result<LoginResponse>> RegisterAsync(RegisterDto registerDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -491,13 +492,13 @@ public class UserService : IUserService
             var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
             if (existingUser != null)
             {
-                return Result<AuthResultDto>.Failure("User with this email already exists", "UserAlreadyExists");
+                return Result<LoginResponse>.Failure("User with this email already exists", "UserAlreadyExists");
             }
 
             existingUser = await _userManager.FindByNameAsync(registerDto.UserName);
             if (existingUser != null)
             {
-                return Result<AuthResultDto>.Failure("Username is already taken", "UsernameAlreadyTaken");
+                return Result<LoginResponse>.Failure("Username is already taken", "UsernameAlreadyTaken");
             }
 
             // Create user
@@ -517,7 +518,7 @@ public class UserService : IUserService
             var createResult = await CreateUserWithPasswordAsync(user, registerDto.Password);
             if (!createResult.IsSuccess)
             {
-                return Result<AuthResultDto>.Failure(createResult.ErrorMessage, createResult.ErrorCode);
+                return Result<LoginResponse>.Failure(createResult.ErrorMessage, createResult.ErrorCode);
             }
 
             user = createResult.Data;
@@ -547,7 +548,7 @@ public class UserService : IUserService
                 user.Id, user.Email, ipAddress);
 
             // Return success with email confirmation requirement
-            var authResult = new AuthResultDto
+            var authResult = new LoginResponse
             {
                 IsSuccess = true,
                 RequiresEmailConfirmation = true,
@@ -555,12 +556,12 @@ public class UserService : IUserService
                 User = _userMapper.MapToUserDto(user)
             };
 
-            return Result<AuthResultDto>.Success(authResult);
+            return Result<LoginResponse>.Success(authResult);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during registration for email: {Email}", registerDto.Email);
-            return Result<AuthResultDto>.Failure("An error occurred during registration", "RegistrationError");
+            return Result<LoginResponse>.Failure("An error occurred during registration", "RegistrationError");
         }
     }
 
@@ -968,19 +969,19 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<Result<AuthResultDto>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
+    public async Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
     {
         try
         {
             // Validate refresh token
             if (string.IsNullOrEmpty(refreshTokenDto.RefreshToken))
             {
-                return Result<AuthResultDto>.Failure("Invalid refresh token", "InvalidRefreshToken");
+                return Result<LoginResponse>.Failure("Invalid refresh token", "InvalidRefreshToken");
             }
 
             // TODO: Implement proper refresh token validation
             // For now, we'll return an error indicating refresh token functionality is not fully implemented
-            return Result<AuthResultDto>.Failure("Refresh token functionality is not fully implemented", "RefreshTokenNotImplemented");
+            return Result<LoginResponse>.Failure("Refresh token functionality is not fully implemented", "RefreshTokenNotImplemented");
 
             // Note: The code below is commented out until proper refresh token validation is implemented
             /*
@@ -1034,7 +1035,7 @@ public class UserService : IUserService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error refreshing token");
-            return Result<AuthResultDto>.Failure("An error occurred while refreshing the token", "RefreshTokenError");
+            return Result<LoginResponse>.Failure("An error occurred while refreshing the token", "RefreshTokenError");
         }
     }
 

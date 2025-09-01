@@ -2,6 +2,7 @@ using Backend.Application.Features.UserManagement.DTOs;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using Backend.Application.Common.Results;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Client.MVC.Services
 {
@@ -64,7 +65,7 @@ namespace Client.MVC.Services
         /// <summary>
         /// Set user session data - only SessionId in session, user data in Redis/DB
         /// </summary>
-        public void SetUserSession(AuthResultDto result)
+        public void SetUserSession(LoginResponse result)
         {
             try
             {

@@ -2,6 +2,7 @@ using Backend.Application.Common.Commands;
 using Backend.Application.Common.Interfaces;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 using MediatR;
 
 namespace Backend.Application.Features.UserManagement.Commands.RefreshToken;
@@ -9,7 +10,7 @@ namespace Backend.Application.Features.UserManagement.Commands.RefreshToken;
 /// <summary>
 /// Handler for RefreshTokenCommand
 /// </summary>
-public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, Result<AuthResultDto>>
+public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, Result<LoginResponse>>
 {
     private readonly IUserService _userService;
 
@@ -18,7 +19,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
     }
 
-    public async Task<Result<AuthResultDto>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+    public async Task<Result<LoginResponse>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         try
         {
@@ -35,7 +36,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         }
         catch (Exception ex)
         {
-            return Result<AuthResultDto>.Failure(ex.Message, "RefreshTokenError");
+            return Result<LoginResponse>.Failure(ex.Message, "RefreshTokenError");
         }
     }
 } 

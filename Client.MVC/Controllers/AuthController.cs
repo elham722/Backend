@@ -1,4 +1,5 @@
 using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 using Client.MVC.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -79,7 +80,7 @@ namespace Client.MVC.Controllers
         
         [HttpPost]
         [ValidateAntiForgeryToken] // جلوگیری از CSRF
-        public async Task<IActionResult> Login(LoginDto model, string? returnUrl = null)
+        public async Task<IActionResult> Login(LoginRequest model, string? returnUrl = null)
         {
             if (!ModelState.IsValid)
             {

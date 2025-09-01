@@ -1,5 +1,6 @@
 using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Application.Common.Results;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Client.MVC.Services
 {
@@ -12,13 +13,13 @@ namespace Client.MVC.Services
         /// Set user session data from authentication result
         /// </summary>
         /// <param name="result">Authentication result containing user data and tokens</param>
-        void SetUserSession(AuthResultDto result);
+        void SetUserSession(LoginResponse result);
 
         /// <summary>
         /// Set user session data from API response
         /// </summary>
         /// <param name="response">API response containing authentication result</param>
-        void SetUserSession(ApiResponse<AuthResultDto> response);
+        void SetUserSession(ApiResponse<LoginResponse> response);
 
         /// <summary>
         /// Clear all user session data

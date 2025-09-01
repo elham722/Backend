@@ -1,14 +1,14 @@
 using Backend.Application.Common.Commands;
 using Backend.Application.Common.Results;
 using Backend.Application.Common.Security;
-using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Backend.Application.Features.UserManagement.Commands.Register;
 
 /// <summary>
 /// Command to register a new user
 /// </summary>
-public class RegisterCommand : ICommand<Result<AuthResultDto>>, IRequireCaptcha
+public class RegisterCommand : ICommand<Result<LoginResponse>>, IRequireCaptcha
 {
     /// <summary>
     /// User's email address

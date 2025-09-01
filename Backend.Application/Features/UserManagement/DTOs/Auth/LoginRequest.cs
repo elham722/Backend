@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Application.Features.UserManagement.DTOs;
+namespace Backend.Application.Features.UserManagement.DTOs.Auth;
 
-public class LoginDto
+public class LoginRequest
 {
     [Required(ErrorMessage = "ایمیل یا نام کاربری الزامی است")]
     [Display(Name = "ایمیل یا نام کاربری")]

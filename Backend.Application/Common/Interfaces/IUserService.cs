@@ -1,6 +1,7 @@
 using Backend.Application.Common.DTOs;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Backend.Application.Common.Interfaces;
 
@@ -48,12 +49,12 @@ public interface IUserService
     /// <summary>
     /// Authenticates a user
     /// </summary>
-    Task<Result<AuthResultDto>> LoginAsync(LoginDto loginDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
+    Task<Result<LoginResponse>> LoginAsync(LoginRequest loginDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Registers a new user
     /// </summary>
-    Task<Result<AuthResultDto>> RegisterAsync(RegisterDto registerDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
+    Task<Result<LoginResponse>> RegisterAsync(RegisterDto registerDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Changes user password
@@ -118,5 +119,5 @@ public interface IUserService
     /// <summary>
     /// Refreshes access token using refresh token
     /// </summary>
-    Task<Result<AuthResultDto>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
+    Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
 } 

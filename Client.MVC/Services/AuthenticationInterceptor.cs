@@ -1,4 +1,5 @@
 using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
@@ -232,7 +233,7 @@ namespace Client.MVC.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();
-                    var result = JsonSerializer.Deserialize<AuthResultDto>(responseContent, _jsonOptions);
+                    var result = JsonSerializer.Deserialize<LoginResponse>(responseContent, _jsonOptions);
                     
                     if (result?.IsSuccess == true && !string.IsNullOrEmpty(result.AccessToken))
                     {

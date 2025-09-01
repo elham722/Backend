@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <Folder Include="Common\Pagination\" />
-    <Folder Include="Features\" />
   </ItemGroup>
 
   <ItemGroup>

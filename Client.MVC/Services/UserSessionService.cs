@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json;
 using Backend.Application.Common.Results;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Client.MVC.Services
 {
@@ -87,7 +88,7 @@ namespace Client.MVC.Services
         /// <summary>
         /// Set user session data from authentication result
         /// </summary>
-        public void SetUserSession(AuthResultDto result)
+        public void SetUserSession(LoginResponse result)
         {
             SetUserSessionInternal(result);
         }
@@ -95,7 +96,7 @@ namespace Client.MVC.Services
         /// <summary>
         /// Set user session data from API response
         /// </summary>
-        public void SetUserSession(ApiResponse<AuthResultDto> response)
+        public void SetUserSession(ApiResponse<LoginResponse> response)
         {
             if (response?.IsSuccess == true && response.Data != null)
             {
@@ -110,7 +111,7 @@ namespace Client.MVC.Services
         /// <summary>
         /// Internal method to set user session data
         /// </summary>
-        private void SetUserSessionInternal(AuthResultDto result)
+        private void SetUserSessionInternal(LoginResponse result)
         {
             try
             {

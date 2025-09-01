@@ -1,9 +1,10 @@
- using Asp.Versioning;
+using Asp.Versioning;
 using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.Commands.Login;
 using Backend.Application.Features.UserManagement.Commands.Logout;
 using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,10 +28,10 @@ public class LoginController : ControllerBase
 
     [HttpPost("login")]
     [MapToApiVersion("1.0")]
-    [ProducesResponseType(typeof(ApiResponse<AuthResultDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     [ProducesResponseType(typeof(ApiResponse), 500)]
-    public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+    public async Task<IActionResult> Login([FromBody] LoginRequest loginDto)
     {
         try
         {

@@ -1,6 +1,6 @@
-namespace Backend.Application.Features.UserManagement.DTOs;
+namespace Backend.Application.Features.UserManagement.DTOs.Auth;
 
-public class AuthResultDto
+public class LoginResponse
 {
     public bool IsSuccess { get; set; }
     

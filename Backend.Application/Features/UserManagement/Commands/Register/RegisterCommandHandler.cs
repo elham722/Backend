@@ -2,6 +2,7 @@ using Backend.Application.Common.Commands;
 using Backend.Application.Common.Interfaces;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +11,7 @@ namespace Backend.Application.Features.UserManagement.Commands.Register;
 /// <summary>
 /// Handler for RegisterCommand
 /// </summary>
-public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResultDto>>
+public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<LoginResponse>>
 {
     private readonly IUserService _userService;
     private readonly ILogger<RegisterCommandHandler> _logger;
@@ -23,7 +24,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<Result<AuthResultDto>> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<Result<LoginResponse>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         try
         {
@@ -52,7 +53,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
         }
         catch (Exception ex)
         {
-            return Result<AuthResultDto>.Failure(ex.Message, "RegisterError");
+            return Result<LoginResponse>.Failure(ex.Message, "RegisterError");
         }
     }
 } 

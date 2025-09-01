@@ -1,13 +1,13 @@
 using Backend.Application.Common.Commands;
 using Backend.Application.Common.Results;
-using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Backend.Application.Features.UserManagement.Commands.Login;
 
 /// <summary>
 /// Command to authenticate a user
 /// </summary>
-public class LoginCommand : ICommand<Result<AuthResultDto>>
+public class LoginCommand : ICommand<Result<LoginResponse>>
 {
     /// <summary>
     /// User's email or username

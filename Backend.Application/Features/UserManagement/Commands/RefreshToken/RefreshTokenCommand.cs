@@ -1,13 +1,13 @@
 using Backend.Application.Common.Commands;
 using Backend.Application.Common.Results;
-using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Backend.Application.Features.UserManagement.Commands.RefreshToken;
 
 /// <summary>
 /// Command to refresh access token using refresh token
 /// </summary>
-public class RefreshTokenCommand : ICommand<Result<AuthResultDto>>
+public class RefreshTokenCommand : ICommand<Result<LoginResponse>>
 {
     /// <summary>
     /// Refresh token
