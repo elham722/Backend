@@ -1,3 +1,4 @@
+using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.Commands.MFA;
 using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Application.Features.UserManagement.Queries.MFA;
@@ -9,62 +10,53 @@ using System.Security.Claims;
 
 namespace Backend.Api.Controllers;
 
-/// <summary>
-/// MFA (Multi-Factor Authentication) controller
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class MfaController : ControllerBase
+public class MfaController : BaseApiController
 {
     private readonly IMediator _mediator;
-    private readonly ILogger<MfaController> _logger;
 
-    public MfaController(IMediator mediator, ILogger<MfaController> logger)
+    public MfaController(IMediator mediator, ILogger<MfaController> logger) : base(logger)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    /// <summary>
-    /// Get MFA methods for the authenticated user
-    /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<MfaSetupDto>>> GetMfaMethods([FromQuery] bool? isEnabled = null)
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<MfaSetupDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 401)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
+    public async Task<IActionResult> GetMfaMethods([FromQuery] bool? isEnabled = null)
     {
         try
         {
             var userId = GetCurrentUserId();
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Unauthorized");
 
-            var query = new GetMfaMethodsQuery
-            {
-                UserId = userId,
-                IsEnabled = isEnabled
-            };
-
+            var query = new GetMfaMethodsQuery { UserId = userId, IsEnabled = isEnabled };
             var result = await _mediator.Send(query);
-            return Ok(result);
+
+            return Ok(ApiResponse.Success(result));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting MFA methods for user");
-            return StatusCode(500, "Internal server error");
+            return InternalServerError(ex, "Error getting MFA methods");
         }
     }
 
-    /// <summary>
-    /// Setup MFA for the authenticated user
-    /// </summary>
     [HttpPost("setup")]
-    public async Task<ActionResult<MfaSetupDto>> SetupMfa([FromBody] SetupMfaRequest request)
+    [ProducesResponseType(typeof(ApiResponse<MfaSetupDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 401)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
+    public async Task<IActionResult> SetupMfa([FromBody] SetupMfaRequest request)
     {
         try
         {
             var userId = GetCurrentUserId();
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Unauthorized");
 
             var command = new SetupMfaCommand
             {
@@ -76,31 +68,30 @@ public class MfaController : ControllerBase
             };
 
             var result = await _mediator.Send(command);
-            return Ok(result);
+            return Ok(ApiResponse.Success(result));
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid MFA setup request");
-            return BadRequest(ex.Message);
+            return BadRequest(ApiResponse.Error(ex.Message));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error setting up MFA");
-            return StatusCode(500, "Internal server error");
+            return InternalServerError(ex, "Error setting up MFA");
         }
     }
 
-    /// <summary>
-    /// Verify MFA code for the authenticated user
-    /// </summary>
     [HttpPost("verify")]
-    public async Task<ActionResult<MfaVerificationResultDto>> VerifyMfa([FromBody] VerifyMfaRequest request)
+    [ProducesResponseType(typeof(ApiResponse<MfaVerificationResultDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 401)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
+    public async Task<IActionResult> VerifyMfa([FromBody] VerifyMfaRequest request)
     {
         try
         {
             var userId = GetCurrentUserId();
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Unauthorized");
 
             var command = new VerifyMfaCommand
             {
@@ -113,30 +104,28 @@ public class MfaController : ControllerBase
             };
 
             var result = await _mediator.Send(command);
-            
-            if (result.IsSuccess)
-                return Ok(result);
-            else
-                return BadRequest(result);
+
+            return result.IsSuccess
+                ? Ok(ApiResponse.Success(result))
+                : BadRequest(ApiResponse.Error("MFA verification failed"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error verifying MFA");
-            return StatusCode(500, "Internal server error");
+            return InternalServerError(ex, "Error verifying MFA");
         }
     }
 
-    /// <summary>
-    /// Disable MFA for the authenticated user
-    /// </summary>
     [HttpPost("disable")]
-    public async Task<ActionResult<bool>> DisableMfa([FromBody] DisableMfaRequest request)
+    [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 401)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
+    public async Task<IActionResult> DisableMfa([FromBody] DisableMfaRequest request)
     {
         try
         {
             var userId = GetCurrentUserId();
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Unauthorized");
 
             var command = new DisableMfaCommand
             {
@@ -147,34 +136,29 @@ public class MfaController : ControllerBase
             };
 
             var result = await _mediator.Send(command);
-            return Ok(result);
+            return Ok(ApiResponse.Success(result));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error disabling MFA");
-            return StatusCode(500, "Internal server error");
+            return InternalServerError(ex, "Error disabling MFA");
         }
     }
 
-    /// <summary>
-    /// Get MFA setup status for the authenticated user
-    /// </summary>
     [HttpGet("status")]
-    public async Task<ActionResult<MfaStatusDto>> GetMfaStatus()
+    [ProducesResponseType(typeof(ApiResponse<MfaStatusDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 401)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
+    public async Task<IActionResult> GetMfaStatus()
     {
         try
         {
             var userId = GetCurrentUserId();
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
+                return Unauthorized("Unauthorized");
 
-            var query = new GetMfaMethodsQuery
-            {
-                UserId = userId,
-                IsEnabled = true
-            };
-
+            var query = new GetMfaMethodsQuery { UserId = userId, IsEnabled = true };
             var enabledMethods = await _mediator.Send(query);
+
             var status = new MfaStatusDto
             {
                 UserId = userId,
@@ -183,51 +167,33 @@ public class MfaController : ControllerBase
                 TotalMethods = enabledMethods.Count()
             };
 
-            return Ok(status);
+            return Ok(ApiResponse.Success(status));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting MFA status");
-            return StatusCode(500, "Internal server error");
+            return InternalServerError(ex, "Error getting MFA status");
         }
     }
 
-    #region Helper Methods
+    #region Helpers
 
-    private string? GetCurrentUserId()
-    {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    }
-
-    private string GetClientIpAddress()
-    {
-        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? 
-               HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? 
-               "Unknown";
-    }
-
-    private string GetUserAgent()
-    {
-        return HttpContext.Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown";
-    }
+    private string? GetCurrentUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    private string GetClientIpAddress() =>
+        HttpContext.Connection.RemoteIpAddress?.ToString() ??
+        HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault() ??
+        "Unknown";
+    private string GetUserAgent() =>
+        HttpContext.Request.Headers["User-Agent"].FirstOrDefault() ?? "Unknown";
 
     #endregion
 }
 
-#region Request/Response DTOs
-
-/// <summary>
-/// Request DTO for MFA setup
-/// </summary>
 public class SetupMfaRequest
 {
     public MfaType Type { get; set; }
     public string? PhoneNumber { get; set; }
 }
 
-/// <summary>
-/// Request DTO for MFA verification
-/// </summary>
 public class VerifyMfaRequest
 {
     public MfaType Type { get; set; }
@@ -235,17 +201,11 @@ public class VerifyMfaRequest
     public bool RememberDevice { get; set; }
 }
 
-/// <summary>
-/// Request DTO for MFA disable
-/// </summary>
 public class DisableMfaRequest
 {
     public MfaType Type { get; set; }
 }
 
-/// <summary>
-/// Response DTO for MFA status
-/// </summary>
 public class MfaStatusDto
 {
     public string UserId { get; set; } = string.Empty;
@@ -253,5 +213,3 @@ public class MfaStatusDto
     public List<MfaType> EnabledMethods { get; set; } = new();
     public int TotalMethods { get; set; }
 }
-
-#endregion 

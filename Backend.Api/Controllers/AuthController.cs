@@ -5,8 +5,6 @@ using Backend.Application.Features.UserManagement.Commands.Logout;
 using Backend.Application.Features.UserManagement.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using System.Security.Claims;
 using Backend.Application.Common.Results;
 
 namespace Backend.Api.Controllers;
@@ -14,33 +12,27 @@ namespace Backend.Api.Controllers;
 /// <summary>
 /// Authentication controller for user registration and login
 /// </summary>
-[ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : BaseApiController
 {
     private readonly IMediator _mediator;
-    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IMediator mediator, ILogger<AuthController> logger)
+    public AuthController(IMediator mediator, ILogger<AuthController> logger) : base(logger)
     {
         _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
     /// Register a new user
     /// </summary>
-    /// <param name="registerDto">Registration request</param>
-    /// <returns>Authentication result</returns>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResultDto), 200)]
-    [ProducesResponseType(typeof(ProblemDetails), 400)]
-    [ProducesResponseType(typeof(ProblemDetails), 500)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResultDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
     public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
     {
         try
         {
-            // Create command from DTO
             var command = new RegisterCommand
             {
                 Email = registerDto.Email,
@@ -57,78 +49,26 @@ public class AuthController : ControllerBase
                              GetDeviceInfoFromUserAgent(HttpContext.Request.Headers["User-Agent"].ToString())
             };
 
-            // Send command through mediator
             var result = await _mediator.Send(command);
-
-            if (result.IsSuccess)
-            {
-                return Ok(result.Data);
-            }
-
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Registration Failed",
-                Detail = result.ErrorMessage,
-                Status = 400,
-                Extensions = { ["errorCode"] = result.ErrorCode }
-            });
+            return HandleResult(result);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error during registration");
-            return StatusCode(500, new ProblemDetails
-            {
-                Title = "Internal Server Error",
-                Detail = "An unexpected error occurred during registration",
-                Status = 500
-            });
-        }
-    }
-
-    /// <summary>
-    /// Test CAPTCHA configuration
-    /// </summary>
-    /// <returns>Configuration status</returns>
-    [HttpGet("test-captcha")]
-    [ProducesResponseType(typeof(object), 200)]
-    public IActionResult TestCaptchaConfiguration()
-    {
-        try
-        {
-            var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
-            
-            var captchaConfig = new
-            {
-                SecretKey = configuration["GoogleReCaptcha:SecretKey"] ?? "NOT_FOUND",
-                SecretKeyLength = (configuration["GoogleReCaptcha:SecretKey"] ?? "").Length,
-                SiteKey = configuration["GoogleReCaptcha:SiteKey"] ?? "NOT_FOUND",
-                SiteKeyLength = (configuration["GoogleReCaptcha:SiteKey"] ?? "").Length,
-                ScoreThreshold = configuration["GoogleReCaptcha:ScoreThreshold"] ?? "NOT_FOUND",
-                AllKeys = configuration.GetSection("GoogleReCaptcha").GetChildren().Select(x => new { Key = x.Key, Value = x.Value }).ToList()
-            };
-            
-            return Ok(captchaConfig);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { Error = ex.Message });
+            return InternalServerError(ex, "An unexpected error occurred during registration");
         }
     }
 
     /// <summary>
     /// Login user
     /// </summary>
-    /// <param name="loginDto">Login request</param>
-    /// <returns>Authentication result</returns>
     [HttpPost("login")]
-    [ProducesResponseType(typeof(AuthResultDto), 200)]
-    [ProducesResponseType(typeof(ProblemDetails), 400)]
-    [ProducesResponseType(typeof(ProblemDetails), 500)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResultDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
         try
         {
-            // Create command from DTO
             var command = new LoginCommand
             {
                 EmailOrUsername = loginDto.EmailOrUsername,
@@ -141,48 +81,26 @@ public class AuthController : ControllerBase
                              GetDeviceInfoFromUserAgent(HttpContext.Request.Headers["User-Agent"].ToString())
             };
 
-            // Send command through mediator
             var result = await _mediator.Send(command);
-
-            if (result.IsSuccess)
-            {
-                return Ok(result.Data);
-            }
-
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Login Failed",
-                Detail = result.ErrorMessage,
-                Status = 400,
-                Extensions = { ["errorCode"] = result.ErrorCode }
-            });
+            return HandleResult(result);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error during login");
-            return StatusCode(500, new ProblemDetails
-            {
-                Title = "Internal Server Error",
-                Detail = "An unexpected error occurred during login",
-                Status = 500
-            });
+            return InternalServerError(ex, "An unexpected error occurred during login");
         }
     }
 
     /// <summary>
     /// Refresh access token using refresh token
     /// </summary>
-    /// <param name="refreshTokenDto">Refresh token request</param>
-    /// <returns>Authentication result with new tokens</returns>
     [HttpPost("refresh-token")]
-    [ProducesResponseType(typeof(AuthResultDto), 200)]
-    [ProducesResponseType(typeof(ProblemDetails), 400)]
-    [ProducesResponseType(typeof(ProblemDetails), 500)]
+    [ProducesResponseType(typeof(ApiResponse<AuthResultDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenDto refreshTokenDto)
     {
         try
         {
-            // Create command from DTO
             var command = new RefreshTokenCommand
             {
                 RefreshToken = refreshTokenDto.RefreshToken,
@@ -190,48 +108,26 @@ public class AuthController : ControllerBase
                 UserAgent = HttpContext.Request.Headers["User-Agent"].ToString()
             };
 
-            // Send command through mediator
             var result = await _mediator.Send(command);
-
-            if (result.IsSuccess)
-            {
-                return Ok(result.Data);
-            }
-
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Token Refresh Failed",
-                Detail = result.ErrorMessage,
-                Status = 400,
-                Extensions = { ["errorCode"] = result.ErrorCode }
-            });
+            return HandleResult(result);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error during token refresh");
-            return StatusCode(500, new ProblemDetails
-            {
-                Title = "Internal Server Error",
-                Detail = "An unexpected error occurred during token refresh",
-                Status = 500
-            });
+            return InternalServerError(ex, "An unexpected error occurred during token refresh");
         }
     }
 
     /// <summary>
     /// Logout user and invalidate refresh tokens
     /// </summary>
-    /// <param name="logoutDto">Logout request</param>
-    /// <returns>Logout result</returns>
     [HttpPost("logout")]
-    [ProducesResponseType(typeof(LogoutResultDto), 200)]
-    [ProducesResponseType(typeof(ProblemDetails), 400)]
-    [ProducesResponseType(typeof(ProblemDetails), 500)]
+    [ProducesResponseType(typeof(ApiResponse<LogoutResultDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
     public async Task<IActionResult> Logout([FromBody] LogoutDto logoutDto)
     {
         try
         {
-            // Create command from DTO
             var command = new LogoutCommand
             {
                 RefreshToken = logoutDto.RefreshToken,
@@ -241,83 +137,59 @@ public class AuthController : ControllerBase
                 LogoutReason = "User initiated logout"
             };
 
-            // Send command through mediator
             var result = await _mediator.Send(command);
-
-            if (result.IsSuccess)
-            {
-                return Ok(result.Data);
-            }
-
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Logout Failed",
-                Detail = result.ErrorMessage,
-                Status = 400,
-                Extensions = { ["errorCode"] = result.ErrorCode }
-            });
+            return HandleResult(result);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error during logout");
-            return StatusCode(500, new ProblemDetails
-            {
-                Title = "Internal Server Error",
-                Detail = "An unexpected error occurred during logout",
-                Status = 500
-            });
+            return InternalServerError(ex, "An unexpected error occurred during logout");
         }
     }
 
     /// <summary>
-        /// Extract device information from User-Agent string
-        /// </summary>
-        private string GetDeviceInfoFromUserAgent(string userAgent)
+    /// Extract device information from User-Agent string
+    /// </summary>
+    private string GetDeviceInfoFromUserAgent(string userAgent)
+    {
+        if (string.IsNullOrEmpty(userAgent))
+            return "Unknown Device";
+
+        try
         {
-            if (string.IsNullOrEmpty(userAgent))
-                return "Unknown Device";
+            var deviceInfo = new List<string>();
 
-            try
-            {
-                var deviceInfo = new List<string>();
+            if (userAgent.Contains("Mobile") || userAgent.Contains("Android") || userAgent.Contains("iPhone"))
+                deviceInfo.Add("Mobile");
+            else if (userAgent.Contains("Tablet") || userAgent.Contains("iPad"))
+                deviceInfo.Add("Tablet");
+            else
+                deviceInfo.Add("Desktop");
 
-                // Check for mobile devices
-                if (userAgent.Contains("Mobile") || userAgent.Contains("Android") || userAgent.Contains("iPhone"))
-                    deviceInfo.Add("Mobile");
-                else if (userAgent.Contains("Tablet") || userAgent.Contains("iPad"))
-                    deviceInfo.Add("Tablet");
-                else
-                    deviceInfo.Add("Desktop");
+            if (userAgent.Contains("Windows"))
+                deviceInfo.Add("Windows");
+            else if (userAgent.Contains("Mac OS"))
+                deviceInfo.Add("macOS");
+            else if (userAgent.Contains("Linux"))
+                deviceInfo.Add("Linux");
+            else if (userAgent.Contains("Android"))
+                deviceInfo.Add("Android");
+            else if (userAgent.Contains("iOS"))
+                deviceInfo.Add("iOS");
 
-                // Check for operating system
-                if (userAgent.Contains("Windows"))
-                    deviceInfo.Add("Windows");
-                else if (userAgent.Contains("Mac OS"))
-                    deviceInfo.Add("macOS");
-                else if (userAgent.Contains("Linux"))
-                    deviceInfo.Add("Linux");
-                else if (userAgent.Contains("Android"))
-                    deviceInfo.Add("Android");
-                else if (userAgent.Contains("iOS"))
-                    deviceInfo.Add("iOS");
+            if (userAgent.Contains("Chrome"))
+                deviceInfo.Add("Chrome");
+            else if (userAgent.Contains("Firefox"))
+                deviceInfo.Add("Firefox");
+            else if (userAgent.Contains("Safari"))
+                deviceInfo.Add("Safari");
+            else if (userAgent.Contains("Edge"))
+                deviceInfo.Add("Edge");
 
-                // Check for browser
-                if (userAgent.Contains("Chrome"))
-                    deviceInfo.Add("Chrome");
-                else if (userAgent.Contains("Firefox"))
-                    deviceInfo.Add("Firefox");
-                else if (userAgent.Contains("Safari"))
-                    deviceInfo.Add("Safari");
-                else if (userAgent.Contains("Edge"))
-                    deviceInfo.Add("Edge");
-
-                return string.Join(" | ", deviceInfo);
-            }
-            catch
-            {
-                return "Unknown Device";
-            }
+            return string.Join(" | ", deviceInfo);
+        }
+        catch
+        {
+            return "Unknown Device";
         }
     }
-
-
+}
