@@ -4,7 +4,6 @@ using Backend.Application.Common.Interfaces;
 using Backend.Application.Common.Infrastructure;
 using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Services;
-using Backend.Application.Features.UserManagement.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Mapster;
 using MapsterMapper;
@@ -45,8 +44,6 @@ public static class ApplicationServicesRegistration
         // Register Memory Cache
         services.AddMemoryCache();
 
-        // Register User Management services
-        services.AddUserManagementServices();
 
         // Register application interfaces
         services.AddScoped<IDateTimeService, DateTimeService>();
