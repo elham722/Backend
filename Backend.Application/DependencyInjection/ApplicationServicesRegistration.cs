@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
-using Backend.Application.Common.Extensions;
 using Backend.Application.Common.Interfaces;
 using Backend.Application.Common.Infrastructure;
 using Backend.Application.Common.Interfaces.Infrastructure;
@@ -28,8 +27,23 @@ public static class ApplicationServicesRegistration
     /// <returns>Service collection</returns>
     public static IServiceCollection ConfigureApplicationServices(this IServiceCollection services)
     {
-        // Register application services
-        services.AddApplicationServices();
+        // Register MediatR
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
+
+        // Register AutoMapper
+        services.AddAutoMapper(cfg => cfg.AddMaps(Assembly.GetExecutingAssembly()));
+
+        // Register FluentValidation
+        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // Register Pipeline Behaviors
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CachingBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CaptchaBehavior<,>));
+
+        // Register Memory Cache
+        services.AddMemoryCache();
 
         // Register User Management services
         services.AddUserManagementServices();
@@ -37,7 +51,6 @@ public static class ApplicationServicesRegistration
         // Register application interfaces
         services.AddScoped<IDateTimeService, DateTimeService>();
         
-      
         // Register dispatchers
         services.AddScoped<ICommandDispatcher, CommandDispatcher>();
         services.AddScoped<IQueryDispatcher, QueryDispatcher>();
@@ -50,17 +63,6 @@ public static class ApplicationServicesRegistration
         config.Scan(Assembly.GetExecutingAssembly());
         services.AddSingleton(config);
         services.AddScoped<IMapper, ServiceMapper>();
-
-        // Register MediatR
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-
-        // Register FluentValidation
-        services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-        
-        // Register Pipeline Behaviors
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(CaptchaBehavior<,>));
-
 
         return services;
     }
