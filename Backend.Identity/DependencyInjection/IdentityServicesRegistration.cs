@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Backend.Application.Common.Interfaces;
-using Backend.Identity.Mappers;
 using Backend.Identity.Services;
 using Microsoft.AspNetCore.Http;
 
@@ -188,10 +187,9 @@ namespace Backend.Identity.DependencyInjection
         /// </summary>
         private static IServiceCollection AddMappingServices(this IServiceCollection services)
         {
-            // Register AutoMapper
-
-            // Register user mapper
-            services.AddScoped<IUserMapper, UserMapper>();
+            // AutoMapper is already registered in Application layer
+            // Identity adapters are registered in Infrastructure layer
+            // No additional mapping services needed here
 
             return services;
         }

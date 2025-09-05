@@ -39,6 +39,7 @@ public static class InfrastructureServicesRegistration
         services.AddFileStorageServices(configuration);
         services.AddMfaServices(); // Add MFA services
         services.AddRecaptchaServices(configuration); // Add reCAPTCHA services
+        services.AddIdentityAdapters(); // Add Identity adapters
 
         return services;
     }
@@ -261,6 +262,17 @@ public static class InfrastructureServicesRegistration
         // Register typed HttpClient for reCAPTCHA
         services.AddHttpClient<IHumanVerificationService, GoogleRecaptchaService>();
 
+        return services;
+    }
+
+    /// <summary>
+    /// Registers Identity adapters
+    /// </summary>
+    private static IServiceCollection AddIdentityAdapters(this IServiceCollection services)
+    {
+        // IdentityAdapterFactory is a static class and doesn't need DI registration
+        // It's used directly in the code
+        
         return services;
     }
 }

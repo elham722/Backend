@@ -7,25 +7,16 @@ namespace Backend.Application.Mappers.Profiles;
 /// <summary>
 /// AutoMapper profile for MFA-related mappings
 /// </summary>
-public class MfaMappingProfile : Profile
+public class MfaMappingProfile : BaseMappingProfile
 {
-    public MfaMappingProfile()
+    protected override void ConfigureEntityMappings()
+    {
+        // Entity to Entity mappings (if any)
+    }
+
+    protected override void ConfigureDtoMappings()
     {
         CreateMap<MfaMethod, MfaSetupDto>()
-            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
-            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type))
-            .ForMember(dest => dest.IsEnabled, opt => opt.MapFrom(src => src.IsEnabled))
-            .ForMember(dest => dest.LastUsed, opt => opt.MapFrom(src => src.LastUsed))
-            .ForMember(dest => dest.FailedAttempts, opt => opt.MapFrom(src => src.FailedAttempts))
-            .ForMember(dest => dest.LockedUntil, opt => opt.MapFrom(src => src.LockedUntil))
-            .ForMember(dest => dest.TotpSecretKey, opt => opt.MapFrom(src => src.TotpSecretKey))
-            .ForMember(dest => dest.TotpQrCodeUrl, opt => opt.MapFrom(src => src.TotpQrCodeUrl))
-            .ForMember(dest => dest.TotpDigits, opt => opt.MapFrom(src => src.TotpDigits))
-            .ForMember(dest => dest.TotpPeriod, opt => opt.MapFrom(src => src.TotpPeriod))
-            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.PhoneNumber))
-            .ForMember(dest => dest.SmsCodeExpiry, opt => opt.MapFrom(src => src.SmsCodeExpiry))
-            .ForMember(dest => dest.BackupCodes, opt => opt.MapFrom(src => src.BackupCodes))
-            .ForMember(dest => dest.RemainingBackupCodes, opt => opt.MapFrom(src => src.RemainingBackupCodes))
             .ForMember(dest => dest.IsSetupComplete, opt => opt.MapFrom(src => src.IsEnabled))
             .ForMember(dest => dest.SetupMessage, opt => opt.MapFrom(src => GetSetupMessage(src)))
             .ForMember(dest => dest.SetupSteps, opt => opt.MapFrom(src => GetSetupSteps(src)));

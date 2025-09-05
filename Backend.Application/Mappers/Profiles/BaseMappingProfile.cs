@@ -9,16 +9,8 @@ public abstract class BaseMappingProfile : Profile
 {
     protected BaseMappingProfile()
     {
-        // Common mapping configurations can be added here
-        ConfigureCommonMappings();
-    }
-
-    /// <summary>
-    /// Configure common mappings that apply to all entities
-    /// </summary>
-    protected virtual void ConfigureCommonMappings()
-    {
-        // Override in derived classes to add common mappings
+        ConfigureEntityMappings();
+        ConfigureDtoMappings();
     }
 
     /// <summary>
@@ -30,4 +22,13 @@ public abstract class BaseMappingProfile : Profile
     /// Configure DTO-specific mappings
     /// </summary>
     protected abstract void ConfigureDtoMappings();
+
+    /// <summary>
+    /// Helper method to ignore common properties that should not be mapped
+    /// </summary>
+    protected IMappingExpression<TSource, TDestination> IgnoreCommonProperties<TSource, TDestination>(
+        IMappingExpression<TSource, TDestination> mapping)
+    {
+        return mapping;
+    }
 } 

@@ -3,13 +3,12 @@ using Backend.Application.Common.Results;
 using Backend.Application.Common.Interfaces;
 using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Identity.Models;
-using Backend.Identity.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System.Security.Claims;
 using System.Text.Encodings.Web;
-using System.Linq;
 using Backend.Application.Features.UserManagement.DTOs.Auth;
+using AutoMapper;
+using Backend.Identity.Adapters;
 
 namespace Backend.Identity.Services;
 
@@ -21,7 +20,7 @@ public class UserService : IUserService
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly IUserMapper _userMapper;
+    private readonly IMapper _mapper;
     private readonly IAccountManagementService _accountManagementService;
     private readonly IDateTimeService _dateTimeService;
     private readonly IEmailConfirmationService _emailConfirmationService;
@@ -31,7 +30,7 @@ public class UserService : IUserService
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
         SignInManager<ApplicationUser> signInManager,
-        IUserMapper userMapper,
+        IMapper mapper,
         IAccountManagementService accountManagementService,
         IDateTimeService dateTimeService,
         IEmailConfirmationService emailConfirmationService,
@@ -40,7 +39,7 @@ public class UserService : IUserService
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
         _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
-        _userMapper = userMapper ?? throw new ArgumentNullException(nameof(userMapper));
+        _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         _accountManagementService = accountManagementService ?? throw new ArgumentNullException(nameof(accountManagementService));
         _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
         _emailConfirmationService = emailConfirmationService ?? throw new ArgumentNullException(nameof(emailConfirmationService));
@@ -113,7 +112,8 @@ public class UserService : IUserService
 
             // Get user with roles for response
             var userWithRoles = await GetUserWithRolesAsync(user.Id);
-            var userDto = _userMapper.MapToUserDto(userWithRoles, userWithRoles.Roles);
+            var userInterface = IdentityAdapterFactory.CreateApplicationUser(userWithRoles);
+            var userDto = _mapper.Map<UserDto>(userInterface);
 
             _logger.LogInformation("User created successfully: {UserId}, {Email}", user.Id, user.Email);
             return Result<UserDto>.Success(userDto);
@@ -174,7 +174,8 @@ public class UserService : IUserService
 
             // Get updated user with roles
             var updatedUser = await GetUserWithRolesAsync(user.Id);
-            var userDto = _userMapper.MapToUserDto(updatedUser, updatedUser.Roles);
+            var userInterface = IdentityAdapterFactory.CreateApplicationUser(updatedUser);
+            var userDto = _mapper.Map<UserDto>(userInterface);
 
             _logger.LogInformation("User updated successfully: {UserId}", userId);
             return Result<UserDto>.Success(userDto);
@@ -234,12 +235,12 @@ public class UserService : IUserService
             if (includeRoles)
             {
                 var roles = await _userManager.GetRolesAsync(user);
-                var userDto = _userMapper.MapToUserDto(user, roles.ToList());
-                return Result<UserDto>.Success(userDto);
+                user.Roles = roles.ToList();
             }
 
-            var userDtoWithoutRoles = _userMapper.MapToUserDto(user);
-            return Result<UserDto>.Success(userDtoWithoutRoles);
+            var userInterface = IdentityAdapterFactory.CreateApplicationUser(user);
+            var userDto = _mapper.Map<UserDto>(userInterface);
+            return Result<UserDto>.Success(userDto);
         }
         catch (Exception ex)
         {
@@ -336,12 +337,15 @@ public class UserService : IUserService
                 .Take(pageSize)
                 .ToList();
 
-            // Get roles for all users
+            // Get roles for all users and map to DTOs
             var userDtos = new List<UserDto>();
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
-                var userDto = _userMapper.MapToUserDto(user, roles.ToList());
+                user.Roles = roles.ToList();
+                
+                var userInterface = IdentityAdapterFactory.CreateApplicationUser(user);
+                var userDto = _mapper.Map<UserDto>(userInterface);
                 userDtos.Add(userDto);
             }
 
@@ -434,7 +438,10 @@ public class UserService : IUserService
 
                 // Get user roles
                 var roles = await _userManager.GetRolesAsync(user);
-                var userDto = _userMapper.MapToUserDto(user, roles.ToList());
+                user.Roles = roles.ToList();
+                
+                var userInterface = IdentityAdapterFactory.CreateApplicationUser(user);
+                var userDto = _mapper.Map<UserDto>(userInterface);
 
                 // Generate JWT tokens with caching
                 var claims = await _accountManagementService.GetUserClaimsAsync(user);
@@ -553,7 +560,7 @@ public class UserService : IUserService
                 IsSuccess = true,
                 RequiresEmailConfirmation = true,
                 Message = "Registration successful. Please check your email to confirm your account.",
-                User = _userMapper.MapToUserDto(user)
+                User = _mapper.Map<UserDto>(IdentityAdapterFactory.CreateApplicationUser(user))
             };
 
             return Result<LoginResponse>.Success(authResult);
@@ -1016,7 +1023,13 @@ public class UserService : IUserService
 
             // Get user roles for mapping
             var roles = await _userManager.GetRolesAsync(user);
-            var userDto = _userMapper.MapToUserDto(user, roles.ToList());
+            user.Roles = roles.ToList();
+            
+            // Convert to interface using adapter
+            var userInterface = IdentityAdapterFactory.CreateApplicationUser(user);
+            
+            // Map to DTO using AutoMapper
+            var userDto = _mapper.Map<UserDto>(userInterface);
 
             // Create auth result
             var authResult = new AuthResultDto
