@@ -5,8 +5,6 @@ using Backend.Application.Common.Infrastructure;
 using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Services;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Mapster;
-using MapsterMapper;
 using System.Reflection;
 using FluentValidation;
 using Backend.Application.Common.Behaviors;
@@ -29,8 +27,12 @@ public static class ApplicationServicesRegistration
         // Register MediatR
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
-        // Register AutoMapper
-        services.AddAutoMapper(cfg => cfg.AddMaps(Assembly.GetExecutingAssembly()));
+        // Register AutoMapper with profiles from Application assembly
+        services.AddAutoMapper(cfg => 
+        {
+            cfg.AddMaps(Assembly.GetExecutingAssembly());
+            // Add any additional configuration here if needed
+        });
 
         // Register FluentValidation
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
@@ -55,11 +57,7 @@ public static class ApplicationServicesRegistration
         // Register HttpContextAccessor for CurrentUserService
         services.TryAddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-        // Register Mapster
-        var config = TypeAdapterConfig.GlobalSettings;
-        config.Scan(Assembly.GetExecutingAssembly());
-        services.AddSingleton(config);
-        services.AddScoped<IMapper, ServiceMapper>();
+        // Mapster is not needed - we use AutoMapper instead
 
         return services;
     }

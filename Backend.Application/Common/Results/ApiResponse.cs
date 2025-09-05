@@ -25,6 +25,10 @@ public class ApiResponse<T>
     public static ApiResponse<T> Failure(Exception ex, int? statusCode = 500) =>
         new() { IsSuccess = false, ErrorMessage = ex.Message, StatusCode = statusCode, ErrorCode = ex.GetType().Name };
 
+    // ? Failure with custom message and error code
+    public static ApiResponse<T> Failure(string errorMessage, string? errorCode = null, int? statusCode = 400) =>
+        new() { IsSuccess = false, ErrorMessage = errorMessage, StatusCode = statusCode, ErrorCode = errorCode };
+
     // ? From Result<T>
     public static ApiResponse<T> FromResult(Result<T> result, int? statusCode = null) =>
         result.IsSuccess
@@ -46,6 +50,9 @@ public class ApiResponse : ApiResponse<object>
 
     public static new ApiResponse Failure(Exception ex, int? statusCode = 500) =>
         new() { IsSuccess = false, ErrorMessage = ex.Message, StatusCode = statusCode, ErrorCode = ex.GetType().Name };
+
+    public static new ApiResponse Failure(string errorMessage, string? errorCode = null, int? statusCode = 400) =>
+        new() { IsSuccess = false, ErrorMessage = errorMessage, StatusCode = statusCode, ErrorCode = errorCode };
 
     public static new ApiResponse FromResult(Result result, int? statusCode = null) =>
         result.IsSuccess

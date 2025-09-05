@@ -22,8 +22,7 @@ namespace Backend.Identity.DependencyInjection
             // Configure Identity
             ConfigureIdentity(services);
 
-            // Configure AutoMapper
-            services.AddAutoMapper(cfg => cfg.AddMaps(Assembly.GetExecutingAssembly()));
+            // AutoMapper is configured in Application layer - no need to register again here
 
             // Add Identity services
             services.AddIdentityServices();
