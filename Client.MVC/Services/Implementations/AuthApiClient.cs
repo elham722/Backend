@@ -4,8 +4,9 @@ using System.Text;
 using System.Text.Json;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs.Auth;
+using Client.MVC.Services.Abstractions;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Implementations
 {
     public static class AuthResultExtensions
     {

@@ -1,4 +1,7 @@
 using Client.MVC.Services;
+using Client.MVC.Services.Abstractions;
+using Client.MVC.Services.Handler;
+using Client.MVC.Services.Implementations;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,29 +61,34 @@ builder.Services.AddHttpClient("ApiClient", client =>
         apiSettings.GetValue<int>("TimeoutSeconds", 100));
 });
 
-// Register services with improved dependency injection
+// Register services with improved dependency injection following SOLID principles
 builder.Services.AddScoped<IAuthenticationInterceptor, AuthenticationInterceptor>();
 builder.Services.AddSingleton<ResiliencePolicyService>();
 builder.Services.AddScoped<IAuthenticatedHttpClient, AuthenticatedHttpClient>();
-// builder.Services.AddScoped<IUserSessionService, UserSessionService>(); // Replaced with StatelessUserSessionService
+
+// Register API clients
 builder.Services.AddScoped<IAuthApiClient, AuthApiClient>();
 builder.Services.AddScoped<IUserApiClient, UserApiClient>();
 builder.Services.AddScoped<IBackgroundJobAuthClient, BackgroundJobAuthClient>();
 
-// Register new services
+// Register utility services
 builder.Services.AddScoped<IErrorHandlingService, ErrorHandlingService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddSingleton<LogSanitizer>();
 builder.Services.AddSingleton<IConcurrencyManager, ConcurrencyManager>();
-builder.Services.AddScoped<ITokenManager, TokenManager>();
+// TokenManager removed - functionality moved to ITokenProvider
 builder.Services.AddScoped<IAntiForgeryService, AntiForgeryService>();
-
-// Register JWT Claims Extractor
 builder.Services.AddScoped<IJwtClaimsExtractor, JwtClaimsExtractor>();
 
-// Register Stateless User Session Service (alternative to current UserSessionService)
-// Use stateless approach for better performance and scalability
-builder.Services.AddScoped<IUserSessionService, StatelessUserSessionService>();
+// Register new refactored services following Single Responsibility Principle
+builder.Services.AddScoped<Client.MVC.Services.Abstractions.ICurrentUser, Client.MVC.Services.Implementations.CurrentUserProvider>();
+builder.Services.AddScoped<Client.MVC.Services.Abstractions.ISessionManager, Client.MVC.Services.Implementations.SessionManager>();
+builder.Services.AddScoped<Client.MVC.Services.Abstractions.ITokenProvider, Client.MVC.Services.Implementations.TokenProvider>();
+builder.Services.AddScoped<Client.MVC.Services.Abstractions.ILogoutService, Client.MVC.Services.Implementations.LogoutService>();
+
+// Keep backward compatibility with existing IUserSessionService using Adapter pattern
+// This allows legacy code to continue working while using the new refactored services internally
+builder.Services.AddScoped<IUserSessionService, Client.MVC.Services.Adapters.UserSessionServiceAdapter>();
 
 builder.Services.AddHttpContextAccessor();
 

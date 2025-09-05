@@ -1,20 +1,11 @@
+using Client.MVC.Services.Abstractions;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Implementations
 {
     /// <summary>
     /// Service for managing Anti-Forgery (CSRF) tokens
-    /// </summary>
-    public interface IAntiForgeryService
-    {
-        string GetToken();
-        string GetTokenHeaderName();
-        string GetTokenCookieName();
-        bool ValidateToken(string token);
-        void SetTokenInCookie(HttpContext context);
-        string GetTokenFromCookie(HttpContext context);
-    }
 
     public class AntiForgeryService : IAntiForgeryService
     {

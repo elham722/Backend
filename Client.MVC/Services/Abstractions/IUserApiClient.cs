@@ -1,7 +1,7 @@
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Abstractions
 {
     /// <summary>
     /// Typed API client for user management operations

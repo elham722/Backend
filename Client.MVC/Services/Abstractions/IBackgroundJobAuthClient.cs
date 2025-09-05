@@ -1,6 +1,6 @@
 using Backend.Application.Features.UserManagement.DTOs;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Abstractions
 {
     /// <summary>
     /// Authentication client for background jobs and external services

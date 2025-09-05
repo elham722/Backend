@@ -3,8 +3,9 @@ using Backend.Application.Common.DTOs;
 using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Application.Features.UserManagement.DTOs.Auth;
 using Microsoft.Extensions.Logging;
+using Client.MVC.Services.Abstractions;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Implementations
 {
     /// <summary>
     /// Implementation of user API client using authenticated HTTP client

@@ -1,4 +1,4 @@
-using Client.MVC.Services;
+using Client.MVC.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Client.MVC.ViewComponents

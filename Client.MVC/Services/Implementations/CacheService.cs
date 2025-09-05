@@ -1,19 +1,11 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using Client.MVC.Services.Abstractions;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Implementations
 {
-    public interface ICacheService
-    {
-        Task<T?> GetAsync<T>(string key);
-        Task SetAsync<T>(string key, T value, TimeSpan? expiration = null);
-        Task RemoveAsync(string key);
-        Task RemoveByPatternAsync(string pattern);
-        Task<bool> ExistsAsync(string key);
-        Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiration = null);
-        Task ClearAllAsync();
-    }
+  
 
     public class CacheService : ICacheService
     {
@@ -39,12 +31,12 @@ namespace Client.MVC.Services
                 }
 
                 _logger.LogDebug("Cache miss for key: {Key}", key);
-                return Task.FromResult<T?>(default(T));
+                return Task.FromResult(default(T));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting cache value for key: {Key}", key);
-                return Task.FromResult<T?>(default(T));
+                return Task.FromResult(default(T));
             }
         }
 

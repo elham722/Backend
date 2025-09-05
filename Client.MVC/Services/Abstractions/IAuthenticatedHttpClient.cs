@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Backend.Application.Common.Results;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Abstractions
 {
     /// <summary>
     /// Interface for authenticated HTTP client with automatic token management and resilience policies

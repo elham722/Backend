@@ -1,9 +1,10 @@
 using Backend.Application.Features.UserManagement.DTOs;
+using Client.MVC.Services.Abstractions;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Implementations
 {
     /// <summary>
     /// Implementation of authentication client for background jobs and external services
@@ -57,7 +58,7 @@ namespace Client.MVC.Services
                 var payload = tokenParts[1];
                 var paddedPayload = payload.PadRight(4 * ((payload.Length + 3) / 4), '=');
                 var decodedPayload = Convert.FromBase64String(paddedPayload.Replace('-', '+').Replace('_', '/'));
-                var payloadJson = System.Text.Encoding.UTF8.GetString(decodedPayload);
+                var payloadJson = Encoding.UTF8.GetString(decodedPayload);
                 
                 var payloadData = JsonSerializer.Deserialize<JsonElement>(payloadJson, _jsonOptions);
                 
@@ -142,7 +143,7 @@ namespace Client.MVC.Services
                 var payload = tokenParts[1];
                 var paddedPayload = payload.PadRight(4 * ((payload.Length + 3) / 4), '=');
                 var decodedPayload = Convert.FromBase64String(paddedPayload.Replace('-', '+').Replace('_', '/'));
-                var payloadJson = System.Text.Encoding.UTF8.GetString(decodedPayload);
+                var payloadJson = Encoding.UTF8.GetString(decodedPayload);
                 
                 var payloadData = JsonSerializer.Deserialize<JsonElement>(payloadJson, _jsonOptions);
                 

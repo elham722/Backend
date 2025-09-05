@@ -1,10 +1,11 @@
+using Client.MVC.Services.Abstractions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Handler
 {
     /// <summary>
     /// Custom authentication handler for JWT tokens stored in cookies

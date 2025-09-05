@@ -2,7 +2,7 @@ using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs.Auth;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Abstractions
 {
     /// <summary>
     /// Service for managing user session data

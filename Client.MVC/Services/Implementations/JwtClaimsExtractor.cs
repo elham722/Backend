@@ -1,27 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
+using Client.MVC.Services.Abstractions;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Implementations
 {
     /// <summary>
     /// Service for extracting claims from JWT tokens
     /// </summary>
-    public interface IJwtClaimsExtractor
-    {
-        string? GetUserId(string? jwtToken);
-        string? GetUserName(string? jwtToken);
-        string? GetUserEmail(string? jwtToken);
-        IEnumerable<string> GetUserRoles(string? jwtToken);
-        DateTime? GetTokenExpiration(string? jwtToken);
-        bool IsTokenValid(string? jwtToken);
-        IDictionary<string, object> GetAllClaims(string? jwtToken);
-        
-        // ✅ New methods for generic claim extraction
-        string? GetClaimValue(string claimType, string? jwtToken = null);
-        IEnumerable<string> GetClaimValues(string claimType, string? jwtToken = null);
-    }
-
+ 
     public class JwtClaimsExtractor : IJwtClaimsExtractor
     {
         private readonly ILogger<JwtClaimsExtractor> _logger;

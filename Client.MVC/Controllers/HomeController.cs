@@ -1,15 +1,17 @@
 using Client.MVC.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using Client.MVC.Services;
-using Microsoft.AspNetCore.Authorization;
+using Client.MVC.Services.Abstractions;
+using Client.MVC.Controllers.Base;
 
 namespace Client.MVC.Controllers
 {
-    public class HomeController : BaseController
+    public class HomeController : AuthenticatedController
     {
-        public HomeController(IUserSessionService userSessionService, ILogger<HomeController> logger, IErrorHandlingService errorHandlingService, ICacheService cacheService, IAntiForgeryService antiForgeryService)
-            : base(userSessionService, logger, errorHandlingService, cacheService, antiForgeryService)
+        public HomeController(
+            ICurrentUser currentUser,
+            ILogger<HomeController> logger)
+            : base(currentUser, logger)
         {
         }
         

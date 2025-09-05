@@ -1,24 +1,29 @@
 using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Application.Features.UserManagement.DTOs.Auth;
-using Client.MVC.Services;
+using Client.MVC.Services.Abstractions;
+using Client.MVC.Controllers.Base;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Client.MVC.Controllers
 {
-    public class AuthController : BaseController
+    public class AuthController : SecureController
     {
         private readonly IAuthApiClient _authApiClient;
+        private readonly ISessionManager _sessionManager;
+        private readonly ILogoutService _logoutService;
 
         public AuthController(
-            IAuthApiClient authApiClient, 
-            IUserSessionService userSessionService,
-            ILogger<AuthController> logger,
-            IErrorHandlingService errorHandlingService,
-            ICacheService cacheService,
-            IAntiForgeryService antiForgeryService)
-            : base(userSessionService, logger, errorHandlingService, cacheService, antiForgeryService)
+            IAuthApiClient authApiClient,
+            ISessionManager sessionManager,
+            ILogoutService logoutService,
+            ICurrentUser currentUser,
+            IAntiForgeryService antiForgeryService,
+            ILogger<AuthController> logger)
+            : base(currentUser, antiForgeryService, logger)
         {
             _authApiClient = authApiClient ?? throw new ArgumentNullException(nameof(authApiClient));
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+            _logoutService = logoutService ?? throw new ArgumentNullException(nameof(logoutService));
         }
 
         #region Register
@@ -44,8 +49,8 @@ namespace Client.MVC.Controllers
 
                 if (response.IsSuccess)
                 {
-                    // Set user session using the service
-                    UserSessionService.SetUserSession(response);
+                    // Set user session using the new session manager
+                    _sessionManager.SetUserSession(response);
 
                     TempData["SuccessMessage"] = "ثبت نام با موفقیت انجام شد!";
 
@@ -98,8 +103,8 @@ namespace Client.MVC.Controllers
 
                 if (response.IsSuccess)
                 {
-                    // ذخیره سشن و کوکی
-                    UserSessionService.SetUserSession(response);
+                    // ذخیره سشن و کوکی با session manager جدید
+                    _sessionManager.SetUserSession(response);
 
                     // لاگ امنیتی (اختیاری - برای دیتابیس)
                     Logger.LogInformation("User {User} logged in successfully from IP {IP}",
@@ -108,12 +113,7 @@ namespace Client.MVC.Controllers
                     TempData["SuccessMessage"] = "ورود با موفقیت انجام شد!";
 
                     // اگر returnUrl معتبر باشه برگرد همونجا، در غیر اینصورت برو Home
-                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-                    {
-                        return Redirect(returnUrl);
-                    }
-
-                    return RedirectToAction("Index", "Home");
+                    return RedirectToLocal(returnUrl ?? "/");
                 }
                 else
                 {
@@ -141,21 +141,24 @@ namespace Client.MVC.Controllers
         {
             try
             {
-                // Get logout DTO with current refresh token
-                var logoutDto = UserSessionService.GetLogoutDto();
-
-                // Call AuthApiClient for logout
-                await _authApiClient.LogoutAsync(logoutDto);
+                // Logout using the dedicated logout service to avoid circular dependencies
+                var result = await _logoutService.LogoutAsync();
+                
+                if (result.IsSuccess)
+                {
+                    TempData["SuccessMessage"] = "خروج با موفقیت انجام شد!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.ErrorMessage ?? "خطا در خروج از سیستم";
+                }
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Error during logout");
-                // Continue with local logout even if API call fails
+                TempData["ErrorMessage"] = "خطا در خروج از سیستم";
             }
 
-            // Clear session using the service
-            UserSessionService.ClearUserSession();
-            TempData["SuccessMessage"] = "خروج با موفقیت انجام شد!";
             return RedirectToAction("Index", "Home");
         }
 

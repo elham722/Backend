@@ -3,8 +3,9 @@ using System.Text;
 using System.Text.Json;
 using Polly;
 using Backend.Application.Common.Results;
+using Client.MVC.Services.Abstractions;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Implementations
 {
     /// <summary>
     /// Implementation of authenticated HTTP client with automatic token management and resilience policies

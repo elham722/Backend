@@ -1,4 +1,5 @@
 using Client.MVC.Services;
+using Client.MVC.Services.Abstractions;
 using Microsoft.AspNetCore.Http.Extensions;
 
 namespace Client.MVC.Middleware

@@ -1,19 +1,12 @@
+using Client.MVC.Services.Abstractions;
 using Microsoft.Extensions.Logging;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Implementations
 {
     /// <summary>
     /// Advanced concurrency manager for handling concurrent operations safely
     /// </summary>
-    public interface IConcurrencyManager
-    {
-        Task<T> ExecuteWithLockAsync<T>(string operationKey, Func<Task<T>> operation, TimeSpan? timeout = null);
-        Task ExecuteWithLockAsync(string operationKey, Func<Task> operation, TimeSpan? timeout = null);
-        Task<T> ExecuteWithLockAsync<T>(string operationKey, Func<Task<T>> operation, Func<Task<T>> fallbackOperation, TimeSpan? timeout = null);
-        bool IsOperationInProgress(string operationKey);
-        Task WaitForOperationCompletionAsync(string operationKey, TimeSpan? timeout = null);
-        void CancelOperation(string operationKey);
-    }
+  
 
     public class ConcurrencyManager : IConcurrencyManager
     {

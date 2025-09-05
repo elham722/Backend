@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
 
-namespace Client.MVC.Services
+namespace Client.MVC.Services.Abstractions
 {
     /// <summary>
     /// Interface for authentication interceptor to handle JWT tokens automatically
