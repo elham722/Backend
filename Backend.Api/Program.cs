@@ -24,6 +24,32 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container.
+// Add CORS policy for MVC client
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MvcClient", policy =>
+    {
+        policy.WithOrigins("https://localhost:5001", "http://localhost:5000", "https://localhost:7251", "http://localhost:5242")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// Add response compression
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+});
+
+// Add response caching
+builder.Services.AddResponseCaching();
+
+// Add memory cache
+builder.Services.AddMemoryCache();
+
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
     {
@@ -134,6 +160,28 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Use response compression
+app.UseResponseCompression();
+
+// Use response caching
+app.UseResponseCaching();
+
+// Use CORS
+app.UseCors("MvcClient");
+
+// Add security headers
+app.Use(async (context, next) =>
+{
+    // Security headers for API
+    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Add("X-Frame-Options", "DENY");
+    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Add("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    
+    await next();
+});
 
 // Use session
 app.UseSession();

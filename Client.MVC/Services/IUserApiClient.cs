@@ -11,7 +11,7 @@ namespace Client.MVC.Services
         /// <summary>
         /// Get user profile
         /// </summary>
-        Task<UserProfileDto?> GetUserProfileAsync();
+        Task<UserDto?> GetUserProfileAsync();
 
         /// <summary>
         /// Get user by ID

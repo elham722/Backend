@@ -67,6 +67,8 @@ public interface IAccountInfo
     bool IsLocked();
     DateTime CreatedAt { get; }
     DateTime? LastPasswordChangeAt { get; }
+    DateTime? LastLoginAt { get; }
+    int LoginAttempts { get; }
 }
 
 /// <summary>

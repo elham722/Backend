@@ -48,7 +48,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogUserAuthentication("Register", dto.Email, true);
                 
-                var response = await _httpClient.PostAsync<RegisterDto, LoginResponse>("api/Auth/register", dto, cancellationToken);
+                var response = await _httpClient.PostAsync<RegisterDto, LoginResponse>("api/v1.0/auth/register", dto, cancellationToken);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
@@ -83,7 +83,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogUserAuthentication("Login", dto.EmailOrUsername, true);
                 
-                var response = await _httpClient.PostAsync<LoginRequest, LoginResponse>("api/Auth/login", dto, cancellationToken);
+                var response = await _httpClient.PostAsync<LoginRequest, LoginResponse>("api/v1.0/auth/login", dto, cancellationToken);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
@@ -118,7 +118,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogInformation("Attempting to logout user");
                 
-                var response = await _httpClient.PostAsync<LogoutDto, LoginResponse>("api/Auth/logout", logoutDto ?? new LogoutDto(), cancellationToken);
+                var response = await _httpClient.PostAsync<LogoutDto, LoginResponse>("api/v1.0/auth/logout", logoutDto ?? new LogoutDto(), cancellationToken);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {
@@ -167,7 +167,7 @@ namespace Client.MVC.Services
                 _logger.LogInformation("Attempting to refresh token");
                 
                 var request = new RefreshTokenDto { RefreshToken = refreshToken };
-                var response = await _httpClient.PostAsync<RefreshTokenDto, LoginResponse>("api/Auth/refresh-token", request, cancellationToken);
+                var response = await _httpClient.PostAsync<RefreshTokenDto, LoginResponse>("api/v1.0/auth/refresh-token", request, cancellationToken);
                 
                 if (response.IsSuccess && response.Data?.IsSuccess == true)
                 {

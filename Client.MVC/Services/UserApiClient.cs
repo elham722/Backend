@@ -1,4 +1,5 @@
 using Backend.Application.Common.Results;
+using Backend.Application.Common.DTOs;
 using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Application.Features.UserManagement.DTOs.Auth;
 using Microsoft.Extensions.Logging;
@@ -22,13 +23,13 @@ namespace Client.MVC.Services
         /// <summary>
         /// Get user profile
         /// </summary>
-        public async Task<UserProfileDto?> GetUserProfileAsync()
+        public async Task<UserDto?> GetUserProfileAsync()
         {
             try
             {
                 _logger.LogDebug("Getting user profile");
                 
-                var response = await _httpClient.GetAsync<UserProfileDto>("api/User/profile");
+                var response = await _httpClient.GetAsync<UserDto>("api/v1.0/users/profile");
                 
                 if (response.IsSuccess && response.Data != null)
                 {
@@ -57,7 +58,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Getting user by ID: {UserId}", userId);
                 
-                var response = await _httpClient.GetAsync<UserDto>($"api/User/{userId}");
+                var response = await _httpClient.GetAsync<UserDto>($"api/v1.0/users/{userId}");
                 
                 if (response.IsSuccess && response.Data != null)
                 {
@@ -86,12 +87,18 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Getting users with pagination: Page {Page}, Size {PageSize}", page, pageSize);
                 
-                var response = await _httpClient.GetAsync<PaginatedResult<UserDto>>($"api/User?page={page}&pageSize={pageSize}");
+                var response = await _httpClient.GetAsync<PaginationResponse<UserDto>>($"api/v1.0/users?page={page}&pageSize={pageSize}");
                 
                 if (response.IsSuccess && response.Data != null)
                 {
-                    _logger.LogDebug("Users retrieved successfully: {Count} users", response.Data.TotalCount);
-                    return response.Data;
+                    _logger.LogDebug("Users retrieved successfully: {Count} users", response.Data.Meta.TotalCount);
+                    
+                    // Convert PaginationResponse to PaginatedResult for MVC compatibility
+                    return PaginatedResult<UserDto>.Success(
+                        response.Data.Data,
+                        response.Data.Meta.TotalCount,
+                        response.Data.Meta.PageNumber,
+                        response.Data.Meta.PageSize);
                 }
                 else
                 {
@@ -115,7 +122,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Updating user: {UserId}", userId);
                 
-                var response = await _httpClient.PutAsync<UpdateUserDto, UserDto>($"api/User/{userId}", updateUserDto);
+                var response = await _httpClient.PutAsync<UpdateUserDto, UserDto>($"api/v1.0/users/{userId}", updateUserDto);
                 
                 if (response.IsSuccess && response.Data != null)
                 {
@@ -144,16 +151,16 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Changing user password");
                 
-                var response = await _httpClient.PostAsync<ChangePasswordDto, LoginResponse>("api/User/change-password", changePasswordDto);
+                var response = await _httpClient.PostAsync<ChangePasswordDto, object>("api/v1.0/users/change-password", changePasswordDto);
                 
-                if (response.IsSuccess && response.Data?.IsSuccess == true)
+                if (response.IsSuccess)
                 {
                     _logger.LogInformation("Password changed successfully");
                     return true;
                 }
                 else
                 {
-                    var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "Password change failed";
+                    var errorMessage = response.ErrorMessage ?? "Password change failed";
                     _logger.LogWarning("Failed to change password: {Error}", errorMessage);
                     return false;
                 }
@@ -174,7 +181,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Deleting user: {UserId}", userId);
                 
-                var response = await _httpClient.DeleteAsync($"api/User/{userId}");
+                var response = await _httpClient.DeleteAsync($"api/v1.0/users/{userId}");
                 
                 if (response.IsSuccess && response.Data)
                 {
@@ -203,16 +210,16 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Activating user: {UserId}", userId);
                 
-                var response = await _httpClient.PostAsync<object, LoginResponse>($"api/User/{userId}/activate", new { });
+                var response = await _httpClient.PostAsync<object, object>($"api/v1.0/users/{userId}/activate", new { });
                 
-                if (response.IsSuccess && response.Data?.IsSuccess == true)
+                if (response.IsSuccess)
                 {
                     _logger.LogInformation("User activated successfully: {UserId}", userId);
                     return true;
                 }
                 else
                 {
-                    var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "User activation failed";
+                    var errorMessage = response.ErrorMessage ?? "User activation failed";
                     _logger.LogWarning("Failed to activate user: {UserId}. Error: {Error}", userId, errorMessage);
                     return false;
                 }
@@ -233,7 +240,7 @@ namespace Client.MVC.Services
             {
                 _logger.LogDebug("Deactivating user: {UserId}", userId);
                 
-                var result = await _httpClient.PostAsync<object, LoginResponse>($"api/User/{userId}/deactivate", new { });
+                var result = await _httpClient.PostAsync<object, object>($"api/v1.0/users/{userId}/deactivate", new { });
                 
                 if (result?.IsSuccess == true)
                 {

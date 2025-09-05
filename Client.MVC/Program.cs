@@ -62,7 +62,7 @@ builder.Services.AddHttpClient("ApiClient", client =>
 builder.Services.AddScoped<IAuthenticationInterceptor, AuthenticationInterceptor>();
 builder.Services.AddSingleton<ResiliencePolicyService>();
 builder.Services.AddScoped<IAuthenticatedHttpClient, AuthenticatedHttpClient>();
-builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+// builder.Services.AddScoped<IUserSessionService, UserSessionService>(); // Replaced with StatelessUserSessionService
 builder.Services.AddScoped<IAuthApiClient, AuthApiClient>();
 builder.Services.AddScoped<IUserApiClient, UserApiClient>();
 builder.Services.AddScoped<IBackgroundJobAuthClient, BackgroundJobAuthClient>();
@@ -79,8 +79,8 @@ builder.Services.AddScoped<IAntiForgeryService, AntiForgeryService>();
 builder.Services.AddScoped<IJwtClaimsExtractor, JwtClaimsExtractor>();
 
 // Register Stateless User Session Service (alternative to current UserSessionService)
-// Uncomment the line below to use stateless approach instead of session-based
-// builder.Services.AddScoped<IUserSessionService, StatelessUserSessionService>();
+// Use stateless approach for better performance and scalability
+builder.Services.AddScoped<IUserSessionService, StatelessUserSessionService>();
 
 builder.Services.AddHttpContextAccessor();
 

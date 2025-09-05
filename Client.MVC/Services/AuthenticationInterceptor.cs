@@ -221,7 +221,7 @@ namespace Client.MVC.Services
                 
                 var response = await policy.ExecuteAsync(async (context) =>
                 {
-                    var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/Auth/refresh-token")
+                    var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/v1.0/auth/refresh-token")
                     {
                         Content = content
                     };

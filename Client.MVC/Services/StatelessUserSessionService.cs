@@ -2,6 +2,7 @@ using Backend.Application.Features.UserManagement.DTOs;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using Backend.Application.Common.Results;
+using Backend.Application.Features.UserManagement.DTOs.Auth;
 
 namespace Client.MVC.Services
 {
@@ -31,7 +32,7 @@ namespace Client.MVC.Services
         Task<ApiResponse<LogoutResultDto>> LogoutAsync(bool logoutFromAllDevices = false, CancellationToken cancellationToken = default);
     }
 
-    public class StatelessUserSessionService : IStatelessUserSessionService
+    public class StatelessUserSessionService : IStatelessUserSessionService, IUserSessionService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<StatelessUserSessionService> _logger;
@@ -509,6 +510,74 @@ namespace Client.MVC.Services
                 _logger.LogWarning(ex, "Failed to invalidate refresh token on backend. Token may still be valid.");
                 // Don't throw - this is not critical for local logout
             }
+        }
+
+        // IUserSessionService implementation
+        public void SetUserSession(LoginResponse result)
+        {
+            try
+            {
+                var httpContext = _httpContextAccessor.HttpContext;
+                if (httpContext == null)
+                {
+                    _logger.LogWarning("HttpContext is not available");
+                    return;
+                }
+
+                var response = httpContext.Response;
+
+                // Store JWT token in HttpOnly cookie only (stateless approach)
+                if (!string.IsNullOrEmpty(result.AccessToken))
+                {
+                    var jwtCookieOptions = CreateCookieOptions(
+                        isSecure: _cookieConfig.RequireSecure && httpContext.Request.IsHttps,
+                        sameSite: _cookieConfig.JwtTokenSameSite,
+                        expires: result.ExpiresAt ?? DateTime.UtcNow.AddMinutes(60)
+                    );
+                    
+                    response.Cookies.Append("jwt_token", result.AccessToken, jwtCookieOptions);
+                    _logger.LogDebug("JWT token stored in HttpOnly cookie (stateless mode)");
+                }
+
+                // Store refresh token in HttpOnly cookie only
+                if (!string.IsNullOrEmpty(result.RefreshToken))
+                {
+                    var refreshCookieOptions = CreateCookieOptions(
+                        isSecure: _cookieConfig.RequireSecure && httpContext.Request.IsHttps,
+                        sameSite: _cookieConfig.RefreshTokenSameSite,
+                        expires: DateTime.UtcNow.AddDays(7) // Default refresh token expiry
+                    );
+                    
+                    response.Cookies.Append("refresh_token", result.RefreshToken, refreshCookieOptions);
+                    _logger.LogDebug("Refresh token stored in HttpOnly cookie (stateless mode)");
+                }
+
+                _logger.LogInformation("User session set successfully (stateless mode) - No session storage used");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error setting user session in stateless mode");
+                throw;
+            }
+        }
+
+        public void SetUserSession(ApiResponse<LoginResponse> response)
+        {
+            if (response?.IsSuccess == true && response.Data != null)
+            {
+                SetUserSession(response.Data);
+            }
+            else
+            {
+                _logger.LogWarning("Cannot set user session from failed API response");
+            }
+        }
+
+        public DateTimeOffset? GetCachedTokenExpiration(string currentToken)
+        {
+            // In stateless mode, we always parse from token - no caching
+            var expiration = GetTokenExpiration();
+            return expiration.HasValue ? new DateTimeOffset(expiration.Value) : null;
         }
     }
 } 

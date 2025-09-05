@@ -44,7 +44,7 @@ public class ApplicationUserAdapter : IApplicationUser
     public ISecurityInfo Security => new SecurityInfoAdapter(_user.Security);
     
     // Audit Info
-    public IAuditInfo Audit => new AuditInfoAdapter(_user.Audit);
+    public IAuditInfo Audit => new AuditInfoAdapter(_user.Audit, _user.Account.CreatedAt);
     
     // Navigation Properties
     public List<string> Roles => _user.Roles;
@@ -61,7 +61,7 @@ public class ApplicationUserAdapter : IApplicationUser
     public DateTime? LastPasswordChangeAt => _user.Account.LastPasswordChangeAt;
     public int LoginAttempts => _user.Account.LoginAttempts;
 
-    bool IApplicationUser.RequiresPasswordChange => throw new NotImplementedException();
+    bool IApplicationUser.RequiresPasswordChange => _user.RequiresPasswordChange();
 
     // Business Logic Methods
     public bool CanLogin() => _user.CanLogin();
@@ -85,6 +85,8 @@ public class AccountInfoAdapter : IAccountInfo
     public bool IsLocked() => _accountInfo.IsLocked();
     public DateTime CreatedAt => _accountInfo.CreatedAt;
     public DateTime? LastPasswordChangeAt => _accountInfo.LastPasswordChangeAt;
+    public DateTime? LastLoginAt => _accountInfo.LastLoginAt;
+    public int LoginAttempts => _accountInfo.LoginAttempts;
 }
 
 /// <summary>
@@ -99,11 +101,11 @@ public class SecurityInfoAdapter : ISecurityInfo
         _securityInfo = securityInfo ?? throw new ArgumentNullException(nameof(securityInfo));
     }
 
-    public string? SecurityQuestion => throw new NotImplementedException();
+    public string? SecurityQuestion => null; // SecurityInfo doesn't have SecurityQuestion
 
-    public string? SecurityAnswer => throw new NotImplementedException();
+    public string? SecurityAnswer => null; // SecurityInfo doesn't have SecurityAnswer
 
-    public DateTime? LastSecurityUpdate => throw new NotImplementedException();
+    public DateTime? LastSecurityUpdate => _securityInfo.TwoFactorEnabledAt; // Map to TwoFactorEnabledAt
 }
 
 /// <summary>
@@ -112,17 +114,19 @@ public class SecurityInfoAdapter : ISecurityInfo
 public class AuditInfoAdapter : IAuditInfo
 {
     private readonly AuditInfo _auditInfo;
+    private readonly DateTime _createdAt;
 
-    public AuditInfoAdapter(AuditInfo auditInfo)
+    public AuditInfoAdapter(AuditInfo auditInfo, DateTime createdAt)
     {
         _auditInfo = auditInfo ?? throw new ArgumentNullException(nameof(auditInfo));
+        _createdAt = createdAt;
     }
 
     public string? CreatedBy => _auditInfo.CreatedBy;
 
-    public DateTime CreatedAt => throw new NotImplementedException();
+    public DateTime CreatedAt => _createdAt; // Use provided CreatedAt
 
-    public string? LastModifiedBy => throw new NotImplementedException();
+    public string? LastModifiedBy => _auditInfo.UpdatedBy; // Map to UpdatedBy
 
-    public DateTime? LastModifiedAt => throw new NotImplementedException();
+    public DateTime? LastModifiedAt => _auditInfo.UpdatedAt; // Map to UpdatedAt
 }
