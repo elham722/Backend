@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "موفقیت";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-check-circle fa-4x text-success mb-4"></i>
+                
+                <h3 class="mb-3">عملیات با موفقیت انجام شد</h3>
+                
+                @if (!string.IsNullOrEmpty(ViewData["SuccessMessage"] as string))
+                {
+                    <p class="text-success mb-3">@ViewData["SuccessMessage"]</p>
+                }
+                
+                <div class="d-flex justify-content-center gap-2">
+                    @if (!string.IsNullOrEmpty(ViewData["ReturnUrl"] as string))
+                    {
+                        <a href="@ViewData["ReturnUrl"]" class="btn btn-admin">
+                            <i class="fas fa-arrow-right me-1"></i>
+                            ادامه
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })" class="btn btn-admin">
+                            <i class="fas fa-home me-1"></i>
+                            بازگشت به داشبورد
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

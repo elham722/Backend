@@ -94,6 +94,9 @@ builder.Services.AddScoped<Client.MVC.Services.Abstractions.ILogoutService, Logo
 // This allows legacy code to continue working while using the new refactored services internally
 builder.Services.AddScoped<IUserSessionService, UserSessionServiceAdapter>();
 
+// Register Admin services
+builder.Services.AddScoped<Client.MVC.Services.Admin.IAdminUserService, Client.MVC.Services.Admin.AdminUserService>();
+
 builder.Services.AddHttpContextAccessor();
 
 // Add health checks
@@ -171,6 +174,12 @@ app.UseAuthorization();
 
 // Add health check endpoint
 app.MapHealthChecks("/health");
+
+// Configure Admin Area routing
+app.MapControllerRoute(
+    name: "admin",
+    pattern: "Admin/{controller=Dashboard}/{action=Index}/{id?}",
+    defaults: new { area = "Admin" });
 
 app.MapControllerRoute(
     name: "default",

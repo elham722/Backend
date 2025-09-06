@@ -58,6 +58,12 @@ namespace Client.MVC.Services.Abstractions
         string? GetUserEmail();
 
         /// <summary>
+        /// Get current user roles from session
+        /// </summary>
+        /// <returns>List of user roles</returns>
+        IEnumerable<string> GetUserRoles();
+
+        /// <summary>
         /// Get JWT token from HttpOnly cookie
         /// </summary>
         /// <returns>JWT token if exists, null otherwise</returns>

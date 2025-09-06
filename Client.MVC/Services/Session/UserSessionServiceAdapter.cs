@@ -82,6 +82,11 @@ namespace Client.MVC.Services.Session
             return _currentUser.GetUserEmail();
         }
 
+        public IEnumerable<string> GetUserRoles()
+        {
+            return _currentUser.GetUserRoles();
+        }
+
         public bool IsAuthenticated()
         {
             return _currentUser.IsAuthenticated();

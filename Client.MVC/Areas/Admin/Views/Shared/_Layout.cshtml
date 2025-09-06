@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - پنل مدیریت</title>
+    
+    <!-- Bootstrap RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Admin Panel Custom CSS -->
+    <style>
+        :root {
+            --admin-sidebar-width: 250px;
+            --admin-header-height: 60px;
+            --admin-primary-color: #2c3e50;
+            --admin-secondary-color: #34495e;
+            --admin-accent-color: #3498db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .admin-sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100vh;
+            width: var(--admin-sidebar-width);
+            background: linear-gradient(135deg, var(--admin-primary-color), var(--admin-secondary-color));
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .admin-sidebar.collapsed {
+            width: 70px;
+        }
+
+        .admin-sidebar .sidebar-header {
+            height: var(--admin-header-height);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .admin-sidebar .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .admin-sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: none;
+            transition: all 0.3s ease;
+        }
+
+        .admin-sidebar .nav-link:hover,
+        .admin-sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-right: 3px solid var(--admin-accent-color);
+        }
+
+        .admin-sidebar .nav-link i {
+            width: 20px;
+            margin-left: 10px;
+        }
+
+        .admin-main {
+            margin-right: var(--admin-sidebar-width);
+            transition: all 0.3s ease;
+        }
+
+        .admin-main.expanded {
+            margin-right: 70px;
+        }
+
+        .admin-header {
+            height: var(--admin-header-height);
+            background: white;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-content {
+            padding: 2rem;
+            min-height: calc(100vh - var(--admin-header-height));
+        }
+
+        .admin-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: none;
+            margin-bottom: 2rem;
+        }
+
+        .admin-card .card-header {
+            background: linear-gradient(135deg, var(--admin-primary-color), var(--admin-secondary-color));
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            border: none;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-card .stats-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+
+        .stats-card .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .btn-admin {
+            background: linear-gradient(135deg, var(--admin-primary-color), var(--admin-secondary-color));
+            border: none;
+            color: white;
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .table-admin {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table-admin thead {
+            background: var(--admin-primary-color);
+            color: white;
+        }
+
+        .badge-admin {
+            background: var(--admin-accent-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        @@media (max-width: 768px) {
+            .admin-sidebar {
+                transform: translateX(100%);
+            }
+            
+            .admin-sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .admin-main {
+                margin-right: 0;
+            }
+        }
+    </style>
+    
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <!-- Admin Sidebar -->
+    <nav class="admin-sidebar" id="adminSidebar">
+        <div class="sidebar-header">
+            <h4 class="mb-0">
+                <i class="fas fa-shield-alt"></i>
+                <span class="sidebar-text">پنل مدیریت</span>
+            </h4>
+        </div>
+        
+        <div class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" ? "active" : "")" 
+                       href="@Url.Action("Index", "Dashboard", new { area = "Admin" })">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span class="sidebar-text">داشبورد</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Users" ? "active" : "")" 
+                       href="@Url.Action("Index", "Users", new { area = "Admin" })">
+                        <i class="fas fa-users"></i>
+                        <span class="sidebar-text">مدیریت کاربران</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Roles" ? "active" : "")" 
+                       href="@Url.Action("Index", "Roles", new { area = "Admin" })">
+                        <i class="fas fa-user-shield"></i>
+                        <span class="sidebar-text">مدیریت نقش‌ها</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Settings" ? "active" : "")" 
+                       href="@Url.Action("Index", "Settings", new { area = "Admin" })">
+                        <i class="fas fa-cog"></i>
+                        <span class="sidebar-text">تنظیمات</span>
+                    </a>
+                </li>
+                <li class="nav-item mt-3">
+                    <a class="nav-link" href="@Url.Action("Index", "Home", new { area = "" })">
+                        <i class="fas fa-home"></i>
+                        <span class="sidebar-text">بازگشت به سایت</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="@Url.Action("Logout", "Auth", new { area = "" })">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="sidebar-text">خروج</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Admin Main Content -->
+    <div class="admin-main" id="adminMain">
+        <!-- Admin Header -->
+        <header class="admin-header">
+            <div class="d-flex align-items-center">
+                <button class="sidebar-toggle me-3" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h5 class="mb-0">@ViewData["Title"]</h5>
+            </div>
+            
+            <div class="d-flex align-items-center">
+                <span class="text-muted me-3">
+                    <i class="fas fa-user-circle"></i>
+                    @ViewData["AdminUsername"]
+                </span>
+                @if (ViewData["IsSuperAdmin"] as bool? == true)
+                {
+                    <span class="badge bg-warning text-dark me-3">Super Admin</span>
+                }
+                else
+                {
+                    <span class="badge bg-info me-3">Admin</span>
+                }
+            </div>
+        </header>
+
+        <!-- Admin Content -->
+        <main class="admin-content">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Admin Panel JS -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const main = document.getElementById('adminMain');
+            
+            sidebar.classList.toggle('collapsed');
+            main.classList.toggle('expanded');
+        }
+
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+
+        // Mobile sidebar toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            sidebar.classList.toggle('show');
+        }
+    </script>
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

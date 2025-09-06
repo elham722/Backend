@@ -17,12 +17,15 @@ namespace Client.MVC.ViewComponents
             var isAuthenticated = _userSessionService.IsAuthenticated();
             var userName = _userSessionService.GetUserName();
             var userEmail = _userSessionService.GetUserEmail();
+            var userRoles = _userSessionService.GetUserRoles();
 
             var model = new UserStatusViewModel
             {
                 IsAuthenticated = isAuthenticated,
                 UserName = userName,
-                UserEmail = userEmail
+                UserEmail = userEmail,
+                UserRoles = userRoles?.ToList() ?? new List<string>(),
+                IsAdmin = userRoles?.Contains("Admin") == true || userRoles?.Contains("SuperAdmin") == true
             };
 
             return View(model);
@@ -34,5 +37,7 @@ namespace Client.MVC.ViewComponents
         public bool IsAuthenticated { get; set; }
         public string? UserName { get; set; }
         public string? UserEmail { get; set; }
+        public List<string> UserRoles { get; set; } = new();
+        public bool IsAdmin { get; set; }
     }
 } 

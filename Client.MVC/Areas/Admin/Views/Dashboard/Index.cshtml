@@ -1,0 +1,267 @@
+@model dynamic
+@{
+    ViewData["Title"] = "داشبورد مدیریت";
+    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">کل کاربران</h6>
+                    <div class="stats-number">@Model.Statistics.TotalUsers</div>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">کاربران فعال</h6>
+                    <div class="stats-number">@Model.Statistics.ActiveUsers</div>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">کاربران جدید این ماه</h6>
+                    <div class="stats-number">@Model.Statistics.NewUsersThisMonth</div>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">کاربران با MFA</h6>
+                    <div class="stats-number">@Model.Statistics.UsersWithMfa</div>
+                </div>
+                <div class="stats-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Activity -->
+    <div class="col-lg-8 mb-4">
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    فعالیت‌های اخیر
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentActivity.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>کاربر</th>
+                                    <th>فعالیت</th>
+                                    <th>زمان</th>
+                                    <th>جزئیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var activity in Model.RecentActivity.Take(10))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                    @activity.Username.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <span>@activity.Username</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">@activity.Activity</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">@activity.Timestamp.ToString("yyyy/MM/dd HH:mm")</small>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">@activity.Details</small>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-history fa-3x mb-3"></i>
+                        <p>هیچ فعالیتی یافت نشد</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <!-- Users by Role -->
+    <div class="col-lg-4 mb-4">
+        <div class="admin-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    کاربران بر اساس نقش
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Statistics.UsersByRole.Any())
+                {
+                    @foreach (var role in Model.Statistics.UsersByRole)
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="badge-admin">@role.Key</span>
+                            </div>
+                            <div>
+                                <strong>@role.Value</strong>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-chart-pie fa-3x mb-3"></i>
+                        <p>اطلاعاتی موجود نیست</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Users -->
+    <div class="col-12">
+        <div class="admin-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-clock me-2"></i>
+                    کاربران اخیر
+                </h5>
+                <a href="@Url.Action("Index", "Users", new { area = "Admin" })" class="btn btn-admin btn-sm">
+                    <i class="fas fa-eye me-1"></i>
+                    مشاهده همه
+                </a>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentUsers.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-admin">
+                            <thead>
+                                <tr>
+                                    <th>نام کاربری</th>
+                                    <th>ایمیل</th>
+                                    <th>نقش‌ها</th>
+                                    <th>وضعیت</th>
+                                    <th>تاریخ عضویت</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in Model.RecentUsers.Take(5))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-sm bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                    @user.UserName.Substring(0, 1).ToUpper()
+                                                </div>
+                                                <span>@user.UserName</span>
+                                            </div>
+                                        </td>
+                                        <td>@user.Email</td>
+                                        <td>
+                                            @foreach (var role in user.Roles.Take(2))
+                                            {
+                                                <span class="badge bg-primary me-1">@role</span>
+                                            }
+                                            @if (user.Roles.Count > 2)
+                                            {
+                                                <span class="badge bg-secondary">+@(user.Roles.Count - 2)</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (user.IsActive)
+                                            {
+                                                <span class="badge bg-success">فعال</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">غیرفعال</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">@user.CreatedAt.ToString("yyyy/MM/dd")</small>
+                                        </td>
+                                        <td>
+                                            <a href="@Url.Action("Details", "Users", new { area = "Admin", id = user.Id })" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-users fa-3x mb-3"></i>
+                        <p>هیچ کاربری یافت نشد</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh statistics every 30 seconds
+        setInterval(function() {
+            $.get('@Url.Action("GetStatistics", "Dashboard", new { area = "Admin" })', function(data) {
+                if (data.success) {
+                    // Update statistics cards
+                    $('.stats-number').eq(0).text(data.data.totalUsers);
+                    $('.stats-number').eq(1).text(data.data.activeUsers);
+                    $('.stats-number').eq(2).text(data.data.newUsersThisMonth);
+                    $('.stats-number').eq(3).text(data.data.usersWithMfa);
+                }
+            });
+        }, 30000);
+    </script>
+}
