@@ -496,6 +496,12 @@ namespace Client.MVC.Services.ApiClients
             {
                 request.Headers.Add(header.Key, header.Value);
             }
+            
+            // Add User-Agent header if not already present
+            if (!request.Headers.Contains("User-Agent"))
+            {
+                request.Headers.Add("User-Agent", "Backend-Client/1.0");
+            }
         }
     }
 } 

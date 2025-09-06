@@ -133,6 +133,59 @@ html,body{height:100%;margin:0;background:linear-gradient(90deg,var(--bg-left),v
   transform: translateY(-1px);
 }
 
+/* Validation styles */
+.input.is-valid {
+  border-color: #28a745;
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.input.is-invalid {
+  border-color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.field-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  display: none;
+}
+
+.form-error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.alert {
+  padding: 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary:disabled:hover {
+  transform: none;
+  box-shadow: 0 6px 18px rgba(233,141,166,0.26);
+}
+
 /* Social button specific colors */
 .social-btn.google:hover{border-color: #EA4335;color: #EA4335;}
 .social-btn.github:hover{border-color: #333;color: #333;}
