@@ -1,7 +1,11 @@
-using Client.MVC.Services;
 using Client.MVC.Services.Abstractions;
-using Client.MVC.Services.Handler;
-using Client.MVC.Services.Implementations;
+using Client.MVC.Services.ApiClients;
+using Client.MVC.Services.Auth;
+using Client.MVC.Services.Cache;
+using Client.MVC.Services.ErrorHandling;
+using Client.MVC.Services.Infrastructure;
+using Client.MVC.Services.Security;
+using Client.MVC.Services.Session;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,14 +85,14 @@ builder.Services.AddScoped<IAntiForgeryService, AntiForgeryService>();
 builder.Services.AddScoped<IJwtClaimsExtractor, JwtClaimsExtractor>();
 
 // Register new refactored services following Single Responsibility Principle
-builder.Services.AddScoped<Client.MVC.Services.Abstractions.ICurrentUser, Client.MVC.Services.Implementations.CurrentUserProvider>();
-builder.Services.AddScoped<Client.MVC.Services.Abstractions.ISessionManager, Client.MVC.Services.Implementations.SessionManager>();
-builder.Services.AddScoped<Client.MVC.Services.Abstractions.ITokenProvider, Client.MVC.Services.Implementations.TokenProvider>();
-builder.Services.AddScoped<Client.MVC.Services.Abstractions.ILogoutService, Client.MVC.Services.Implementations.LogoutService>();
+builder.Services.AddScoped<Client.MVC.Services.Abstractions.ICurrentUser, CurrentUserProvider>();
+builder.Services.AddScoped<Client.MVC.Services.Abstractions.ISessionManager, SessionManager>();
+builder.Services.AddScoped<Client.MVC.Services.Abstractions.ITokenProvider, TokenProvider>();
+builder.Services.AddScoped<Client.MVC.Services.Abstractions.ILogoutService, LogoutService>();
 
 // Keep backward compatibility with existing IUserSessionService using Adapter pattern
 // This allows legacy code to continue working while using the new refactored services internally
-builder.Services.AddScoped<IUserSessionService, Client.MVC.Services.Adapters.UserSessionServiceAdapter>();
+builder.Services.AddScoped<IUserSessionService, UserSessionServiceAdapter>();
 
 builder.Services.AddHttpContextAccessor();
 
