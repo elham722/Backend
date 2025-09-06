@@ -47,7 +47,18 @@ public class LoginController : ControllerBase
             };
 
             var result = await _mediator.Send(command);
-            return Ok(ApiResponse.FromResult(result, result.IsSuccess ? 200 : 400));
+            
+            // Log the result for debugging
+            _logger.LogInformation("Login result - IsSuccess: {IsSuccess}, Data: {Data}", 
+                result.IsSuccess, result.Data != null ? "Not null" : "NULL");
+            
+            if (result.Data != null)
+            {
+                _logger.LogInformation("Login result - AccessToken: {AccessToken}, RefreshToken: {RefreshToken}", 
+                    result.Data.AccessToken, result.Data.RefreshToken);
+            }
+            
+            return Ok(ApiResponse<LoginResponse>.FromResult(result, result.IsSuccess ? 200 : 400));
         }
         catch (Exception ex)
         {

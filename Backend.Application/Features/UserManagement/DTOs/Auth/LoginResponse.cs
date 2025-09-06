@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Backend.Application.Features.UserManagement.DTOs.Auth;
 
 public class LoginResponse
@@ -8,8 +10,10 @@ public class LoginResponse
     
     public string? Message { get; set; }
     
+    [JsonPropertyName("AccessToken")]
     public string? AccessToken { get; set; }
     
+    [JsonPropertyName("RefreshToken")]
     public string? RefreshToken { get; set; }
    
     public DateTime? ExpiresAt { get; set; }

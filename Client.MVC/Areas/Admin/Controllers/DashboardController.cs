@@ -2,12 +2,16 @@ using Client.MVC.Services.Admin;
 using Backend.Application.Features.UserManagement.DTOs;
 using Client.MVC.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Client.MVC.Areas.Admin.Controllers
 {
     /// <summary>
     /// Controller for admin dashboard
     /// </summary>
+    ///   [Area("Admin")]
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
     public class DashboardController : AdminBaseController
     {
         private readonly IAdminUserService _adminUserService;

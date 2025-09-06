@@ -27,16 +27,19 @@ namespace Client.MVC.Services.ApiClients
     public class AuthApiClient : IAuthApiClient
     {
         private readonly IAuthenticatedHttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<AuthApiClient> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public AuthApiClient(IAuthenticatedHttpClient httpClient, ILogger<AuthApiClient> logger)
+        public AuthApiClient(IAuthenticatedHttpClient httpClient, IHttpClientFactory httpClientFactory, ILogger<AuthApiClient> logger)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _jsonOptions = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNamingPolicy = null, // مهم، اگر API PascalCase دارد
+                PropertyNameCaseInsensitive = true, // تا مطمئن شود حتی اگر کمی تفاوت باشد map شود
                 WriteIndented = false
             };
         }
@@ -52,15 +55,16 @@ namespace Client.MVC.Services.ApiClients
                 
                 var response = await _httpClient.PostAsync<RegisterDto, LoginResponse>("api/v1.0/auth/register", dto, cancellationToken);
                 
-                if (response.IsSuccess && response.Data?.IsSuccess == true)
+                if (response.IsSuccess && response.Data != null)
                 {
-                    _logger.LogUserAuthentication("Register", dto.Email, true);
+                    _logger.LogInformation("Registration successful - AccessToken: {AccessToken}, RefreshToken: {RefreshToken}", 
+                        response.Data.AccessToken, response.Data.RefreshToken);
                     return ApiResponse<LoginResponse>.Success(response.Data);
                 }
                 else
                 {
                     var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "Registration failed";
-                    _logger.LogUserAuthentication("Register", dto.Email, false, errorMessage);
+                    _logger.LogWarning("Registration failed: {ErrorMessage}", errorMessage);
                     return ApiResponse<LoginResponse>.Error(errorMessage, response.StatusCode ?? 400);
                 }
             }
@@ -77,25 +81,64 @@ namespace Client.MVC.Services.ApiClients
         }
 
         /// <summary>
-        /// Login user
+        /// Login user - GUARANTEED DEBUG VERSION
         /// </summary>
         public async Task<ApiResponse<LoginResponse>> LoginAsync(LoginRequest dto, CancellationToken cancellationToken = default)
         {
             try
             {
-                _logger.LogUserAuthentication("Login", dto.EmailOrUsername, true);
+                _logger.LogInformation("=== LOGIN DEBUG START ===");
+                _logger.LogInformation("Login attempt for: {EmailOrUsername}", dto.EmailOrUsername);
                 
+                // Step 1: Direct HTTP call to see raw response
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                var json = JsonSerializer.Serialize(dto, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                
+                _logger.LogInformation("Request JSON: {RequestJson}", json);
+                
+                var directResponse = await httpClient.PostAsync("api/v1.0/auth/login", content, cancellationToken);
+                var rawContent = await directResponse.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("Direct HTTP Status: {StatusCode}", directResponse.StatusCode);
+                _logger.LogInformation("Direct Raw Response: {RawContent}", rawContent);
+                
+                // Step 2: Test deserialization with different options
+                LoginResponse? testResult = null;
+                try
+                {
+                    // Test with current options
+                    testResult = JsonSerializer.Deserialize<LoginResponse>(rawContent, _jsonOptions);
+                    _logger.LogInformation("Test deserialization - AccessToken: {AccessToken}, RefreshToken: {RefreshToken}", 
+                        testResult?.AccessToken, testResult?.RefreshToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Test deserialization failed");
+                }
+                
+                // Step 3: Use the normal flow
                 var response = await _httpClient.PostAsync<LoginRequest, LoginResponse>("api/v1.0/auth/login", dto, cancellationToken);
                 
-                if (response.IsSuccess && response.Data?.IsSuccess == true)
+                _logger.LogInformation("Normal flow response - IsSuccess: {IsSuccess}, Data: {Data}", 
+                    response.IsSuccess, response.Data != null ? "Not null" : "NULL");
+                
+                if (response.Data != null)
                 {
-                    _logger.LogUserAuthentication("Login", dto.EmailOrUsername, true);
+                    _logger.LogInformation("Normal flow - AccessToken: {AccessToken}, RefreshToken: {RefreshToken}", 
+                        response.Data.AccessToken, response.Data.RefreshToken);
+                }
+                
+                _logger.LogInformation("=== LOGIN DEBUG END ===");
+                
+                if (response.IsSuccess && response.Data != null)
+                {
                     return ApiResponse<LoginResponse>.Success(response.Data);
                 }
                 else
                 {
                     var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "Login failed";
-                    _logger.LogUserAuthentication("Login", dto.EmailOrUsername, false, errorMessage);
+                    _logger.LogWarning("Login failed: {ErrorMessage}", errorMessage);
                     return ApiResponse<LoginResponse>.Error(errorMessage, response.StatusCode ?? 400);
                 }
             }

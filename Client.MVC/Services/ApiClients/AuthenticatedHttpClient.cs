@@ -36,7 +36,8 @@ namespace Client.MVC.Services.ApiClients
             
             _jsonOptions = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNamingPolicy = null, // مهم، اگر API PascalCase دارد
+                PropertyNameCaseInsensitive = true, // تا مطمئن شود حتی اگر کمی تفاوت باشد map شود
                 WriteIndented = false
             };
             
@@ -154,8 +155,15 @@ namespace Client.MVC.Services.ApiClients
                         Content = content
                     };
                     
-                    // Add authentication header
-                    httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                    // Add authentication header only for non-auth operations
+                    if (!isAuthOperation)
+                    {
+                        httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Skipping authentication header for auth operation: {Endpoint}", endpoint);
+                    }
                     
                     // Add custom headers
                     AddCustomHeadersToRequest(httpRequest);
@@ -178,7 +186,13 @@ namespace Client.MVC.Services.ApiClients
                                 {
                                     Content = content
                                 };
-                                httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                                
+                                // Add authentication header only for non-auth operations
+                                if (!isAuthOperation)
+                                {
+                                    httpRequest = await _authInterceptor.AddAuthenticationHeaderAsync(httpRequest);
+                                }
+                                
                                 AddCustomHeadersToRequest(httpRequest);
                                 httpResponse = await httpClient.SendAsync(httpRequest, cancellationToken);
                             }
@@ -453,9 +467,15 @@ namespace Client.MVC.Services.ApiClients
         {
             try
             {
+                // Log HTTP status code and raw response for debugging
+                _logger.LogInformation("HTTP Status Code: {StatusCode}", response.StatusCode);
+                
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
+                    
+                    // Log raw response for debugging
+                    _logger.LogInformation("Raw response from API: {RawContent}", content);
                     
                     if (typeof(TResponse) == typeof(string))
                     {
@@ -464,13 +484,30 @@ namespace Client.MVC.Services.ApiClients
                     
                     if (string.IsNullOrEmpty(content))
                     {
-                        // Return success with null data for empty responses
+                        _logger.LogWarning("Empty response content received");
                         return ApiResponse<TResponse>.Success(null!, (int)response.StatusCode);
                     }
                     
-                    var result = JsonSerializer.Deserialize<TResponse>(content, _jsonOptions);
-                    _logger.LogDebug("Successfully deserialized response to {Type}", typeof(TResponse).Name);
-                    return ApiResponse<TResponse>.Success(result!, (int)response.StatusCode);
+                    try
+                    {
+                        // First deserialize as ApiResponse<TResponse>
+                        var apiResponse = JsonSerializer.Deserialize<ApiResponse<TResponse>>(content, _jsonOptions);
+                        _logger.LogInformation("Successfully deserialized ApiResponse<{Type}>", typeof(TResponse).Name);
+                        
+                        // Log the deserialized result for debugging
+                        if (apiResponse != null)
+                        {
+                            var serializedResult = JsonSerializer.Serialize(apiResponse, _jsonOptions);
+                            _logger.LogInformation("Deserialized ApiResponse: {Result}", serializedResult);
+                        }
+                        
+                        return apiResponse!;
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogError(ex, "JSON deserialization failed. Raw content: {RawContent}", content);
+                        return ApiResponse<TResponse>.Error($"JSON deserialization failed: {ex.Message}", 500);
+                    }
                 }
                 else
                 {
