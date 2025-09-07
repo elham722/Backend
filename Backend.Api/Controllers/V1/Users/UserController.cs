@@ -3,6 +3,7 @@ using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
 using Backend.Application.Features.UserManagement.Queries.GetUserById;
 using Backend.Application.Features.UserManagement.Queries.GetUsers;
+using Backend.Application.Features.UserManagement.Commands.CreateUser;
 using Backend.Application.Features.UserManagement.Commands.UpdateUser;
 using Backend.Application.Features.UserManagement.Commands.DeleteUser;
 using Backend.Application.Features.UserManagement.Commands.ActivateUser;
@@ -129,6 +130,46 @@ public class UserController : ControllerBase
         {
             _logger.LogError(ex, "Error getting users");
             return StatusCode(500, ApiResponse.Error("An error occurred while getting users", 500, ex.GetType().Name));
+        }
+    }
+
+    /// <summary>
+    /// Creates a new user
+    /// </summary>
+    [HttpPost]
+    [MapToApiVersion("1.0")]
+    [ProducesResponseType(typeof(ApiResponse<UserDto>), 201)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 401)]
+    [ProducesResponseType(typeof(ApiResponse), 500)]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
+    {
+        try
+        {
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+                return Unauthorized();
+
+            var command = new CreateUserCommand
+            {
+                Email = createUserDto.Email,
+                UserName = createUserDto.UserName,
+                Password = createUserDto.Password,
+                PhoneNumber = createUserDto.PhoneNumber,
+                Roles = createUserDto.Roles,
+                CustomerId = createUserDto.CustomerId,
+                SendConfirmationEmail = createUserDto.SendConfirmationEmail,
+                RequirePasswordChange = createUserDto.RequirePasswordChange,
+                CreatedBy = currentUserId
+            };
+
+            var result = await _mediator.Send(command);
+            return Ok(ApiResponse.FromResult(result, result.IsSuccess ? 201 : 400));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user");
+            return StatusCode(500, ApiResponse.Error("An error occurred while creating the user", 500, ex.GetType().Name));
         }
     }
 

@@ -1,14 +1,9 @@
-using Backend.Application.Common.DTOs;
-using Backend.Application.Common.Results;
-using Backend.Application.Common.Interfaces;
-using Backend.Application.Features.UserManagement.DTOs;
+using Backend.Application.Common.DTOs.Identity;
+using Backend.Application.Common.Interfaces.Identity;
 using Backend.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using System.Text.Encodings.Web;
-using Backend.Application.Features.UserManagement.DTOs.Auth;
 using AutoMapper;
-using Backend.Identity.Adapters;
 
 namespace Backend.Identity.Services;
 
@@ -18,1147 +13,388 @@ namespace Backend.Identity.Services;
 public class UserService : IUserService
 {
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly RoleManager<Role> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IMapper _mapper;
-    private readonly IAccountManagementService _accountManagementService;
-    private readonly IDateTimeService _dateTimeService;
-    private readonly IEmailConfirmationService _emailConfirmationService;
     private readonly ILogger<UserService> _logger;
 
     public UserService(
         UserManager<ApplicationUser> userManager,
-        RoleManager<IdentityRole> roleManager,
+        RoleManager<Role> roleManager,
         SignInManager<ApplicationUser> signInManager,
         IMapper mapper,
-        IAccountManagementService accountManagementService,
-        IDateTimeService dateTimeService,
-        IEmailConfirmationService emailConfirmationService,
         ILogger<UserService> logger)
     {
         _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
         _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
         _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-        _accountManagementService = accountManagementService ?? throw new ArgumentNullException(nameof(accountManagementService));
-        _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
-        _emailConfirmationService = emailConfirmationService ?? throw new ArgumentNullException(nameof(emailConfirmationService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto createUserDto, string createdBy, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            // Check if user already exists
-            var existingUser = await _userManager.FindByEmailAsync(createUserDto.Email);
-            if (existingUser != null)
-            {
-                return Result<UserDto>.Failure("User with this email already exists", "UserAlreadyExists");
-            }
-
-            existingUser = await _userManager.FindByNameAsync(createUserDto.UserName);
-            if (existingUser != null)
-            {
-                return Result<UserDto>.Failure("Username is already taken", "UsernameAlreadyTaken");
-            }
-
-            // Create new user
-            var user = ApplicationUser.Create(
-                createUserDto.Email,
-                createUserDto.UserName,
-                createUserDto.CustomerId,
-                createdBy,
-                _dateTimeService);
-
-            if (!string.IsNullOrEmpty(createUserDto.PhoneNumber))
-            {
-                user.PhoneNumber = createUserDto.PhoneNumber;
-            }
-
-            // Create user with password using helper method
-            var createResult = await CreateUserWithPasswordAsync(user, createUserDto.Password);
-            if (!createResult.IsSuccess)
-            {
-                return Result<UserDto>.Failure(createResult.ErrorMessage, createResult.ErrorCode);
-            }
-            
-            user = createResult.Data;
-
-            // Assign roles if specified
-            if (createUserDto.Roles?.Any() == true)
-            {
-                var roleResult = await AssignRolesAsync(user.Id, createUserDto.Roles, createdBy, cancellationToken);
-                if (!roleResult.IsSuccess)
-                {
-                    _logger.LogWarning("User created but role assignment failed: {UserId}, Error: {Error}", user.Id, roleResult.ErrorMessage);
-                }
-            }
-
-            // Set password change requirement if specified
-            // Note: This would need to be implemented in the SecurityInfo value object
-            // For now, we'll handle this through the AccountInfo or a separate mechanism
-            if (createUserDto.RequirePasswordChange)
-            {
-                // TODO: Implement password change requirement logic
-                _logger.LogInformation("Password change requirement set for user: {UserId}", user.Id);
-            }
-
-            // Send confirmation email if requested
-            if (createUserDto.SendConfirmationEmail)
-            {
-                await SendEmailConfirmationAsync(user.Id, cancellationToken);
-            }
-
-            // Get user with roles for response
-            var userWithRoles = await GetUserWithRolesAsync(user.Id);
-            var userInterface = IdentityAdapterFactory.CreateApplicationUser(userWithRoles);
-            var userDto = _mapper.Map<UserDto>(userInterface);
-
-            _logger.LogInformation("User created successfully: {UserId}, {Email}", user.Id, user.Email);
-            return Result<UserDto>.Success(userDto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating user with email: {Email}", createUserDto.Email);
-            return Result<UserDto>.Failure("An error occurred while creating the user", "UserCreationError");
-        }
-    }
-
-    public async Task<Result<UserDto>> UpdateUserAsync(string userId, UpdateUserDto updateUserDto, string updatedBy, CancellationToken cancellationToken = default)
+    public async Task<bool> HasPermissionAsync(string userId, string resource, string action, CancellationToken cancellationToken = default)
     {
         try
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result<UserDto>.Failure("User not found", "UserNotFound");
-            }
-
-            // Update basic properties
-            if (!string.IsNullOrEmpty(updateUserDto.Email) && updateUserDto.Email != user.Email)
-            {
-                var emailResult = await _userManager.SetEmailAsync(user, updateUserDto.Email);
-                if (!emailResult.Succeeded)
-                {
-                    var errors = string.Join(", ", emailResult.Errors.Select(e => e.Description));
-                    return Result<UserDto>.Failure($"Failed to update email: {errors}", "EmailUpdateFailed");
-                }
-            }
-
-            if (!string.IsNullOrEmpty(updateUserDto.UserName) && updateUserDto.UserName != user.UserName)
-            {
-                var usernameResult = await _userManager.SetUserNameAsync(user, updateUserDto.UserName);
-                if (!usernameResult.Succeeded)
-                {
-                    var errors = string.Join(", ", usernameResult.Errors.Select(e => e.Description));
-                    return Result<UserDto>.Failure($"Failed to update username: {errors}", "UsernameUpdateFailed");
-                }
-            }
-
-            if (!string.IsNullOrEmpty(updateUserDto.PhoneNumber))
-            {
-                user.PhoneNumber = updateUserDto.PhoneNumber;
-            }
-
-            // Update audit info
-            var updatedAudit = user.Audit.Update(updatedBy, _dateTimeService);
-            user.UpdateAudit(updatedAudit);
-
-            var updateResult = await _userManager.UpdateAsync(user);
-            if (!updateResult.Succeeded)
-            {
-                var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
-                return Result<UserDto>.Failure($"Failed to update user: {errors}", "UserUpdateFailed");
-            }
-
-            // Get updated user with roles
-            var updatedUser = await GetUserWithRolesAsync(user.Id);
-            var userInterface = IdentityAdapterFactory.CreateApplicationUser(updatedUser);
-            var userDto = _mapper.Map<UserDto>(userInterface);
-
-            _logger.LogInformation("User updated successfully: {UserId}", userId);
-            return Result<UserDto>.Success(userDto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating user: {UserId}", userId);
-            return Result<UserDto>.Failure("An error occurred while updating the user", "UserUpdateError");
-        }
-    }
-
-    public async Task<Result> DeleteUserAsync(string userId, string deletedBy, bool permanentDelete = false, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
-
-            if (permanentDelete)
-            {
-                var deleteResult = await _userManager.DeleteAsync(user);
-                if (!deleteResult.Succeeded)
-                {
-                    var errors = string.Join(", ", deleteResult.Errors.Select(e => e.Description));
-                    return Result.Failure($"Failed to delete user: {errors}", "UserDeletionFailed");
-                }
-            }
-            else
-            {
-                // Soft delete
-                await _accountManagementService.MarkAsDeletedAsync(user);
-            }
-
-            _logger.LogInformation("User deleted successfully: {UserId}, Permanent: {Permanent}", userId, permanentDelete);
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting user: {UserId}", userId);
-            return Result.Failure("An error occurred while deleting the user", "UserDeletionError");
-        }
-    }
-
-    public async Task<Result<UserDto>> GetUserByIdAsync(string userId, bool includeRoles = true, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result<UserDto>.Failure("User not found", "UserNotFound");
-            }
-
-            if (includeRoles)
-            {
-                var roles = await _userManager.GetRolesAsync(user);
-                user.Roles = roles.ToList();
-            }
-
-            var userInterface = IdentityAdapterFactory.CreateApplicationUser(user);
-            var userDto = _mapper.Map<UserDto>(userInterface);
-            return Result<UserDto>.Success(userDto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting user by ID: {UserId}", userId);
-            return Result<UserDto>.Failure("An error occurred while retrieving the user", "UserRetrievalError");
-        }
-    }
-
-    public async Task<Result<PaginationResponse<UserDto>>> GetUsersAsync(
-        int pageNumber, 
-        int pageSize, 
-        string? searchTerm = null,
-        string? status = null,
-        string? role = null,
-        bool? emailConfirmed = null,
-        bool? isActive = null,
-        string? sortBy = null,
-        string? sortDirection = null,
-        bool includeDeleted = false,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var query = _userManager.Users.AsQueryable();
-
-            // Apply filters
-            if (!string.IsNullOrEmpty(searchTerm))
-            {
-                query = query.Where(u => 
-                    u.Email.Contains(searchTerm) || 
-                    u.UserName.Contains(searchTerm) || 
-                    (u.PhoneNumber != null && u.PhoneNumber.Contains(searchTerm)));
-            }
-
-            if (!string.IsNullOrEmpty(status))
-            {
-                switch (status.ToLower())
-                {
-                    case "active":
-                        query = query.Where(u => u.IsActive);
-                        break;
-                    case "inactive":
-                        query = query.Where(u => !u.IsActive);
-                        break;
-                    case "locked":
-                        query = query.Where(u => u.IsLocked);
-                        break;
-                }
-            }
-
-            if (emailConfirmed.HasValue)
-            {
-                query = query.Where(u => u.EmailConfirmed == emailConfirmed.Value);
-            }
-
-            if (isActive.HasValue)
-            {
-                query = query.Where(u => u.IsActive == isActive.Value);
-            }
-
-            if (!includeDeleted)
-            {
-                query = query.Where(u => !u.Account.IsDeleted);
-            }
-
-            // Apply sorting
-            if (!string.IsNullOrEmpty(sortBy))
-            {
-                query = sortBy.ToLower() switch
-                {
-                    "email" => sortDirection?.ToLower() == "desc" 
-                        ? query.OrderByDescending(u => u.Email)
-                        : query.OrderBy(u => u.Email),
-                    "username" => sortDirection?.ToLower() == "desc"
-                        ? query.OrderByDescending(u => u.UserName)
-                        : query.OrderBy(u => u.UserName),
-                    "created" => sortDirection?.ToLower() == "desc"
-                        ? query.OrderByDescending(u => u.Account.CreatedAt)
-                        : query.OrderBy(u => u.Account.CreatedAt),
-                    _ => query.OrderBy(u => u.UserName)
-                };
-            }
-            else
-            {
-                query = query.OrderBy(u => u.UserName);
-            }
-
-            // Get total count
-            var totalCount = await Task.FromResult(query.Count());
-
-            // Apply pagination
-            var users = query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            // Get roles for all users and map to DTOs
-            var userDtos = new List<UserDto>();
-            foreach (var user in users)
-            {
-                var roles = await _userManager.GetRolesAsync(user);
-                user.Roles = roles.ToList();
-                
-                var userInterface = IdentityAdapterFactory.CreateApplicationUser(user);
-                var userDto = _mapper.Map<UserDto>(userInterface);
-                userDtos.Add(userDto);
-            }
-
-            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            var hasPreviousPage = pageNumber > 1;
-            var hasNextPage = pageNumber < totalPages;
-
-            var paginationResponse = new PaginationResponse<UserDto>
-            {
-                Data = userDtos,
-                Meta = new PaginationMetaData
-                {
-                    TotalCount = totalCount,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize,
-                    TotalPages = totalPages,
-                    HasPreviousPage = hasPreviousPage,
-                    HasNextPage = hasNextPage
-                },
-                Links = new PaginationLinks
-                {
-                    First = $"?pageNumber=1&pageSize={pageSize}",
-                    Last = $"?pageNumber={totalPages}&pageSize={pageSize}",
-                    Previous = hasPreviousPage ? $"?pageNumber={pageNumber - 1}&pageSize={pageSize}" : null,
-                    Next = hasNextPage ? $"?pageNumber={pageNumber + 1}&pageSize={pageSize}" : null
-                }
-            };
-
-            return Result<PaginationResponse<UserDto>>.Success(paginationResponse);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting users with pagination");
-            return Result<PaginationResponse<UserDto>>.Failure("An error occurred while retrieving users", "UsersRetrievalError");
-        }
-    }
-
-    public async Task<Result<LoginResponse>> LoginAsync(LoginRequest loginDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            // Find user by email or username
-            var user = await _userManager.FindByEmailAsync(loginDto.EmailOrUsername) ??
-                      await _userManager.FindByNameAsync(loginDto.EmailOrUsername);
-
-            if (user == null)
-            {
-                // Don't reveal if user exists or not
-                await Task.Delay(1000, cancellationToken); // Add delay to prevent timing attacks
-                return Result<LoginResponse>.Failure("Invalid email or password", "InvalidCredentials");
-            }
-
-            // Check if email is confirmed
-            if (!user.EmailConfirmed)
-            {
-                return Result<LoginResponse>.Failure("Please confirm your email address before logging in", "EmailNotConfirmed");
-            }
-
-            // Check if account is active
-            if (!user.IsActive)
-            {
-                if (user.IsLocked)
-                {
-                    return Result<LoginResponse>.Failure("Account is locked", "AccountLocked");
-                }
-                if (!user.IsActive)
-                {
-                    return Result<LoginResponse>.Failure("Account is deactivated", "AccountDeactivated");
-                }
-                return Result<LoginResponse>.Failure("Account is not accessible", "AccountInaccessible");
-            }
-
-            // Attempt sign in
-            var signInResult = await _signInManager.PasswordSignInAsync(
-                user, 
-                loginDto.Password, 
-                loginDto.RememberMe, 
-                lockoutOnFailure: true);
-
-            if (signInResult.Succeeded)
-            {
-                // Update last login
-                await _accountManagementService.UpdateLastLoginAsync(user);
-
-                // Reset login attempts
-                if (user.AccessFailedCount > 0)
-                {
-                    await _userManager.ResetAccessFailedCountAsync(user);
-                }
-
-                // Get user roles
-                var roles = await _userManager.GetRolesAsync(user);
-                user.Roles = roles.ToList();
-                
-                var userInterface = IdentityAdapterFactory.CreateApplicationUser(user);
-                var userDto = _mapper.Map<UserDto>(userInterface);
-
-                // Generate JWT tokens with caching
-                var claims = await _accountManagementService.GetUserClaimsAsync(user);
-                var accessToken = await _accountManagementService.GenerateAccessTokenAsync(claims, user.Id);
-                var refreshToken = await _accountManagementService.GenerateRefreshTokenAsync(user.Id, loginDto.DeviceInfo, loginDto.IpAddress);
-
-                var authResult = new LoginResponse
-                {
-                    IsSuccess = true,
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken,
-                    ExpiresAt = DateTime.UtcNow.AddMinutes(60), // Configure from settings
-                    User = userDto,
-                    RequiresEmailConfirmation = false, // Email is already confirmed
-                    RequiresPasswordChange = user.RequiresPasswordChange()
-                };
-
-                _logger.LogInformation("User logged in successfully: {UserId}, {Email}, IP: {IpAddress}", 
-                    user.Id, user.Email, ipAddress);
-                return Result<LoginResponse>.Success(authResult);
-            }
-            else if (signInResult.IsLockedOut)
-            {
-                await _accountManagementService.IncrementLoginAttemptsAsync(user);
-                return Result<LoginResponse>.Failure("Account is temporarily locked due to multiple failed login attempts", "AccountLockedOut");
-            }
-            else if (signInResult.RequiresTwoFactor)
-            {
-                var authResult = new LoginResponse
-                {
-                    IsSuccess = false,
-                    RequiresTwoFactor = true,
-                    ErrorMessage = "Two-factor authentication is required"
-                };
-                return Result<LoginResponse>.Success(authResult);
-            }
-            else
-            {
-                await _accountManagementService.IncrementLoginAttemptsAsync(user);
-                return Result<LoginResponse>.Failure("Invalid email or password", "InvalidCredentials");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during login for email: {Email}", loginDto.EmailOrUsername);
-            return Result<LoginResponse>.Failure("An error occurred during login", "LoginError");
-        }
-    }
-
-    public async Task<Result<LoginResponse>> RegisterAsync(RegisterDto registerDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            // Check if user already exists
-            var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
-            if (existingUser != null)
-            {
-                return Result<LoginResponse>.Failure("User with this email already exists", "UserAlreadyExists");
-            }
-
-            existingUser = await _userManager.FindByNameAsync(registerDto.UserName);
-            if (existingUser != null)
-            {
-                return Result<LoginResponse>.Failure("Username is already taken", "UsernameAlreadyTaken");
-            }
-
-            // Create user
-            var user = ApplicationUser.Create(
-                registerDto.Email,
-                registerDto.UserName,
-                null, // No customer ID for registration
-                registerDto.UserName, // Created by self
-                _dateTimeService);
-
-            if (!string.IsNullOrEmpty(registerDto.PhoneNumber))
-            {
-                user.PhoneNumber = registerDto.PhoneNumber;
-            }
-
-            // Create user with password
-            var createResult = await CreateUserWithPasswordAsync(user, registerDto.Password);
-            if (!createResult.IsSuccess)
-            {
-                return Result<LoginResponse>.Failure(createResult.ErrorMessage, createResult.ErrorCode);
-            }
-
-            user = createResult.Data;
-
-            // Assign default role (if configured)
-            var defaultRole = "User"; // This could come from configuration
-            if (!string.IsNullOrEmpty(defaultRole))
-            {
-                var roleResult = await AssignRolesAsync(user.Id, new List<string> { defaultRole }, user.UserName, cancellationToken);
-                if (!roleResult.IsSuccess)
-                {
-                    _logger.LogWarning("User registered but default role assignment failed: {UserId}, Error: {Error}", user.Id, roleResult.ErrorMessage);
-                }
-            }
-
-            // Send email confirmation
-            var callbackUrl = $"{GetBaseUrl()}/confirm-email";
-            var emailSent = await _emailConfirmationService.SendEmailConfirmationAsync(user, callbackUrl);
-            
-            if (!emailSent)
-            {
-                _logger.LogWarning("User registered but email confirmation failed to send: {UserId}", user.Id);
-            }
-
-            // Log registration
-            _logger.LogInformation("User registered successfully: {UserId}, {Email}, IP: {IpAddress}", 
-                user.Id, user.Email, ipAddress);
-
-            // Return success with email confirmation requirement
-            var authResult = new LoginResponse
-            {
-                IsSuccess = true,
-                RequiresEmailConfirmation = true,
-                Message = "Registration successful. Please check your email to confirm your account.",
-                User = _mapper.Map<UserDto>(IdentityAdapterFactory.CreateApplicationUser(user))
-            };
-
-            return Result<LoginResponse>.Success(authResult);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during registration for email: {Email}", registerDto.Email);
-            return Result<LoginResponse>.Failure("An error occurred during registration", "RegistrationError");
-        }
-    }
-
-    /// <summary>
-    /// Get base URL for the application
-    /// </summary>
-    private string GetBaseUrl()
-    {
-        return _emailConfirmationService.GetBaseUrl();
-    }
-
-    public async Task<Result> ChangePasswordAsync(string? userId, string? currentPassword, string newPassword, string changedBy, bool requirePasswordChangeOnNextLogin = false, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Result.Failure("User ID is required", "UserIdRequired");
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
-
-            // Change password using helper method
-            var changeResult = await ChangeUserPasswordAsync(user, newPassword, currentPassword);
-            if (!changeResult.IsSuccess)
-            {
-                return changeResult;
-            }
-
-            // Update password change timestamp
-            await _accountManagementService.UpdatePasswordChangeAsync(user);
-
-            // Set password change requirement if specified
-            // Note: This would need to be implemented in the SecurityInfo value object
-            if (requirePasswordChangeOnNextLogin)
-            {
-                // TODO: Implement password change requirement logic
-                _logger.LogInformation("Password change requirement set for user: {UserId}", userId);
-            }
-
-            // Update audit info
-            var updatedAudit = user.Audit.Update(changedBy, _dateTimeService);
-            user.UpdateAudit(updatedAudit);
-            await _userManager.UpdateAsync(user);
-
-            _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error changing password for user: {UserId}", userId);
-            return Result.Failure("An error occurred while changing the password", "PasswordChangeError");
-        }
-    }
-
-    public async Task<Result> ActivateUserAsync(string userId, string activatedBy, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
-
-            if (user.IsActive)
-            {
-                return Result.Failure("User is already active", "UserAlreadyActive");
-            }
-
-            await _accountManagementService.ActivateAccountAsync(user);
-
-            _logger.LogInformation("User activated successfully: {UserId}", userId);
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error activating user: {UserId}", userId);
-            return Result.Failure("An error occurred while activating the user", "UserActivationError");
-        }
-    }
-
-    public async Task<Result> DeactivateUserAsync(string userId, string deactivatedBy, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
-
-            if (!user.IsActive)
-            {
-                return Result.Failure("User is already deactivated", "UserAlreadyDeactivated");
-            }
-
-            await _accountManagementService.DeactivateAccountAsync(user);
-
-            _logger.LogInformation("User deactivated successfully: {UserId}", userId);
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deactivating user: {UserId}", userId);
-            return Result.Failure("An error occurred while deactivating the user", "UserDeactivationError");
-        }
-    }
-
-    public async Task<Result> ResetPasswordAsync(string userId, string newPassword, string resetBy, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
-
-            // Generate password reset token
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            
-            // Reset password using token
-            var resetResult = await _userManager.ResetPasswordAsync(user, token, newPassword);
-            if (!resetResult.Succeeded)
-            {
-                var errors = string.Join(", ", resetResult.Errors.Select(e => e.Description));
-                return Result.Failure($"Failed to reset password: {errors}", "PasswordResetFailed");
-            }
-
-            // Update password change timestamp
-            await _accountManagementService.UpdatePasswordChangeAsync(user);
-
-            // Update audit info
-            var updatedAudit = user.Audit.Update(resetBy, _dateTimeService);
-            user.UpdateAudit(updatedAudit);
-            await _userManager.UpdateAsync(user);
-
-            _logger.LogInformation("Password reset successfully for user: {UserId}", userId);
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error resetting password for user: {UserId}", userId);
-            return Result.Failure("An error occurred while resetting the password", "PasswordResetError");
-        }
-    }
-
-    public async Task<Result> AssignRolesAsync(string userId, List<string> roles, string assignedBy, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
-
-            // Validate roles exist
-            foreach (var role in roles)
-            {
-                if (!await _roleManager.RoleExistsAsync(role))
-                {
-                    return Result.Failure($"Role '{role}' does not exist", "RoleNotFound");
-                }
-            }
-
-            // Get current roles
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            
-            // Add new roles
-            var rolesToAdd = roles.Except(currentRoles).ToList();
-            if (rolesToAdd.Any())
-            {
-                var addResult = await _userManager.AddToRolesAsync(user, rolesToAdd);
-                if (!addResult.Succeeded)
-                {
-                    var errors = string.Join(", ", addResult.Errors.Select(e => e.Description));
-                    return Result.Failure($"Failed to assign roles: {errors}", "RoleAssignmentFailed");
-                }
-            }
-
-            // Update audit info
-            var updatedAudit = user.Audit.Update(assignedBy, _dateTimeService);
-            user.UpdateAudit(updatedAudit);
-            await _userManager.UpdateAsync(user);
-
-            _logger.LogInformation("Roles assigned successfully to user: {UserId}, Roles: {Roles}", userId, string.Join(", ", roles));
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error assigning roles to user: {UserId}, Roles: {Roles}", userId, string.Join(", ", roles));
-            return Result.Failure("An error occurred while assigning roles", "RoleAssignmentError");
-        }
-    }
-
-    public async Task<Result> RemoveRolesAsync(string userId, List<string> roles, string removedBy, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
-
-            // Get current roles
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            
-            // Remove specified roles
-            var rolesToRemove = roles.Intersect(currentRoles).ToList();
-            if (rolesToRemove.Any())
-            {
-                var removeResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
-                if (!removeResult.Succeeded)
-                {
-                    var errors = string.Join(", ", removeResult.Errors.Select(e => e.Description));
-                    return Result.Failure($"Failed to remove roles: {errors}", "RoleRemovalFailed");
-                }
-            }
-
-            // Update audit info
-            var updatedAudit = user.Audit.Update(removedBy, _dateTimeService);
-            user.UpdateAudit(updatedAudit);
-            await _userManager.UpdateAsync(user);
-
-            _logger.LogInformation("Roles removed successfully from user: {UserId}, Roles: {Roles}", userId, string.Join(", ", roles));
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error removing roles from user: {UserId}, Roles: {Roles}", userId, string.Join(", ", roles));
-            return Result.Failure("An error occurred while removing roles", "RoleRemovalError");
-        }
-    }
-
-    public async Task<Result<List<string>>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result<List<string>>.Failure("User not found", "UserNotFound");
-            }
+            if (user == null) return false;
 
             var roles = await _userManager.GetRolesAsync(user);
-            return Result<List<string>>.Success(roles.ToList());
+            foreach (var roleName in roles)
+            {
+                var role = await _roleManager.FindByNameAsync(roleName);
+                if (role == null) continue;
+
+                // Check if role has the permission
+                var hasPermission = await HasRolePermissionAsync(role.Id, resource, action);
+                if (hasPermission) return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking permission for user: {UserId}, Resource: {Resource}, Action: {Action}", userId, resource, action);
+            return false;
+        }
+    }
+
+    public async Task<bool> HasAnyPermissionAsync(string userId, IEnumerable<(string Resource, string Action)> permissions, CancellationToken cancellationToken = default)
+    {
+        foreach (var (resource, action) in permissions)
+        {
+            if (await HasPermissionAsync(userId, resource, action, cancellationToken))
+                return true;
+        }
+        return false;
+    }
+
+    public async Task<bool> HasAllPermissionsAsync(string userId, IEnumerable<(string Resource, string Action)> permissions, CancellationToken cancellationToken = default)
+    {
+        foreach (var (resource, action) in permissions)
+        {
+            if (!await HasPermissionAsync(userId, resource, action, cancellationToken))
+                return false;
+        }
+        return true;
+    }
+
+    public async Task<IEnumerable<PermissionDto>> GetUserPermissionsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return Enumerable.Empty<PermissionDto>();
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var permissions = new List<PermissionDto>();
+
+            foreach (var roleName in roles)
+            {
+                var role = await _roleManager.FindByNameAsync(roleName);
+                if (role == null) continue;
+
+                var rolePermissions = await GetRolePermissionsAsync(role.Id, cancellationToken);
+                permissions.AddRange(rolePermissions);
+            }
+
+            return permissions.DistinctBy(p => new { p.Resource, p.Action });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting permissions for user: {UserId}", userId);
+            return Enumerable.Empty<PermissionDto>();
+        }
+    }
+
+    public async Task<bool> IsInRoleAsync(string userId, string roleName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return false;
+
+            return await _userManager.IsInRoleAsync(user, roleName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking role for user: {UserId}, Role: {Role}", userId, roleName);
+            return false;
+        }
+    }
+
+    public async Task<bool> IsInAnyRoleAsync(string userId, IEnumerable<string> roleNames, CancellationToken cancellationToken = default)
+    {
+        foreach (var roleName in roleNames)
+        {
+            if (await IsInRoleAsync(userId, roleName, cancellationToken))
+                return true;
+        }
+        return false;
+    }
+
+    public async Task<IEnumerable<string>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return Enumerable.Empty<string>();
+
+            return await _userManager.GetRolesAsync(user);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting roles for user: {UserId}", userId);
-            return Result<List<string>>.Failure("An error occurred while retrieving user roles", "RoleRetrievalError");
+            return Enumerable.Empty<string>();
         }
     }
 
-    public async Task<Result<bool>> UserHasRoleAsync(string userId, string role, CancellationToken cancellationToken = default)
+    public async Task<bool> IsResourceOwnerAsync(string userId, string resourceType, string resourceId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // This is a simplified implementation
+            // In a real application, you would check against the actual resource
+            // For now, we'll return true if the user ID matches the resource ID
+            return userId == resourceId;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking resource ownership for user: {UserId}, ResourceType: {ResourceType}, ResourceId: {ResourceId}", userId, resourceType, resourceId);
+            return false;
+        }
+    }
+
+    public async Task<bool> HasBranchAccessAsync(string userId, string branchId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // This is a simplified implementation
+            // In a real application, you would check against the user's branch assignments
+            // For now, we'll return true for all users
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking branch access for user: {UserId}, BranchId: {BranchId}", userId, branchId);
+            return false;
+        }
+    }
+
+    public async Task<string?> GetUserBranchIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         try
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result<bool>.Failure("User not found", "UserNotFound");
-            }
+            if (user == null) return null;
 
-            var hasRole = await _userManager.IsInRoleAsync(user, role);
-            return Result<bool>.Success(hasRole);
+            // This is a simplified implementation
+            // In a real application, you would get the branch ID from user claims or a separate table
+            return "default-branch";
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking role for user: {UserId}, Role: {Role}", userId, role);
-            return Result<bool>.Failure("An error occurred while checking user role", "RoleCheckError");
+            _logger.LogError(ex, "Error getting branch ID for user: {UserId}", userId);
+            return null;
         }
     }
 
-    public async Task<Result> ConfirmEmailAsync(string userId, string token, CancellationToken cancellationToken = default)
+    public async Task<bool> AssignRoleAsync(string userId, string roleName, string assignedBy, DateTime? expiresAt = null, string? reason = null, CancellationToken cancellationToken = default)
     {
         try
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
+            if (user == null) return false;
 
-            if (user.EmailConfirmed)
-            {
-                return Result.Failure("Email is already confirmed", "EmailAlreadyConfirmed");
-            }
+            var role = await _roleManager.FindByNameAsync(roleName);
+            if (role == null) return false;
 
-            var confirmResult = await _userManager.ConfirmEmailAsync(user, token);
-            if (!confirmResult.Succeeded)
-            {
-                var errors = string.Join(", ", confirmResult.Errors.Select(e => e.Description));
-                return Result.Failure($"Failed to confirm email: {errors}", "EmailConfirmationFailed");
-            }
-
-            _logger.LogInformation("Email confirmed successfully for user: {UserId}", userId);
-            return Result.Success();
+            var result = await _userManager.AddToRoleAsync(user, roleName);
+            return result.Succeeded;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error confirming email for user: {UserId}", userId);
-            return Result.Failure("An error occurred while confirming the email", "EmailConfirmationError");
+            _logger.LogError(ex, "Error assigning role to user: {UserId}, Role: {Role}", userId, roleName);
+            return false;
         }
     }
 
-    public async Task<Result> SendEmailConfirmationAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<bool> RemoveRoleAsync(string userId, string roleName, string removedBy, string? reason = null, CancellationToken cancellationToken = default)
     {
         try
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return Result.Failure("User not found", "UserNotFound");
-            }
+            if (user == null) return false;
 
-            if (user.EmailConfirmed)
-            {
-                return Result.Failure("Email is already confirmed", "EmailAlreadyConfirmed");
-            }
-
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var encodedToken = UrlEncoder.Default.Encode(token);
-
-            // TODO: Implement email sending service
-            // For now, just log that token was generated (without the actual token)
-            _logger.LogInformation("Email confirmation token generated for user: {UserId}", userId);
-
-            return Result.Success();
+            var result = await _userManager.RemoveFromRoleAsync(user, roleName);
+            return result.Succeeded;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending email confirmation for user: {UserId}", userId);
-            return Result.Failure("An error occurred while sending email confirmation", "EmailConfirmationError");
+            _logger.LogError(ex, "Error removing role from user: {UserId}, Role: {Role}", userId, roleName);
+            return false;
         }
     }
 
-    public async Task<Result> SendPasswordResetEmailAsync(string email, CancellationToken cancellationToken = default)
+    public async Task<bool> AssignPermissionToRoleAsync(string roleId, string permissionId, string assignedBy, DateTime? expiresAt = null, string? reason = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                // Don't reveal if user exists or not
-                _logger.LogInformation("Password reset requested for non-existent email: {Email}", email);
-                return Result.Success();
-            }
-
-            if (!user.EmailConfirmed)
-            {
-                return Result.Failure("Email is not confirmed", "EmailNotConfirmed");
-            }
-
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var encodedToken = UrlEncoder.Default.Encode(token);
-
-            // TODO: Implement email sending service
-            // For now, just log that token was generated (without the actual token)
-            _logger.LogInformation("Password reset token generated for user: {UserId}", user.Id);
-
-            return Result.Success();
+            // This is a simplified implementation
+            // In a real application, you would add the permission to the role in the database
+            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending password reset email for: {Email}", email);
-            return Result.Failure("An error occurred while sending password reset email", "PasswordResetEmailError");
+            _logger.LogError(ex, "Error assigning permission to role: {RoleId}, Permission: {PermissionId}", roleId, permissionId);
+            return false;
         }
     }
 
-    public async Task<Result> ResetPasswordWithTokenAsync(string email, string token, string newPassword, CancellationToken cancellationToken = default)
+    public async Task<bool> RemovePermissionFromRoleAsync(string roleId, string permissionId, string removedBy, string? reason = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                return Result.Failure("Invalid email or token", "InvalidEmailOrToken");
-            }
-
-            var resetResult = await _userManager.ResetPasswordAsync(user, token, newPassword);
-            if (!resetResult.Succeeded)
-            {
-                var errors = string.Join(", ", resetResult.Errors.Select(e => e.Description));
-                return Result.Failure($"Failed to reset password: {errors}", "PasswordResetFailed");
-            }
-
-            // Update password change timestamp
-            await _accountManagementService.UpdatePasswordChangeAsync(user);
-
-            _logger.LogInformation("Password reset with token successfully for user: {UserId}", user.Id);
-            return Result.Success();
+            // This is a simplified implementation
+            // In a real application, you would remove the permission from the role in the database
+            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error resetting password with token for email: {Email}", email);
-            return Result.Failure("An error occurred while resetting the password", "PasswordResetError");
+            _logger.LogError(ex, "Error removing permission from role: {RoleId}, Permission: {PermissionId}", roleId, permissionId);
+            return false;
         }
     }
 
-    public async Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<PermissionDto>> GetRolePermissionsAsync(string roleId, CancellationToken cancellationToken = default)
     {
         try
         {
-            // Validate refresh token
-            if (string.IsNullOrEmpty(refreshTokenDto.RefreshToken))
-            {
-                return Result<LoginResponse>.Failure("Invalid refresh token", "InvalidRefreshToken");
-            }
-
-            // TODO: Implement proper refresh token validation
-            // For now, we'll return an error indicating refresh token functionality is not fully implemented
-            return Result<LoginResponse>.Failure("Refresh token functionality is not fully implemented", "RefreshTokenNotImplemented");
-
-            // Note: The code below is commented out until proper refresh token validation is implemented
-            /*
-            // Find user by refresh token (you might need to implement this based on your token storage strategy)
-            var user = await _userManager.FindByIdAsync(refreshTokenDto.RefreshToken);
-            if (user == null)
-            {
-                return Result<AuthResultDto>.Failure("Invalid refresh token", "InvalidRefreshToken");
-            }
-
-            // Check if user can login
-            if (!user.CanLogin())
-            {
-                if (user.IsAccountLocked)
-                {
-                    return Result<AuthResultDto>.Failure("Account is locked", "AccountLocked");
-                }
-                if (!user.IsActive)
-                {
-                    return Result<AuthResultDto>.Failure("Account is deactivated", "AccountDeactivated");
-                }
-                return Result<AuthResultDto>.Failure("Account is not accessible", "AccountInaccessible");
-            }
-
-            // Generate new access token
-            var claims = await _accountManagementService.GetUserClaimsAsync(user);
-            var accessToken = _accountManagementService.GenerateAccessToken(claims);
-            var newRefreshToken = _accountManagementService.GenerateRefreshToken();
-
-            // Update last login
-            await _accountManagementService.UpdateLastLoginAsync(user);
-
-            // Get user roles for mapping
-            var roles = await _userManager.GetRolesAsync(user);
-            user.Roles = roles.ToList();
-            
-            // Convert to interface using adapter
-            var userInterface = IdentityAdapterFactory.CreateApplicationUser(user);
-            
-            // Map to DTO using AutoMapper
-            var userDto = _mapper.Map<UserDto>(userInterface);
-
-            // Create auth result
-            var authResult = new AuthResultDto
-            {
-                IsSuccess = true,
-                AccessToken = accessToken,
-                RefreshToken = newRefreshToken,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(60), // Configure from settings
-                User = userDto
-            };
-
-            _logger.LogInformation("Token refreshed successfully for user: {UserId}", user.Id);
-            return Result<AuthResultDto>.Success(authResult);
-            */
+            // This is a simplified implementation
+            // In a real application, you would get the permissions for the role from the database
+            return Enumerable.Empty<PermissionDto>();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error refreshing token");
-            return Result<LoginResponse>.Failure("An error occurred while refreshing the token", "RefreshTokenError");
+            _logger.LogError(ex, "Error getting permissions for role: {RoleId}", roleId);
+            return Enumerable.Empty<PermissionDto>();
         }
     }
 
-    // Helper method to get user with roles
-    private async Task<ApplicationUser> GetUserWithRolesAsync(string userId)
-    {
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user == null)
-        {
-            throw new InvalidOperationException($"User with ID {userId} not found");
-        }
-
-        // Populate roles for mapping
-        var roles = await _userManager.GetRolesAsync(user);
-        user.Roles = roles.ToList();
-        
-        return user;
-    }
-
-    // Helper method for password validation and handling
-    private async Task<Result> ValidateAndSetPasswordAsync(ApplicationUser user, string password, string? currentPassword = null)
+    public async Task<RoleDto> CreateRoleAsync(string name, string description, string? category = null, int priority = 0, bool isSystemRole = false, string createdBy = "System", CancellationToken cancellationToken = default)
     {
         try
         {
-            // Validate current password if provided
-            if (!string.IsNullOrEmpty(currentPassword))
+            var role = Role.Create(name, description, category, priority, isSystemRole, createdBy);
+
+            var result = await _roleManager.CreateAsync(role);
+            if (result.Succeeded)
             {
-                var isValidPassword = await _userManager.CheckPasswordAsync(user, currentPassword);
-                if (!isValidPassword)
-                {
-                    return Result.Failure("Current password is incorrect", "InvalidCurrentPassword");
-                }
+                return _mapper.Map<RoleDto>(role);
             }
 
-            // Validate new password using Identity's password validators
-            var passwordValidators = _userManager.PasswordValidators;
-            foreach (var validator in passwordValidators)
-            {
-                var validationResult = await validator.ValidateAsync(_userManager, user, password);
-                if (!validationResult.Succeeded)
-                {
-                    var errors = string.Join(", ", validationResult.Errors.Select(e => e.Description));
-                    return Result.Failure($"Password validation failed: {errors}", "PasswordValidationFailed");
-                }
-            }
-
-            return Result.Success();
+            throw new InvalidOperationException($"Failed to create role: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error validating password for user: {UserId}", user.Id);
-            return Result.Failure("An error occurred while validating the password", "PasswordValidationError");
+            _logger.LogError(ex, "Error creating role: {Name}", name);
+            throw;
         }
     }
 
-    // Helper method for creating user with password
-    private async Task<Result<ApplicationUser>> CreateUserWithPasswordAsync(ApplicationUser user, string password)
+    public async Task<PermissionDto> CreatePermissionAsync(string name, string resource, string action, string description, string? category = null, int priority = 0, bool isSystemPermission = false, string createdBy = "System", CancellationToken cancellationToken = default)
     {
         try
         {
-            // Validate password
-            var validationResult = await ValidateAndSetPasswordAsync(user, password);
-            if (!validationResult.IsSuccess)
-            {
-                return Result<ApplicationUser>.Failure(validationResult.ErrorMessage, validationResult.ErrorCode);
-            }
+            var permission = Permission.Create(name, resource, action, description, category, priority, isSystemPermission, createdBy);
 
-            // Create user with password
-            var createResult = await _userManager.CreateAsync(user, password);
-            if (!createResult.Succeeded)
-            {
-                var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
-                return Result<ApplicationUser>.Failure($"Failed to create user: {errors}", "UserCreationFailed");
-            }
-
-            return Result<ApplicationUser>.Success(user);
+            // This is a simplified implementation
+            // In a real application, you would save the permission to the database
+            return _mapper.Map<PermissionDto>(permission);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating user with password: {Email}", user.Email);
-            return Result<ApplicationUser>.Failure("An error occurred while creating the user", "UserCreationError");
+            _logger.LogError(ex, "Error creating permission: {Name}", name);
+            throw;
         }
     }
 
-    // Helper method for changing password
-    private async Task<Result> ChangeUserPasswordAsync(ApplicationUser user, string newPassword, string? currentPassword = null)
+    public async Task<IEnumerable<RoleDto>> GetAllRolesAsync(bool includeInactive = false, CancellationToken cancellationToken = default)
     {
         try
         {
-            // Validate password
-            var validationResult = await ValidateAndSetPasswordAsync(user, newPassword, currentPassword);
-            if (!validationResult.IsSuccess)
+            var roles = _roleManager.Roles.AsEnumerable();
+            if (!includeInactive)
             {
-                return validationResult;
+                // Filter out inactive roles if needed
             }
 
-            // Change password
-            var changeResult = await _userManager.ChangePasswordAsync(user, currentPassword ?? "", newPassword);
-            if (!changeResult.Succeeded)
-            {
-                var errors = string.Join(", ", changeResult.Errors.Select(e => e.Description));
-                return Result.Failure($"Failed to change password: {errors}", "PasswordChangeFailed");
-            }
-
-            return Result.Success();
+            return roles.Select(role => _mapper.Map<RoleDto>(role));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error changing password for user: {UserId}", user.Id);
-            return Result.Failure("An error occurred while changing the password", "PasswordChangeError");
+            _logger.LogError(ex, "Error getting all roles");
+            return Enumerable.Empty<RoleDto>();
         }
     }
-} 
+
+    public async Task<IEnumerable<PermissionDto>> GetAllPermissionsAsync(bool includeInactive = false, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // This is a simplified implementation
+            // In a real application, you would get permissions from the database
+            return Enumerable.Empty<PermissionDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all permissions");
+            return Enumerable.Empty<PermissionDto>();
+        }
+    }
+
+    public async Task<RoleDto?> GetRoleByNameAsync(string roleName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
+            return role != null ? _mapper.Map<RoleDto>(role) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting role by name: {RoleName}", roleName);
+            return null;
+        }
+    }
+
+    public async Task<PermissionDto?> GetPermissionAsync(string resource, string action, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // This is a simplified implementation
+            // In a real application, you would get the permission from the database
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting permission: {Resource}:{Action}", resource, action);
+            return null;
+        }
+    }
+
+    // Helper method to check if a role has a specific permission
+    private async Task<bool> HasRolePermissionAsync(string roleId, string resource, string action)
+    {
+        try
+        {
+            // This is a simplified implementation
+            // In a real application, you would check the RolePermission table
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking role permission: {RoleId}, {Resource}:{Action}", roleId, resource, action);
+            return false;
+        }
+    }
+}

@@ -297,6 +297,9 @@
         </main>
     </div>
 
+    <!-- jQuery -->
+    <script src="~/lib/jquery/jquery.min.js"></script>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -324,6 +327,50 @@
             const sidebar = document.getElementById('adminSidebar');
             sidebar.classList.toggle('show');
         }
+        
+        // Global function to initialize dashboard statistics
+        window.initializeDashboardStats = function() {
+            if (typeof $ !== 'undefined') {
+                console.log('jQuery available, initializing dashboard stats...');
+                
+                // Auto-refresh statistics every 30 seconds
+                setInterval(function() {
+                    $.get('/Admin/Dashboard/GetStatistics', function(data) {
+                        if (data.success) {
+                            // Update statistics cards
+                            $('.stats-number').eq(0).text(data.data.totalUsers);
+                            $('.stats-number').eq(1).text(data.data.activeUsers);
+                            $('.stats-number').eq(2).text(data.data.newUsersThisMonth);
+                            $('.stats-number').eq(3).text(data.data.usersWithMfa);
+                        }
+                    }).fail(function() {
+                        console.log('Failed to fetch statistics');
+                    });
+                }, 30000);
+            } else {
+                console.log('jQuery not available, using vanilla JavaScript fallback');
+                
+                // Fallback with vanilla JavaScript
+                setInterval(function() {
+                    fetch('/Admin/Dashboard/GetStatistics')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const statsNumbers = document.querySelectorAll('.stats-number');
+                                if (statsNumbers.length >= 4) {
+                                    statsNumbers[0].textContent = data.data.totalUsers;
+                                    statsNumbers[1].textContent = data.data.activeUsers;
+                                    statsNumbers[2].textContent = data.data.newUsersThisMonth;
+                                    statsNumbers[3].textContent = data.data.usersWithMfa;
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.log('Failed to fetch statistics:', error);
+                        });
+                }, 30000);
+            }
+        };
     </script>
     
     @await RenderSectionAsync("Scripts", required: false)

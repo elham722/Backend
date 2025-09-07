@@ -69,6 +69,7 @@ public interface IAccountInfo
     DateTime? LastPasswordChangeAt { get; }
     DateTime? LastLoginAt { get; }
     int LoginAttempts { get; }
+    string? BranchId { get; }
 }
 
 /// <summary>

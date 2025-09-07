@@ -61,11 +61,10 @@ public class ApplicationUserAdapter : IApplicationUser
     public DateTime? LastPasswordChangeAt => _user.Account.LastPasswordChangeAt;
     public int LoginAttempts => _user.Account.LoginAttempts;
 
-    bool IApplicationUser.RequiresPasswordChange => _user.RequiresPasswordChange();
+    bool IApplicationUser.RequiresPasswordChange => _user.RequiresPasswordChange;
 
     // Business Logic Methods
     public bool CanLogin() => _user.CanLogin();
-    public bool RequiresPasswordChange(int maxPasswordAgeDays = 90) => _user.RequiresPasswordChange(maxPasswordAgeDays);
 }
 
 /// <summary>
@@ -87,6 +86,7 @@ public class AccountInfoAdapter : IAccountInfo
     public DateTime? LastPasswordChangeAt => _accountInfo.LastPasswordChangeAt;
     public DateTime? LastLoginAt => _accountInfo.LastLoginAt;
     public int LoginAttempts => _accountInfo.LoginAttempts;
+    public string? BranchId => _accountInfo.BranchId;
 }
 
 /// <summary>

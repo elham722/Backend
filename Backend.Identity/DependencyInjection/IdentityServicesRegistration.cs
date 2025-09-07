@@ -63,7 +63,7 @@ namespace Backend.Identity.DependencyInjection
         private static void ConfigureIdentity(IServiceCollection services)
         {
             // Configure Identity with custom entities
-            services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            services.AddIdentity<ApplicationUser, Role>(options =>
             {
                 // Password settings - Enhanced security
                 options.Password.RequireDigit = true;
@@ -170,8 +170,15 @@ namespace Backend.Identity.DependencyInjection
             services.AddScoped<ISocialLoginService, SocialLoginService>();
             services.AddScoped<IEmailConfirmationService, EmailConfirmationService>(); // ✅ Added
             
-            // Register UserService
-            services.AddScoped<IUserService, UserService>();
+            // Register Application User Service
+            services.AddScoped<Backend.Application.Common.Interfaces.IUserService, ApplicationUserService>();
+            
+            // Register Authorization services
+            services.AddScoped<Backend.Application.Common.Interfaces.Identity.IUserService, UserService>();
+            services.AddScoped<Backend.Application.Common.Interfaces.Identity.ICurrentUserService, CurrentUserService>();
+            services.AddScoped<Backend.Application.Common.Interfaces.Identity.IAuthorizationService, AuthorizationService>();
+            services.AddScoped<Backend.Application.Common.Interfaces.Identity.IJwtTokenService, JwtTokenService>();
+            services.AddScoped<Backend.Application.Common.Interfaces.Identity.IAuditService, AuditService>();
             
             // Register RefreshTokenService
             services.AddScoped<Backend.Domain.Interfaces.IRefreshTokenService, RefreshTokenService>();

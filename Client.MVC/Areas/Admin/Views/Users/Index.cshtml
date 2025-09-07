@@ -61,7 +61,7 @@
         </h5>
     </div>
     <div class="card-body">
-        @if (Model.Users.Items.Any())
+                @if (Model.Users.Items.Any())
         {
             <div class="table-responsive">
                 <table class="table table-admin">
@@ -112,7 +112,11 @@
                                     }
                                 </td>
                                 <td>
-                                    @foreach (var role in user.Roles.Take(2))
+                                            @{
+                                                var userRoles = user.Roles as List<string>;
+                                                var displayRoles = userRoles?.Take(2) ?? Enumerable.Empty<string>();
+                                            }
+                                            @foreach (var role in displayRoles)
                                     {
                                         <span class="badge bg-info me-1">@role</span>
                                     }

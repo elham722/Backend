@@ -30,10 +30,17 @@ public class ApiResponse<T>
         new() { IsSuccess = false, ErrorMessage = errorMessage, StatusCode = statusCode, ErrorCode = errorCode };
 
     // ? From Result<T>
-    public static ApiResponse<T> FromResult(Result<T> result, int? statusCode = null) =>
-        result.IsSuccess
-            ? Success(result.Data!, statusCode ?? 200)
-            : Error(result.ErrorMessage ?? "Operation failed", statusCode ?? 400, result.ErrorCode);
+    public static ApiResponse<T> FromResult(Result<T> result, int? statusCode = null)
+    {
+        if (result.IsSuccess)
+        {
+            return Success(result.Data, statusCode ?? 200);
+        }
+        else
+        {
+            return Error(result.ErrorMessage ?? "Operation failed", statusCode ?? 400, result.ErrorCode);
+        }
+    }
 }
 
 // Non-generic

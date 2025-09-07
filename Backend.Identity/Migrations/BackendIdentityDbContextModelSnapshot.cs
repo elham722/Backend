@@ -157,16 +157,257 @@ namespace Backend.Identity.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
+            modelBuilder.Entity("Backend.Identity.Models.AuditLog", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AdditionalData")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeviceInfo")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<bool>("IsSuccess")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("SessionId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Info");
+
+                    b.Property<DateTime>("Timestamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Action")
+                        .HasDatabaseName("IX_AuditLogs_Action");
+
+                    b.HasIndex("EntityId")
+                        .HasDatabaseName("IX_AuditLogs_EntityId");
+
+                    b.HasIndex("EntityType")
+                        .HasDatabaseName("IX_AuditLogs_EntityType");
+
+                    b.HasIndex("IpAddress")
+                        .HasDatabaseName("IX_AuditLogs_IpAddress");
+
+                    b.HasIndex("IsSuccess")
+                        .HasDatabaseName("IX_AuditLogs_IsSuccess");
+
+                    b.HasIndex("RequestId")
+                        .HasDatabaseName("IX_AuditLogs_RequestId");
+
+                    b.HasIndex("SessionId")
+                        .HasDatabaseName("IX_AuditLogs_SessionId");
+
+                    b.HasIndex("Severity")
+                        .HasDatabaseName("IX_AuditLogs_Severity");
+
+                    b.HasIndex("Timestamp")
+                        .HasDatabaseName("IX_AuditLogs_Timestamp");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_AuditLogs_UserId");
+
+                    b.HasIndex("Action", "Timestamp")
+                        .HasDatabaseName("IX_AuditLogs_Action_Timestamp");
+
+                    b.HasIndex("UserId", "Timestamp")
+                        .HasDatabaseName("IX_AuditLogs_UserId_Timestamp");
+
+                    b.HasIndex("EntityType", "EntityId", "Timestamp")
+                        .HasDatabaseName("IX_AuditLogs_EntityType_EntityId_Timestamp");
+
+                    b.ToTable("AuditLogs", (string)null);
+                });
+
+            modelBuilder.Entity("Backend.Identity.Models.Permission", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsSystemPermission")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Priority")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category")
+                        .HasDatabaseName("IX_Permissions_Category");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Permissions_CreatedAt");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_Permissions_IsActive");
+
+                    b.HasIndex("IsSystemPermission")
+                        .HasDatabaseName("IX_Permissions_IsSystemPermission");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Permissions_Name");
+
+                    b.HasIndex("Priority")
+                        .HasDatabaseName("IX_Permissions_Priority");
+
+                    b.HasIndex("Resource", "Action")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Permissions_Resource_Action");
+
+                    b.ToTable("Permissions", (string)null);
+                });
+
+            modelBuilder.Entity("Backend.Identity.Models.Role", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsSystemRole")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
@@ -174,14 +415,131 @@ namespace Backend.Identity.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<int>("Priority")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Category")
+                        .HasDatabaseName("IX_AspNetRoles_Category");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_AspNetRoles_CreatedAt");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_AspNetRoles_IsActive");
+
+                    b.HasIndex("IsSystemRole")
+                        .HasDatabaseName("IX_AspNetRoles_IsSystemRole");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AspNetRoles_Name");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique()
-                        .HasDatabaseName("RoleNameIndex")
+                        .HasDatabaseName("IX_AspNetRoles_NormalizedName")
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
+                    b.HasIndex("Priority")
+                        .HasDatabaseName("IX_AspNetRoles_Priority");
+
                     b.ToTable("AspNetRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Backend.Identity.Models.RolePermission", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("AssignedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("AssignmentReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsGranted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("PermissionId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("RoleId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedAt")
+                        .HasDatabaseName("IX_RolePermissions_AssignedAt");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("IX_RolePermissions_ExpiresAt");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_RolePermissions_IsActive");
+
+                    b.HasIndex("IsGranted")
+                        .HasDatabaseName("IX_RolePermissions_IsGranted");
+
+                    b.HasIndex("PermissionId")
+                        .HasDatabaseName("IX_RolePermissions_PermissionId");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("IX_RolePermissions_RoleId");
+
+                    b.HasIndex("RoleId", "PermissionId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_RolePermissions_RoleId_PermissionId");
+
+                    b.ToTable("RolePermissions", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -297,6 +655,9 @@ namespace Backend.Identity.Migrations
                             b1.Property<string>("ApplicationUserId")
                                 .HasColumnType("nvarchar(450)");
 
+                            b1.Property<string>("BranchId")
+                                .HasColumnType("nvarchar(max)");
+
                             b1.Property<DateTime>("CreatedAt")
                                 .ValueGeneratedOnAdd()
                                 .HasColumnType("datetime2")
@@ -336,7 +697,7 @@ namespace Backend.Identity.Migrations
 
                             b1.HasIndex("LastLoginAt");
 
-                            b1.ToTable("AspNetUsers");
+                            b1.ToTable("AspNetUsers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ApplicationUserId");
@@ -347,7 +708,19 @@ namespace Backend.Identity.Migrations
                             b1.Property<string>("ApplicationUserId")
                                 .HasColumnType("nvarchar(450)");
 
+                            b1.Property<DateTime>("CreatedAt")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("datetime2")
+                                .HasDefaultValueSql("GETUTCDATE()");
+
                             b1.Property<string>("CreatedBy")
+                                .HasMaxLength(450)
+                                .HasColumnType("nvarchar(450)");
+
+                            b1.Property<DateTime?>("LastModifiedAt")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("LastModifiedBy")
                                 .HasMaxLength(450)
                                 .HasColumnType("nvarchar(450)");
 
@@ -360,11 +733,15 @@ namespace Backend.Identity.Migrations
 
                             b1.HasKey("ApplicationUserId");
 
+                            b1.HasIndex("CreatedAt");
+
                             b1.HasIndex("CreatedBy");
+
+                            b1.HasIndex("LastModifiedAt");
 
                             b1.HasIndex("UpdatedAt");
 
-                            b1.ToTable("AspNetUsers");
+                            b1.ToTable("AspNetUsers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ApplicationUserId");
@@ -374,6 +751,17 @@ namespace Backend.Identity.Migrations
                         {
                             b1.Property<string>("ApplicationUserId")
                                 .HasColumnType("nvarchar(450)");
+
+                            b1.Property<DateTime?>("LastSecurityUpdate")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("SecurityAnswer")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
+
+                            b1.Property<string>("SecurityQuestion")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
 
                             b1.Property<bool>("TwoFactorEnabled")
                                 .ValueGeneratedOnAdd()
@@ -389,9 +777,11 @@ namespace Backend.Identity.Migrations
 
                             b1.HasKey("ApplicationUserId");
 
+                            b1.HasIndex("LastSecurityUpdate");
+
                             b1.HasIndex("TwoFactorEnabled");
 
-                            b1.ToTable("AspNetUsers");
+                            b1.ToTable("AspNetUsers", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("ApplicationUserId");
@@ -407,9 +797,28 @@ namespace Backend.Identity.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Backend.Identity.Models.RolePermission", b =>
+                {
+                    b.HasOne("Backend.Identity.Models.Permission", "Permission")
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Identity.Models.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                    b.HasOne("Backend.Identity.Models.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -436,7 +845,7 @@ namespace Backend.Identity.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                    b.HasOne("Backend.Identity.Models.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)

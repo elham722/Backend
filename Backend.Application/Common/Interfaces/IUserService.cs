@@ -120,4 +120,9 @@ public interface IUserService
     /// Refreshes access token using refresh token
     /// </summary>
     Task<Result<LoginResponse>> RefreshTokenAsync(RefreshTokenDto refreshTokenDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Logs out user and revokes refresh token
+    /// </summary>
+    Task<Result<LogoutResultDto>> LogoutAsync(LogoutDto logoutDto, string? ipAddress = null, string? userAgent = null, CancellationToken cancellationToken = default);
 } 

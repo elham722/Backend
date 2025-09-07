@@ -49,16 +49,6 @@ public class IdentityMappingProfile : BaseMappingProfile
             .ForMember(dest => dest.LastModifiedAt, opt => opt.MapFrom(src => src.Audit.LastModifiedAt))
             .ForMember(dest => dest.LastModifiedBy, opt => opt.MapFrom(src => src.Audit.LastModifiedBy));
 
-        // ApplicationUser to UserSummaryDto
-        CreateMap<IApplicationUser, UserSummaryDto>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
-            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.UserName))
-            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
-            .ForMember(dest => dest.IsLocked, opt => opt.MapFrom(src => src.IsLocked))
-            .ForMember(dest => dest.Roles, opt => opt.MapFrom(src => src.Roles))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.Audit.CreatedAt));
-
         // UserClaim to UserClaimDto
         CreateMap<IUserClaim, UserClaimDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))

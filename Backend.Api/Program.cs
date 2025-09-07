@@ -4,10 +4,8 @@ using Backend.Persistence.DependencyInjection;
 using Backend.Application.DependencyInjection;
 using Backend.Infrastructure.DependencyInjection;
 using Backend.Infrastructure.Extensions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using Backend.Application.Common.Authorization;
 using Serilog;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,6 +84,9 @@ builder.Services.ConfigureIdentityServices(builder.Configuration);
 // Register Application services
 builder.Services.ConfigureApplicationServices();
 
+// Register Authorization services
+builder.Services.AddAuthorizationServices();
+
 // Register Persistence services
 builder.Services.AddPersistenceServices(builder.Configuration);
 
@@ -97,28 +98,6 @@ builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
     cfg.RegisterServicesFromAssembly(typeof(Backend.Application.Features.UserManagement.Commands.Register.RegisterCommand).Assembly);
-});
-
-// Configure JWT Authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-        ValidAudience = builder.Configuration["JwtSettings:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured")))
-    };
 });
 
 // API Versioning

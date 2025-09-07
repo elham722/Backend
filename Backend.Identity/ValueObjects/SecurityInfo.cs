@@ -4,14 +4,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Backend.Application.Common.Interfaces;
+using Backend.Application.Common.Interfaces.Identity;
 
 namespace Backend.Identity.ValueObjects
 {
-    public class SecurityInfo
+    public class SecurityInfo : ISecurityInfo
     {
         public bool TwoFactorEnabled { get; private set; }
         public string? TwoFactorSecret { get; private set; }
         public DateTime? TwoFactorEnabledAt { get; private set; }
+        
+        // ISecurityInfo interface properties
+        public string? SecurityQuestion { get; private set; }
+        public string? SecurityAnswer { get; private set; }
+        public DateTime? LastSecurityUpdate { get; private set; }
 
         private SecurityInfo() { } // For EF Core
 

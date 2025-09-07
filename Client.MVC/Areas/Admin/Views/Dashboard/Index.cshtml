@@ -74,7 +74,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                @if (Model.RecentActivity.Any())
+                @if (Model.RecentActivity.Count > 0)
                 {
                     <div class="table-responsive">
                         <table class="table table-hover">
@@ -87,7 +87,11 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var activity in Model.RecentActivity.Take(10))
+                                @{
+                                    var activities = Model.RecentActivity as List<Client.MVC.Services.Admin.UserActivityDto>;
+                                    var recentActivities = activities?.Take(10) ?? Enumerable.Empty<Client.MVC.Services.Admin.UserActivityDto>();
+                                }
+                                @foreach (var activity in recentActivities)
                                 {
                                     <tr>
                                         <td>
@@ -134,7 +138,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                @if (Model.Statistics.UsersByRole.Any())
+                @if (Model.Statistics.UsersByRole.Count > 0)
                 {
                     @foreach (var role in Model.Statistics.UsersByRole)
                     {
@@ -175,7 +179,7 @@
                 </a>
             </div>
             <div class="card-body">
-                @if (Model.RecentUsers.Any())
+                @if (Model.RecentUsers.Count > 0)
                 {
                     <div class="table-responsive">
                         <table class="table table-admin">
@@ -190,7 +194,11 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var user in Model.RecentUsers.Take(5))
+                                @{
+                                    var recentUsers = Model.RecentUsers as List<Backend.Application.Features.UserManagement.DTOs.UserDto>;
+                                    var topUsers = recentUsers?.Take(5) ?? Enumerable.Empty<Backend.Application.Features.UserManagement.DTOs.UserDto>();
+                                }
+                                @foreach (var user in topUsers)
                                 {
                                     <tr>
                                         <td>
@@ -203,7 +211,11 @@
                                         </td>
                                         <td>@user.Email</td>
                                         <td>
-                                            @foreach (var role in user.Roles.Take(2))
+                                            @{
+                                                var userRoles = user.Roles as List<string>;
+                                                var displayRoles = userRoles?.Take(2) ?? Enumerable.Empty<string>();
+                                            }
+                                            @foreach (var role in displayRoles)
                                             {
                                                 <span class="badge bg-primary me-1">@role</span>
                                             }
@@ -251,17 +263,14 @@
 
 @section Scripts {
     <script>
-        // Auto-refresh statistics every 30 seconds
-        setInterval(function() {
-            $.get('@Url.Action("GetStatistics", "Dashboard", new { area = "Admin" })', function(data) {
-                if (data.success) {
-                    // Update statistics cards
-                    $('.stats-number').eq(0).text(data.data.totalUsers);
-                    $('.stats-number').eq(1).text(data.data.activeUsers);
-                    $('.stats-number').eq(2).text(data.data.newUsersThisMonth);
-                    $('.stats-number').eq(3).text(data.data.usersWithMfa);
-                }
-            });
-        }, 30000);
+        // Call the global function when page is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard page loaded, initializing stats...');
+            if (typeof window.initializeDashboardStats === 'function') {
+                window.initializeDashboardStats();
+            } else {
+                console.log('initializeDashboardStats function not found');
+            }
+        });
     </script>
 }

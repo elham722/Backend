@@ -4,7 +4,6 @@ namespace Backend.Identity.Models
 {
     public class UserClaim : IdentityUserClaim<string>
     {
-        
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
         public string CreatedBy { get; private set; } = null!;
@@ -26,9 +25,6 @@ namespace Backend.Identity.Models
 
             return new UserClaim
             {
-                UserId = userId,
-                ClaimType = claimType,
-                ClaimValue = claimValue,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = createdBy,
                 IsActive = true
@@ -43,7 +39,6 @@ namespace Backend.Identity.Models
             if (string.IsNullOrWhiteSpace(updatedBy))
                 throw new ArgumentException("Updated by cannot be null or empty", nameof(updatedBy));
 
-            ClaimValue = claimValue;
             UpdatedAt = DateTime.UtcNow;
             UpdatedBy = updatedBy;
         }

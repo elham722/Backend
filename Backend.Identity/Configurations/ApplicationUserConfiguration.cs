@@ -75,8 +75,18 @@ namespace Backend.Identity.Configurations
 
                 security.Property(s => s.TwoFactorEnabledAt);
 
+                // New properties for ISecurityInfo interface
+                security.Property(s => s.SecurityQuestion)
+                    .HasMaxLength(500);
+
+                security.Property(s => s.SecurityAnswer)
+                    .HasMaxLength(500);
+
+                security.Property(s => s.LastSecurityUpdate);
+
                 // Indexes for SecurityInfo
                 security.HasIndex(s => s.TwoFactorEnabled);
+                security.HasIndex(s => s.LastSecurityUpdate);
             });
         }
 
@@ -92,9 +102,21 @@ namespace Backend.Identity.Configurations
 
                 audit.Property(a => a.UpdatedAt);
 
+                // New properties for IAuditInfo interface
+                audit.Property(a => a.CreatedAt)
+                    .IsRequired()
+                    .HasDefaultValueSql("GETUTCDATE()");
+
+                audit.Property(a => a.LastModifiedBy)
+                    .HasMaxLength(450);
+
+                audit.Property(a => a.LastModifiedAt);
+
                 // Indexes for AuditInfo
                 audit.HasIndex(a => a.CreatedBy);
                 audit.HasIndex(a => a.UpdatedAt);
+                audit.HasIndex(a => a.CreatedAt);
+                audit.HasIndex(a => a.LastModifiedAt);
             });
         }
 

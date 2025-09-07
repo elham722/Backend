@@ -143,15 +143,24 @@ namespace Client.MVC.Services.Admin
                 _logger.LogInformation("Assigning roles to user for admin panel: {UserId}, Roles: {Roles}", 
                     userId, string.Join(", ", roles));
 
-                // Note: AssignRolesAsync method doesn't exist in IUserApiClient interface
-                // This would need to be implemented in the API client or use a different approach
-                _logger.LogWarning("AssignRolesAsync method not implemented in IUserApiClient");
-                return Result.Failure("Role assignment not implemented");
+                // Use the new UserApiClient methods
+                foreach (var role in roles)
+                {
+                    var success = await _userApiClient.AssignRoleToUserAsync(userId, role);
+                    if (!success)
+                    {
+                        _logger.LogWarning("Failed to assign role {Role} to user {UserId}", role, userId);
+                        return Result.Failure($"خطا در اختصاص نقش {role}");
+                    }
+                }
+
+                _logger.LogInformation("Successfully assigned roles to user: {UserId}", userId);
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while assigning roles to user {UserId}", userId);
-                return Result.Failure("An error occurred while assigning roles");
+                return Result.Failure("خطا در اختصاص نقش‌ها");
             }
         }
 
@@ -161,15 +170,24 @@ namespace Client.MVC.Services.Admin
             {
                 _logger.LogInformation("Getting available roles for admin panel");
 
-                // Note: GetAvailableRolesAsync method doesn't exist in IUserApiClient interface
-                // This would need to be implemented in the API client or use a different approach
-                _logger.LogWarning("GetAvailableRolesAsync method not implemented in IUserApiClient");
-                return Result<List<string>>.Failure("Role retrieval not implemented");
+                var roles = await _userApiClient.GetAllRolesAsync();
+                
+                if (roles != null)
+                {
+                    var roleNames = roles.Select(r => r.Name).ToList();
+                    _logger.LogInformation("Successfully retrieved {Count} roles", roleNames.Count);
+                    return Result<List<string>>.Success(roleNames);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to retrieve roles from API");
+                    return Result<List<string>>.Failure("خطا در دریافت نقش‌ها");
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while getting available roles");
-                return Result<List<string>>.Failure("An error occurred while retrieving roles");
+                return Result<List<string>>.Failure("خطا در دریافت نقش‌ها");
             }
         }
 

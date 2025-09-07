@@ -2,11 +2,13 @@ using Backend.Application.Common.Interfaces;
 using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Common.Security;
 using Backend.Application.DependencyInjection;
+using Backend.Infrastructure.Authentication;
 using Backend.Infrastructure.Cache;
 using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Extensions;
 using Backend.Infrastructure.FileStorage;
 using Backend.Infrastructure.HealthChecks;
+using Backend.Infrastructure.Mappers;
 using Backend.Infrastructure.Security.Recaptcha;
 using Backend.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
@@ -34,12 +36,14 @@ public static class InfrastructureServicesRegistration
 
         // Register Infrastructure services
         services.AddInfrastructureCoreServices(configuration);
+        services.AddJwtAuthentication(configuration); // Add JWT authentication
         services.AddEmailServices(configuration);
         services.AddCacheServices(configuration);
         services.AddFileStorageServices(configuration);
         services.AddMfaServices(); // Add MFA services
         services.AddRecaptchaServices(configuration); // Add reCAPTCHA services
         services.AddIdentityAdapters(); // Add Identity adapters
+        services.AddInfrastructureMappers(); // Add Infrastructure mappers
 
         return services;
     }
@@ -272,6 +276,19 @@ public static class InfrastructureServicesRegistration
     {
         // IdentityAdapterFactory is a static class and doesn't need DI registration
         // It's used directly in the code
+        
+        return services;
+    }
+
+    /// <summary>
+    /// Registers Infrastructure mappers
+    /// </summary>
+    private static IServiceCollection AddInfrastructureMappers(this IServiceCollection services)
+    {
+        // Register AutoMapper with Infrastructure mapping profiles
+        services.AddAutoMapper(cfg => {
+            cfg.AddProfile<IdentityConcreteMappingProfile>();
+        });
         
         return services;
     }

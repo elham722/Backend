@@ -58,7 +58,14 @@ public class LoginController : ControllerBase
                     result.Data.AccessToken, result.Data.RefreshToken);
             }
             
-            return Ok(ApiResponse<LoginResponse>.FromResult(result, result.IsSuccess ? 200 : 400));
+            if (result.IsSuccess && result.Data != null)
+            {
+                return Ok(ApiResponse<LoginResponse>.Success(result.Data, 200));
+            }
+            else
+            {
+                return BadRequest(ApiResponse<LoginResponse>.Error(result.ErrorMessage ?? "Login failed", 400));
+            }
         }
         catch (Exception ex)
         {
@@ -86,7 +93,15 @@ public class LoginController : ControllerBase
             };
 
             var result = await _mediator.Send(command);
-            return Ok(ApiResponse.FromResult(result, result.IsSuccess ? 200 : 400));
+            
+            if (result.IsSuccess && result.Data != null)
+            {
+                return Ok(ApiResponse<LogoutResultDto>.Success(result.Data, 200));
+            }
+            else
+            {
+                return BadRequest(ApiResponse<LogoutResultDto>.Error(result.ErrorMessage ?? "Logout failed", 400));
+            }
         }
         catch (Exception ex)
         {

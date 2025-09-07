@@ -13,12 +13,17 @@ using Microsoft.Extensions.Configuration;
 
 namespace Backend.Identity.Context
 {
-    public class BackendIdentityDbContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
+    public class BackendIdentityDbContext : IdentityDbContext<ApplicationUser, Role, string, IdentityUserClaim<string>, IdentityUserRole<string>, IdentityUserLogin<string>, IdentityRoleClaim<string>, IdentityUserToken<string>>
     {
         public BackendIdentityDbContext(DbContextOptions<BackendIdentityDbContext> options)
             : base(options)
         {
         }
+
+        // DbSets for new authorization models
+        public DbSet<Permission> Permissions { get; set; } = null!;
+        public DbSet<RolePermission> RolePermissions { get; set; } = null!;
+        public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -26,6 +31,10 @@ namespace Backend.Identity.Context
 
             // Apply configurations
             builder.ApplyConfiguration(new ApplicationUserConfiguration());
+            builder.ApplyConfiguration(new RoleConfiguration());
+            builder.ApplyConfiguration(new PermissionConfiguration());
+            builder.ApplyConfiguration(new RolePermissionConfiguration());
+            builder.ApplyConfiguration(new AuditLogConfiguration());
 
             // Add composite indexes for better performance
             AddCompositeIndexes(builder);

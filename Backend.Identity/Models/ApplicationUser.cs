@@ -1,18 +1,24 @@
 ﻿using System;
 using Backend.Identity.ValueObjects;
 using Backend.Application.Common.Interfaces;
+using Backend.Application.Common.Interfaces.Identity;
 using Backend.Identity.Services;
 using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic; // Added for List<string>
 
 namespace Backend.Identity.Models
 {
-    public class ApplicationUser : IdentityUser
+    public class ApplicationUser : IdentityUser, IApplicationUser
     {
         // Core Identity Properties
         public AccountInfo Account { get; private set; } = null!;
         public SecurityInfo Security { get; private set; } = null!;
         public AuditInfo Audit { get; private set; } = null!;
+        
+        // Explicit interface implementations for proper return types
+        IAccountInfo IApplicationUser.Account => Account;
+        ISecurityInfo IApplicationUser.Security => Security;
+        IAuditInfo IApplicationUser.Audit => Audit;
 
         // Integration with Domain (using Guid instead of string)
         public Guid? CustomerId { get; private set; }
@@ -34,8 +40,22 @@ namespace Backend.Identity.Models
         public bool IsAccountLocked => Account.IsLocked();
         public bool IsActive => Account.IsActive && !Account.IsDeleted;
         public bool IsNewUser => DateTime.UtcNow.Subtract(Account.CreatedAt).Days <= 7;
+        
+        // Additional Properties for IApplicationUser interface
+        public bool IsDeleted => Account.IsDeleted;
+        public DateTime? LastLoginAt => Account.LastLoginAt;
+        public DateTime? LastPasswordChangeAt => Account.LastPasswordChangeAt;
+        public int LoginAttempts => Account.LoginAttempts;
+        public bool RequiresPasswordChange => Account.LastPasswordChangeAt == null || 
+            DateTime.UtcNow.Subtract(Account.LastPasswordChangeAt.Value).Days > 90;
 
-        private ApplicationUser() { } // For EF Core
+        private ApplicationUser() 
+        { 
+            // Initialize value objects for EF Core
+            Account = AccountInfo.Create();
+            Security = SecurityInfo.Create();
+            Audit = AuditInfo.Create();
+        } // For EF Core
 
         public static ApplicationUser Create(string email, string userName, Guid? customerId = null, string? createdBy = null, IDateTimeService? dateTimeService = null)
         {
@@ -116,13 +136,6 @@ namespace Backend.Identity.Models
             return IsActive && !IsLocked && !IsAccountLocked;
         }
 
-        public bool RequiresPasswordChange(int maxPasswordAgeDays = 90)
-        {
-            if (!Account.LastPasswordChangeAt.HasValue)
-                return true;
-
-            return DateTime.UtcNow.Subtract(Account.LastPasswordChangeAt.Value).Days > maxPasswordAgeDays;
-        }
 
         // Note: For claims, roles, logins, and tokens management, use UserManager and RoleManager methods
         // These operations should be handled at the service layer, not in the entity

@@ -4,9 +4,6 @@ namespace Backend.Identity.Models
 {
     public class UserRole : IdentityUserRole<string>
     {
-        public string UserId { get; set; } = null!;
-        public string RoleId { get; set; } = null!;
-        
         public DateTime CreatedAt { get; private set; }
         public DateTime? UpdatedAt { get; private set; }
         public string CreatedBy { get; private set; } = null!;

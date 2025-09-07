@@ -1,9 +1,10 @@
 ﻿using System;
 using Backend.Application.Common.Interfaces;
+using Backend.Application.Common.Interfaces.Identity;
 
 namespace Backend.Identity.ValueObjects
 {
-    public class AccountInfo
+    public class AccountInfo : IAccountInfo
     {
         public DateTime CreatedAt { get; private set; }
         public DateTime? LastLoginAt { get; private set; }
@@ -12,10 +13,11 @@ namespace Backend.Identity.ValueObjects
         public bool IsActive { get; private set; }
         public bool IsDeleted { get; private set; }
         public DateTime? DeletedAt { get; private set; }
+        public string? BranchId { get; private set; }
 
         private AccountInfo() { } // For EF Core
 
-        public static AccountInfo Create(IDateTimeService dateTimeService)
+        public static AccountInfo Create(IDateTimeService dateTimeService, string? branchId = null)
         {
             if (dateTimeService == null)
                 throw new ArgumentNullException(nameof(dateTimeService));
@@ -25,7 +27,20 @@ namespace Backend.Identity.ValueObjects
                 CreatedAt = dateTimeService.UtcNow,
                 LoginAttempts = 0,
                 IsActive = true,
-                IsDeleted = false
+                IsDeleted = false,
+                BranchId = branchId
+            };
+        }
+
+        public static AccountInfo Create(string? branchId = null)
+        {
+            return new AccountInfo
+            {
+                CreatedAt = DateTime.UtcNow,
+                LoginAttempts = 0,
+                IsActive = true,
+                IsDeleted = false,
+                BranchId = branchId
             };
         }
 
@@ -42,7 +57,8 @@ namespace Backend.Identity.ValueObjects
                 LoginAttempts = 0, // Reset on successful login
                 IsActive = this.IsActive,
                 IsDeleted = this.IsDeleted,
-                DeletedAt = this.DeletedAt
+                DeletedAt = this.DeletedAt,
+                BranchId = this.BranchId
             };
         }
 
@@ -59,7 +75,8 @@ namespace Backend.Identity.ValueObjects
                 LoginAttempts = this.LoginAttempts,
                 IsActive = this.IsActive,
                 IsDeleted = this.IsDeleted,
-                DeletedAt = this.DeletedAt
+                DeletedAt = this.DeletedAt,
+                BranchId = this.BranchId
             };
         }
 
@@ -73,7 +90,8 @@ namespace Backend.Identity.ValueObjects
                 LoginAttempts = this.LoginAttempts + 1,
                 IsActive = this.IsActive,
                 IsDeleted = this.IsDeleted,
-                DeletedAt = this.DeletedAt
+                DeletedAt = this.DeletedAt,
+                BranchId = this.BranchId
             };
         }
 
@@ -87,7 +105,8 @@ namespace Backend.Identity.ValueObjects
                 LoginAttempts = this.LoginAttempts,
                 IsActive = false,
                 IsDeleted = this.IsDeleted,
-                DeletedAt = this.DeletedAt
+                DeletedAt = this.DeletedAt,
+                BranchId = this.BranchId
             };
         }
 
@@ -101,7 +120,8 @@ namespace Backend.Identity.ValueObjects
                 LoginAttempts = this.LoginAttempts,
                 IsActive = true,
                 IsDeleted = this.IsDeleted,
-                DeletedAt = this.DeletedAt
+                DeletedAt = this.DeletedAt,
+                BranchId = this.BranchId
             };
         }
 
@@ -118,13 +138,19 @@ namespace Backend.Identity.ValueObjects
                 LoginAttempts = this.LoginAttempts,
                 IsActive = false,
                 IsDeleted = true,
-                DeletedAt = dateTimeService.UtcNow
+                DeletedAt = dateTimeService.UtcNow,
+                BranchId = this.BranchId
             };
         }
 
         public bool IsLocked(int maxLoginAttempts = 5)
         {
             return LoginAttempts >= maxLoginAttempts;
+        }
+
+        bool IAccountInfo.IsLocked()
+        {
+            return IsLocked();
         }
     }
 }
