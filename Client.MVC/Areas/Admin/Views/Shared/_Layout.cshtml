@@ -237,10 +237,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="@Url.Action("Logout", "Auth", new { area = "" })">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span class="sidebar-text">خروج</span>
-                    </a>
+                    <form asp-controller="Auth" asp-action="Logout" asp-area="" method="post" style="display: inline;">
+                        <button type="submit" class="nav-link btn btn-link" style="border: none; background: none; padding: 0;">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="sidebar-text">خروج</span>
+                        </button>
+                    </form>
                 </li>
             </ul>
         </div>
