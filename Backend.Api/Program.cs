@@ -127,6 +127,24 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// Seed database with initial data after app is built
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        Log.Information("Starting database seeding...");
+        await Backend.Identity.Services.DatabaseSeeder.SeedDatabaseAsync(
+            scope.ServiceProvider, 
+            builder.Configuration);
+        Log.Information("Database seeding completed successfully");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "An error occurred while seeding the database");
+        throw;
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

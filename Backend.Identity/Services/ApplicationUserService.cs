@@ -58,7 +58,7 @@ public class ApplicationUserService : Backend.Application.Common.Interfaces.IUse
             }
 
             // Assign default role "User" to new users created by admin
-            var roleResult = await _userManager.AddToRoleAsync(user, "User");
+            var roleResult = await _userManager.AddToRoleAsync(user, DatabaseSeeder.DefaultRoles.User);
             if (!roleResult.Succeeded)
             {
                 _logger.LogWarning("Failed to assign default role to user: {Email}. Errors: {Errors}", 
@@ -360,17 +360,34 @@ public class ApplicationUserService : Backend.Application.Common.Interfaces.IUse
     {
         try
         {
+            // Check if user already exists
+            var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
+            if (existingUser != null)
+            {
+                return Result<LoginResponse>.Failure("User with this email already exists");
+            }
+
+            existingUser = await _userManager.FindByNameAsync(registerDto.UserName);
+            if (existingUser != null)
+            {
+                return Result<LoginResponse>.Failure("User with this username already exists");
+            }
+
+            // Create new user
             var user = ApplicationUser.Create(registerDto.Email, registerDto.UserName, null, "System", null);
 
             var result = await _userManager.CreateAsync(user, registerDto.Password);
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogError("Failed to create user: {Email}. Errors: {Errors}", registerDto.Email, errors);
                 return Result<LoginResponse>.Failure($"Failed to create user: {errors}");
             }
 
+            _logger.LogInformation("User created successfully: {Email}", registerDto.Email);
+
             // Assign default role "User" to new users
-            var roleResult = await _userManager.AddToRoleAsync(user, "User");
+            var roleResult = await _userManager.AddToRoleAsync(user, DatabaseSeeder.DefaultRoles.User);
             if (!roleResult.Succeeded)
             {
                 _logger.LogWarning("Failed to assign default role to user: {Email}. Errors: {Errors}", 
@@ -379,7 +396,8 @@ public class ApplicationUserService : Backend.Application.Common.Interfaces.IUse
             }
             else
             {
-                _logger.LogInformation("Successfully assigned default role 'User' to new user: {Email}", registerDto.Email);
+                _logger.LogInformation("Successfully assigned default role '{Role}' to new user: {Email}", 
+                    DatabaseSeeder.DefaultRoles.User, registerDto.Email);
             }
 
             // Generate JWT access token
@@ -408,12 +426,14 @@ public class ApplicationUserService : Backend.Application.Common.Interfaces.IUse
 
             var loginResponse = new LoginResponse
             {
+                IsSuccess = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 ExpiresAt = expiresAt,
                 User = _mapper.Map<UserDto>((IApplicationUser)user)
             };
 
+            _logger.LogInformation("Registration completed successfully for user: {Email}", registerDto.Email);
             return Result<LoginResponse>.Success(loginResponse);
         }
         catch (Exception ex)
