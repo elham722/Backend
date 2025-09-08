@@ -1,0 +1,122 @@
+@model Client.MVC.Areas.Admin.Controllers.AdminLoginRequest
+@{
+    ViewData["Title"] = "ورود به پنل ادمین";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        پنل ادمین
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-75">ورود به بخش مدیریت</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form asp-action="Login" method="post" id="adminLoginForm">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>
+                                ایمیل
+                            </label>
+                            <input asp-for="Email" class="form-control" placeholder="admin@example.com" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>
+                                رمز عبور
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Password" class="form-control" placeholder="رمز عبور" id="passwordInput" />
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label">
+                                مرا به خاطر بسپار
+                            </label>
+                        </div>
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                    {
+                                        <li>@error.ErrorMessage</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>
+                                ورود به پنل ادمین
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card-footer text-center py-3 bg-light">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        فقط کاربران با دسترسی ادمین می‌توانند وارد شوند
+                    </small>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="@Url.Action("Index", "Home")" class="text-decoration-none">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    بازگشت به صفحه اصلی
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Form validation
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            const email = document.querySelector('input[name="Email"]').value.trim();
+            const password = document.querySelector('input[name="Password"]').value.trim();
+            
+            if (!email || !password) {
+                e.preventDefault();
+                alert('لطفاً تمام فیلدها را پر کنید');
+                return false;
+            }
+        });
+    </script>
+}

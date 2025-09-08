@@ -31,10 +31,15 @@ namespace Client.MVC.Areas.Admin.Controllers
         /// </summary>
         protected string CurrentAdminUsername => CurrentUser.GetUserName() ?? string.Empty;
 
-        /// <summary>
-        /// Checks if the current user has SuperAdmin role
-        /// </summary>
-        protected bool IsSuperAdmin => CurrentUser.GetUserRoles()?.Contains("SuperAdmin") == true;
+    /// <summary>
+    /// Checks if the current user has SuperAdmin role
+    /// </summary>
+    protected bool IsSuperAdmin => CurrentUser.GetUserRoles()?.Contains("SuperAdmin") == true;
+    
+    /// <summary>
+    /// Checks if the current user has Admin role (including SuperAdmin)
+    /// </summary>
+    protected bool IsAdmin => CurrentUser.GetUserRoles()?.Contains("Admin") == true || IsSuperAdmin;
 
         /// <summary>
         /// Sets admin-specific view data

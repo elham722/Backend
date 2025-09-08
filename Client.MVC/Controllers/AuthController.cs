@@ -113,6 +113,23 @@ namespace Client.MVC.Controllers
 
                     TempData["SuccessMessage"] = "ورود با موفقیت انجام شد!";
 
+                    // Check if user has admin role and returnUrl is admin area
+                    var userRoles = CurrentUser.GetUserRoles();
+                    if (userRoles != null && (userRoles.Contains("Admin") || userRoles.Contains("SuperAdmin")))
+                    {
+                        // If returnUrl is admin area, redirect to admin dashboard
+                        if (!string.IsNullOrEmpty(returnUrl) && returnUrl.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                        }
+                        
+                        // If user is admin but no specific returnUrl, redirect to admin dashboard
+                        if (string.IsNullOrEmpty(returnUrl))
+                        {
+                            return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                        }
+                    }
+
                     // اگر returnUrl معتبر باشه برگرد همونجا، در غیر اینصورت برو Home
                     return RedirectToLocal(returnUrl ?? "/");
                 }

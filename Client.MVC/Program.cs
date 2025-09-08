@@ -6,6 +6,7 @@ using Client.MVC.Services.ErrorHandling;
 using Client.MVC.Services.Infrastructure;
 using Client.MVC.Services.Security;
 using Client.MVC.Services.Session;
+using Client.MVC.Middleware;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -170,6 +171,10 @@ app.UseAntiforgery();
 
 // Use authentication (must come before authorization)
 app.UseAuthentication();
+
+// Add Admin Area Access Control Middleware
+app.UseMiddleware<AdminAreaAccessMiddleware>();
+
 app.UseAuthorization();
 
 // Add health check endpoint

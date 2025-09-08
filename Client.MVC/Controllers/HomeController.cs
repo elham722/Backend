@@ -28,6 +28,14 @@ namespace Client.MVC.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Access Denied page for unauthorized users
+        /// </summary>
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
