@@ -75,10 +75,10 @@ namespace Client.MVC.Controllers
                         TempData["SuccessMessage"] = "ثبت نام با موفقیت انجام شد! لطفاً وارد شوید.";
                     }
 
-                    Logger.LogInformation("Redirecting to Home...");
+                    Logger.LogInformation("Redirecting to Login...");
                     
-                    // Redirect to home
-                    return RedirectToAction("Index", "Home");
+                    // Redirect to login page to show success message
+                    return RedirectToAction("Login");
                 }
                 else
                 {

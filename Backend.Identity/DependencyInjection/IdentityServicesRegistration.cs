@@ -70,7 +70,7 @@ namespace Backend.Identity.DependencyInjection
                 options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = true;
                 options.Password.RequireUppercase = true;
-                options.Password.RequiredLength = 12; // Increased from 8
+                options.Password.RequiredLength = 8; // Minimum password length
                 options.Password.RequiredUniqueChars = 3; // Increased from 1
 
                 // Lockout settings - Enhanced security
@@ -105,7 +105,7 @@ namespace Backend.Identity.DependencyInjection
                 options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = true;
                 options.Password.RequireUppercase = true;
-                options.Password.RequiredLength = 12; // Increased from 8
+                options.Password.RequiredLength = 8; // Minimum password length
                 options.Password.RequiredUniqueChars = 3; // Increased from 1
 
                 // Lockout settings - Enhanced security

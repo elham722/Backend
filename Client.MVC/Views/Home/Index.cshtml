@@ -17,9 +17,18 @@
                     <h1 class="hero-title">Welcome to Our Online Store</h1>
                     <p class="hero-subtitle">Discover amazing products at unbeatable prices. Shop with confidence and enjoy fast, secure delivery to your doorstep.</p>
                     
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    
                     @if (ViewBag.IsLoggedIn == true)
                     {
-                        <div class="alert alert-success" role="alert">
+                        <div class="alert alert-info" role="alert">
                             <i class="fas fa-user-check me-2"></i>
                             خوش آمدید @ViewBag.UserName!
                         </div>
