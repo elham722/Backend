@@ -5,197 +5,675 @@
     Layout = "_Layout";
 }
 
-<div class="auth-container">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5 col-xl-4">
-                <div class="auth-card">
-                    <div class="card-header">
-                        <h3>
-                            <i class="fas fa-user-plus auth-icon"></i>
-                            Register
-                        </h3>
-                        <p class="text-white-50 mb-0">Create a new account</p>
+<div class="page-root">
+  <div class="center-wrap">
+    <div class="auth-card">
+
+      <!-- LEFT: form -->
+      <div class="auth-left">
+        <div class="logo">MyShop</div>
+        <div class="subtitle">Create your account</div>
+        <h1 class="title">Sign Up</h1>
+
+            <!-- Progress Indicator -->
+            <div class="form-progress">
+                <div class="progress-steps">
+                    <div class="step active" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Basic Info</div>
                     </div>
-                    
-                    <div class="card-body">
-                        <form id="register-form" asp-area="" asp-action="Register" asp-controller="Auth" method="post">
-                            @Html.AntiForgeryToken()
-                            <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
-                            
-                            <div class="form-group">
-                                <label asp-for="Email" class="form-label">
-                                    <i class="fas fa-envelope me-1"></i>Email
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-envelope input-icon"></i>
-                                    <input asp-for="Email" 
-                                           class="form-control" 
-                                           placeholder="example@email.com"
-                                           required
-                                           data-val="true"
-                                           data-val-required="This field is required"
-                                           data-val-email="Please enter a valid email" />
-                                </div>
-                                <span asp-validation-for="Email" class="field-validation-error"></span>
-                            </div>
-
-                            <div class="form-group">
-                                <label asp-for="UserName" class="form-label">
-                                    <i class="fas fa-user me-1"></i>Username
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-user input-icon"></i>
-                                    <input asp-for="UserName" 
-                                           class="form-control" 
-                                           placeholder="Choose username"
-                                           required
-                                           data-val="true"
-                                           data-val-required="This field is required"
-                                           data-val-minlength="Minimum 3 characters"
-                                           data-val-minlength-min="3" />
-                                </div>
-                                <span asp-validation-for="UserName" class="field-validation-error"></span>
-                            </div>
-
-                            <div class="form-group">
-                                <label asp-for="Password" class="form-label">
-                                    <i class="fas fa-lock me-1"></i>Password
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-lock input-icon"></i>
-                                    <input asp-for="Password" 
-                                           class="form-control" 
-                                           placeholder="Minimum 8 characters"
-                                           required
-                                           data-val="true"
-                                           data-val-required="This field is required"
-                                           data-val-minlength="Minimum 8 characters"
-                                           data-val-minlength-min="8" />
-                                </div>
-                                <div class="password-requirements mt-2">
-                                    <small class="text-muted">
-                                        <strong>Password Requirements:</strong><br>
-                                        • Minimum 8 characters<br>
-                                        • At least one uppercase letter (A-Z)<br>
-                                        • At least one lowercase letter (a-z)<br>
-                                        • At least one number (0-9)<br>
-                                        • At least one special character (symbols)<br>
-                                        • At least 4 different character types
-                                    </small>
-                                </div>
-                                <span asp-validation-for="Password" class="field-validation-error"></span>
-                            </div>
-
-                            <div class="form-group">
-                                <label asp-for="ConfirmPassword" class="form-label">
-                                    <i class="fas fa-lock me-1"></i>Confirm Password
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-lock input-icon"></i>
-                                    <input asp-for="ConfirmPassword" 
-                                           class="form-control" 
-                                           placeholder="Confirm password"
-                                           required
-                                           data-val="true"
-                                           data-val-required="This field is required" />
-                                </div>
-                                <span asp-validation-for="ConfirmPassword" class="field-validation-error"></span>
-                            </div>
-
-                            <div class="form-group">
-                                <label asp-for="PhoneNumber" class="form-label">
-                                    <i class="fas fa-phone me-1"></i>Phone Number
-                                </label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-phone input-icon"></i>
-                                    <input asp-for="PhoneNumber" 
-                                           class="form-control" 
-                                           placeholder="09123456789 (اختیاری)" />
-                                </div>
-                                <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
-                            </div>
-
-                            <!-- Accept Terms -->
-                            <div class="form-group">
-                                <div class="form-check">
-                                    <input asp-for="AcceptTerms" class="form-check-input" required />
-                                    <label class="form-check-label" for="AcceptTerms">
-                                        <i class="fas fa-check-circle me-1"></i>
-                                        <span>قوانین و شرایط را می‌پذیرم</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Subscribe to Newsletter -->
-                            <div class="form-group">
-                                <div class="form-check">
-                                    <input asp-for="SubscribeToNewsletter" class="form-check-input" />
-                                    <label class="form-check-label" for="SubscribeToNewsletter">
-                                        <i class="fas fa-envelope me-1"></i>
-                                        <span>اشتراک در خبرنامه</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Hidden CAPTCHA field for automatic validation -->
-                            <input type="hidden" name="CaptchaToken" id="CaptchaToken" />
-                            
-                            <!-- CAPTCHA Status Indicator -->
-                            <div class="captcha-status mt-2">
-                                <small class="text-muted">
-                                    <i class="fas fa-shield-alt me-1"></i>
-                                    <span id="captchaStatus">در حال تأیید امنیتی...</span>
-                                </small>
-                            </div>
-
-                            <div class="d-grid gap-2 mt-4">
-                                <button type="button" 
-                                        class="btn btn-auth btn-register" 
-                                        id="registerBtn">
-                                    <span class="btn-text">
-                                        <i class="fas fa-user-plus me-2"></i>Register
-                                    </span>
-                                    <div class="spinner"></div>
-                                </button>
-                            </div>
-                        </form>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Password</div>
                     </div>
-                    
-                    <div class="card-footer">
-                        <p class="mb-0">
-                            <i class="fas fa-sign-in-alt me-1"></i>
-                            Already have an account? 
-                            <a asp-area="" asp-controller="Auth" asp-action="Login" class="text-decoration-none">
-                                <i class="fas fa-arrow-left me-1"></i>Sign in
-                            </a>
-                        </p>
+                    <div class="step-line"></div>
+                    <div class="step" data-step="3">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Complete</div>
                     </div>
                 </div>
             </div>
+
+            <form id="register-form" asp-area="" asp-action="Register" asp-controller="Auth" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+                
+                <!-- Step 1: Basic Information -->
+                <div class="form-step active" id="step1">
+                    <div class="step-content">
+                        <h3 class="step-title">Basic Information</h3>
+                        <p class="step-description">Let's start with your basic details</p>
+                        
+                        <label class="field-label" asp-for="Email">Email Address</label>
+                        <input asp-for="Email" 
+                               class="input"
+                               placeholder="example@email.com"
+                               required
+                               data-val="true"
+                               data-val-required="This field is required"
+                               data-val-email="Please enter a valid email" />
+                        <span asp-validation-for="Email" class="field-validation-error"></span>
+
+                        <label class="field-label" asp-for="UserName">Username</label>
+                        <input asp-for="UserName" 
+                               class="input"
+                               placeholder="Choose a unique username"
+                               required
+                               data-val="true"
+                               data-val-required="This field is required"
+                               data-val-minlength="Minimum 3 characters"
+                               data-val-minlength-min="3" />
+                        <span asp-validation-for="UserName" class="field-validation-error"></span>
+
+                        <label class="field-label" asp-for="PhoneNumber">Phone Number</label>
+                        <input asp-for="PhoneNumber" 
+                               class="input"
+                               placeholder="09123456789 (اختیاری)" />
+                        <span asp-validation-for="PhoneNumber" class="field-validation-error"></span>
+                    </div>
+                    
+                    <div class="step-actions">
+                        <button type="button" class="btn-primary" id="nextToStep2">
+                            Next Step →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Password -->
+                <div class="form-step" id="step2">
+                    <div class="step-content">
+                        <h3 class="step-title">Create Password</h3>
+                        <p class="step-description">Choose a strong password to secure your account</p>
+                        
+                        <label class="field-label" asp-for="Password">Password</label>
+                        <input asp-for="Password" 
+                               id="passwordInput"
+                               class="input"
+                               placeholder="Create a strong password"
+                               required
+                               data-val="true"
+                               data-val-required="This field is required"
+                               data-val-minlength="Minimum 8 characters"
+                               data-val-minlength-min="8" />
+                        
+                        <!-- Password Strength Indicator -->
+                        <div class="password-strength-container">
+                            <div class="password-strength-bar">
+                                <div class="password-strength-fill" id="passwordStrengthFill"></div>
+                            </div>
+                            <div class="password-strength-text" id="passwordStrengthText">Enter a password</div>
+                        </div>
+                        
+                        <span asp-validation-for="Password" class="field-validation-error"></span>
+
+                        <label class="field-label" asp-for="ConfirmPassword">Confirm Password</label>
+                        <input asp-for="ConfirmPassword" 
+                               id="confirmPasswordInput"
+                               class="input"
+                               placeholder="Confirm your password"
+                               required
+                               data-val="true"
+                               data-val-required="This field is required" />
+                        <div class="password-match-indicator" id="passwordMatchIndicator"></div>
+                        <span asp-validation-for="ConfirmPassword" class="field-validation-error"></span>
+                    </div>
+                    
+                    <div class="step-actions">
+                        <button type="button" class="btn-secondary" id="prevToStep1">
+                            ← Previous
+                        </button>
+                        <button type="button" class="btn-primary" id="nextToStep3">
+                            Next Step →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Terms & Complete -->
+                <div class="form-step" id="step3">
+                    <div class="step-content">
+                        <h3 class="step-title">Almost Done!</h3>
+                        <p class="step-description">Review and accept our terms to complete registration</p>
+                        
+                        <!-- Accept Terms -->
+                        <div class="auth-form-group">
+                            <div class="form-check">
+                                <input asp-for="AcceptTerms" class="form-check-input" required />
+                                <label class="form-check-label" for="AcceptTerms">
+                                    <span>I agree to the <a href="#" class="terms-link">Terms and Conditions</a> and <a href="#" class="terms-link">Privacy Policy</a></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Subscribe to Newsletter -->
+                        <div class="auth-form-group">
+                            <div class="form-check">
+                                <input asp-for="SubscribeToNewsletter" class="form-check-input" />
+                                <label class="form-check-label" for="SubscribeToNewsletter">
+                                    <span>Subscribe to our newsletter for updates and offers</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Registration Summary -->
+                        <div class="registration-summary">
+                            <h4>Registration Summary</h4>
+                            <div class="summary-item">
+                                <span class="summary-label">Email:</span>
+                                <span class="summary-value" id="summaryEmail">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Username:</span>
+                                <span class="summary-value" id="summaryUsername">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Phone:</span>
+                                <span class="summary-value" id="summaryPhone">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="step-actions">
+                        <button type="button" class="btn-secondary" id="prevToStep2">
+                            ← Previous
+                        </button>
+                        <button type="button" 
+                                class="btn-primary" 
+                                id="registerBtn">
+                            Create Account
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden CAPTCHA field for automatic validation -->
+                <input type="hidden" name="CaptchaToken" id="CaptchaToken" />
+                
+                <!-- Hidden CAPTCHA Status Indicator (not visible to user) -->
+                <div class="captcha-status-hidden" id="captchaStatus" style="display: none;">
+                    <span>در حال تأیید امنیتی...</span>
+                </div>
+            </form>
+            
+            <div class="signup-msg">
+                Already have an account? 
+                <a asp-area="" asp-controller="Auth" asp-action="Login">Sign in</a>
+            </div>
+        </div>
+        
+        <!-- RIGHT: illustration -->
+        <div class="auth-right">
+            <div class="image-frame">
+                <img src="~/images/vecteezy_diverse-group-of-smiling-individuals-showcasing-inclusivity_66667449.png" alt="Register Illustration" />
+            </div>
         </div>
     </div>
+  </div>
 </div>
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/modern-auth.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/auth-animations.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/captcha.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.css" />
+    <style>
+        /* Additional styles for multi-step form */
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 2px solid #e5e7eb;
+            padding: 12px 20px;
+            border-radius: 999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .step-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .step-actions .btn-primary {
+            margin: 0;
+            margin-left: auto;
+        }
+        
+        .step-actions .btn-secondary {
+            margin: 0;
+            margin-right: 10px;
+        }
+        
+        /* Password Strength Indicator Styles */
+        .password-strength-container {
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .password-strength-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .password-strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 3px;
+        }
+        
+        .password-strength-fill.weak {
+            background: #ef4444;
+            width: 25%;
+        }
+        
+        .password-strength-fill.fair {
+            background: #f59e0b;
+            width: 50%;
+        }
+        
+        .password-strength-fill.good {
+            background: #3b82f6;
+            width: 75%;
+        }
+        
+        .password-strength-fill.strong {
+            background: #10b981;
+            width: 100%;
+        }
+        
+        .password-strength-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-align: center;
+        }
+        
+        .password-strength-text.weak {
+            color: #ef4444;
+        }
+        
+        .password-strength-text.fair {
+            color: #f59e0b;
+        }
+        
+        .password-strength-text.good {
+            color: #3b82f6;
+        }
+        
+        .password-strength-text.strong {
+            color: #10b981;
+        }
+        
+        
+        /* Password Match Indicator */
+        .password-match-indicator {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .password-match-indicator.match {
+            color: #10b981;
+            opacity: 1;
+        }
+        
+        .password-match-indicator.mismatch {
+            color: #ef4444;
+            opacity: 1;
+        }
+        
+        /* Form Check Styles */
+        .form-check {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .form-check-input {
+            margin-right: 0.75rem;
+            margin-top: 0;
+        }
+        
+        .form-check-label {
+            font-size: 0.9rem;
+            color: #374151;
+            cursor: pointer;
+        }
+        
+        /* Hidden CAPTCHA Status */
+        .captcha-status-hidden {
+            display: none !important;
+        }
+        
+        /* Multi-Step Form Styles */
+        .form-progress {
+            margin-bottom: 1.5rem;
+        }
+        
+        .progress-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active {
+            opacity: 1;
+        }
+        
+        .step.completed {
+            opacity: 1;
+        }
+        
+        .step-number {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-bottom: 0.4rem;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active .step-number {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .step.completed .step-number {
+            background: #10b981;
+            color: white;
+        }
+        
+        .step-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-align: center;
+        }
+        
+        .step.active .step-label {
+            color: var(--primary);
+        }
+        
+        .step-line {
+            width: 50px;
+            height: 2px;
+            background: #e5e7eb;
+            margin: 0 0.75rem;
+            margin-top: -17px;
+            transition: all 0.3s ease;
+        }
+        
+        .step.completed + .step-line {
+            background: #10b981;
+        }
+        
+        /* Form Steps */
+        .form-step {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .form-step.active {
+            display: block;
+        }
+        
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .step-content {
+            margin-bottom: 1.5rem;
+        }
+        
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #0b1220;
+            margin-bottom: 0.4rem;
+            text-align: center;
+        }
+        
+        .step-description {
+            font-size: 0.85rem;
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Registration Summary */
+        .registration-summary {
+            background: rgba(233, 141, 166, 0.05);
+            border: 1px solid rgba(233, 141, 166, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .registration-summary h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0b1220;
+            margin-bottom: 0.75rem;
+            text-align: center;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid rgba(233, 141, 166, 0.1);
+        }
+        
+        .summary-item:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .summary-label {
+            font-weight: 600;
+            color: #0b1220;
+        }
+        
+        .summary-value {
+            color: var(--muted);
+            font-weight: 500;
+        }
+        
+        /* Terms Link */
+        .terms-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .terms-link:hover {
+            text-decoration: underline;
+        }
+        
+        /* Image Size Adjustments */
+        .image-frame img {
+            max-width: 180% !important;
+            max-height: 600px !important;
+            left: -50px !important;
+        }
+        
+        @@media (max-width: 768px) {
+            .image-frame img {
+                max-width: 80% !important;
+                left: 0 !important;
+                max-height: 300px !important;
+            }
+        }
+    </style>
 }
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.js"></script>
-    <script src="~/js/modern-auth.js" asp-append-version="true"></script>
-    <script src="~/js/auth-enhancements.js" asp-append-version="true"></script>
     
-    <!-- Google reCAPTCHA v3 - Clean Architecture -->
     <script>
+        // Multi-Step Form Management
+        let currentStep = 1;
+        const totalSteps = 3;
+        
+        function showStep(stepNumber) {
+            // Hide all steps
+            document.querySelectorAll('.form-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            // Show current step
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+            
+            // Update progress indicator
+            document.querySelectorAll('.step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                if (index + 1 < stepNumber) {
+                    step.classList.add('completed');
+                } else if (index + 1 === stepNumber) {
+                    step.classList.add('active');
+                }
+            });
+            
+            currentStep = stepNumber;
+        }
+        
+        function validateStep(stepNumber) {
+            const step = document.getElementById(`step${stepNumber}`);
+            const inputs = step.querySelectorAll('input[required]');
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    isValid = false;
+                    input.classList.add('error');
+                } else {
+                    input.classList.remove('error');
+                }
+            });
+            
+            return isValid;
+        }
+        
+        function updateSummary() {
+            const email = document.querySelector('input[name="Email"]').value;
+            const username = document.querySelector('input[name="UserName"]').value;
+            const phone = document.querySelector('input[name="PhoneNumber"]').value;
+            
+            document.getElementById('summaryEmail').textContent = email || '-';
+            document.getElementById('summaryUsername').textContent = username || '-';
+            document.getElementById('summaryPhone').textContent = phone || '-';
+        }
+        
+        // Password Strength Validation
+        function checkPasswordStrength(password) {
+            let score = 0;
+            let requirements = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                special: /[!@@#$%^&*(),.?":{}|<>]/.test(password)
+            };
+            
+            // Calculate score
+            Object.values(requirements).forEach(req => {
+                if (req) score++;
+            });
+            
+            return { score, requirements };
+        }
+        
+        function updatePasswordStrength(password) {
+            const { score, requirements } = checkPasswordStrength(password);
+            const strengthFill = document.getElementById('passwordStrengthFill');
+            const strengthText = document.getElementById('passwordStrengthText');
+            
+            // Update strength bar
+            strengthFill.className = 'password-strength-fill';
+            strengthText.className = 'password-strength-text';
+            
+            if (password.length === 0) {
+                strengthText.textContent = 'Enter a password';
+                return;
+            }
+            
+            if (score <= 1) {
+                strengthFill.classList.add('weak');
+                strengthText.classList.add('weak');
+                strengthText.textContent = 'Weak password';
+            } else if (score <= 2) {
+                strengthFill.classList.add('fair');
+                strengthText.classList.add('fair');
+                strengthText.textContent = 'Fair password';
+            } else if (score <= 3) {
+                strengthFill.classList.add('good');
+                strengthText.classList.add('good');
+                strengthText.textContent = 'Good password';
+            } else {
+                strengthFill.classList.add('strong');
+                strengthText.classList.add('strong');
+                strengthText.textContent = 'Strong password';
+            }
+        }
+        
+        function checkPasswordMatch() {
+            const password = document.getElementById('passwordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+            const indicator = document.getElementById('passwordMatchIndicator');
+            
+            if (confirmPassword.length === 0) {
+                indicator.className = 'password-match-indicator';
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                indicator.className = 'password-match-indicator match';
+                indicator.textContent = '✓ Passwords match';
+            } else {
+                indicator.className = 'password-match-indicator mismatch';
+                indicator.textContent = '✗ Passwords do not match';
+            }
+        }
+        
+        // CAPTCHA functionality
         let captchaTokenGenerated = false;
         let captchaToken = null;
         
-        // تابع لود کردن reCAPTCHA
         function loadReCaptcha() {
             console.log('🚀 Loading reCAPTCHA v3...');
             
@@ -211,112 +689,161 @@
             
             script.onerror = function() {
                 console.error('❌ Failed to load reCAPTCHA');
-                document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>خطا در بارگذاری CAPTCHA';
             };
             
             document.head.appendChild(script);
         }
         
-        // تابع راه‌اندازی reCAPTCHA
         function initializeReCaptcha() {
             console.log('⚡ Initializing reCAPTCHA...');
             
             if (typeof grecaptcha !== 'undefined') {
                 grecaptcha.ready(function() {
                     console.log('🎯 reCAPTCHA ready');
-                    document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>تأیید امنیتی آماده است';
                 });
             } else {
                 console.error('❌ grecaptcha not available');
             }
         }
         
-        // تابع اجرای reCAPTCHA
         async function executeReCaptcha() {
             try {
                 console.log('🔄 Executing reCAPTCHA...');
                 
-                // بررسی وجود فرم
                 const form = document.getElementById('register-form');
                 if (!form) {
-                    console.error('❌ Form not found! Looking for: register-form');
-                    document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>خطا: فرم پیدا نشد';
+                    console.error('❌ Form not found!');
                     return;
                 }
                 
-                // نمایش وضعیت
-                document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-spinner fa-spin text-info me-1"></i>در حال تأیید امنیتی...';
-                
-                // اجرای reCAPTCHA v3
                 const token = await grecaptcha.execute('6Leu9bgrAAAAAK4CRoviNVfx160-mRf8HoF7x4yD', {action: 'register'});
                 
                 console.log('✅ reCAPTCHA success! Token length:', token.length);
                 
-                // ذخیره token
                 captchaToken = token;
                 captchaTokenGenerated = true;
                 
-                // ذخیره در فیلد
                 const captchaField = document.getElementById("CaptchaToken");
                 if (captchaField) {
                     captchaField.value = token;
-                } else {
-                    console.warn('⚠️ CaptchaToken field not found');
                 }
                 
-                // نمایش وضعیت
-                document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>تأیید امنیتی انجام شد';
-                
-                // ارسال فرم
                 console.log('📤 Submitting form...');
                 form.submit();
                 
             } catch (error) {
                 console.error('❌ reCAPTCHA error:', error);
-                document.getElementById("captchaStatus").innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-1"></i>خطا در تأیید امنیتی';
             }
         }
         
-        // شروع لود کردن
-        window.addEventListener('load', function() {
-            console.log('🚀 Page loaded, starting reCAPTCHA...');
-            loadReCaptcha();
-        });
-        
-        // اضافه کردن event listener برای دکمه ثبت‌نام
+        // Initialize everything when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 DOM Content Loaded');
+            console.log('🚀 DOM Content Loaded - Multi-Step Form');
             
-            // بررسی وجود عناصر
+            // Step navigation buttons
+            document.getElementById('nextToStep2')?.addEventListener('click', function() {
+                if (validateStep(1)) {
+                    showStep(2);
+                } else {
+                    Swal.fire({
+                        title: 'Please Complete All Fields',
+                        text: 'Please fill in all required fields before proceeding.',
+                        icon: 'warning',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+            
+            document.getElementById('nextToStep3')?.addEventListener('click', function() {
+                if (validateStep(2)) {
+                    const password = document.getElementById('passwordInput').value;
+                    const { score } = checkPasswordStrength(password);
+                    
+                    if (score < 3) {
+                        Swal.fire({
+                            title: 'Password Too Weak',
+                            text: 'Please create a stronger password that meets all requirements.',
+                            icon: 'warning',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    
+                    if (password !== document.getElementById('confirmPasswordInput').value) {
+                        Swal.fire({
+                            title: 'Passwords Do Not Match',
+                            text: 'Please make sure both passwords are identical.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    
+                    updateSummary();
+                    showStep(3);
+                } else {
+                    Swal.fire({
+                        title: 'Please Complete All Fields',
+                        text: 'Please fill in all required fields before proceeding.',
+                        icon: 'warning',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+            
+            document.getElementById('prevToStep1')?.addEventListener('click', function() {
+                showStep(1);
+            });
+            
+            document.getElementById('prevToStep2')?.addEventListener('click', function() {
+                showStep(2);
+            });
+            
+            // Password strength monitoring
+            const passwordInput = document.getElementById('passwordInput');
+            const confirmPasswordInput = document.getElementById('confirmPasswordInput');
             const registerBtn = document.getElementById('registerBtn');
             const form = document.getElementById('register-form');
-            const captchaField = document.getElementById('CaptchaToken');
             
-            console.log('🔍 Elements check:');
-            console.log('- Register button:', registerBtn ? '✅ Found' : '❌ Not found');
-            console.log('- Form:', form ? '✅ Found' : '❌ Not found');
-            console.log('- Captcha field:', captchaField ? '✅ Found' : '❌ Not found');
+            if (passwordInput) {
+                passwordInput.addEventListener('input', function() {
+                    updatePasswordStrength(this.value);
+                });
+            }
+            
+            if (confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+            }
             
             if (registerBtn) {
                 registerBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     console.log('📝 Register button clicked');
                     
+                    if (!document.getElementById('AcceptTerms').checked) {
+                        Swal.fire({
+                            title: 'Terms Not Accepted',
+                            text: 'Please accept the terms and conditions to continue.',
+                            icon: 'warning',
+                            confirmButtonText: 'OK'
+                        });
+                        return;
+                    }
+                    
                     if (captchaTokenGenerated) {
                         console.log('✅ CAPTCHA already generated, submitting form...');
                         if (form) {
                             form.submit();
-                        } else {
-                            console.error('❌ Form not found for submission');
                         }
                     } else {
                         console.log('🔄 Generating CAPTCHA...');
                         executeReCaptcha();
                     }
                 });
-            } else {
-                console.error('❌ Register button not found!');
             }
+            
+            // Load CAPTCHA
+            loadReCaptcha();
         });
     </script>
 }
