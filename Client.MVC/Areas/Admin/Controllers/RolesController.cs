@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Backend.Application.Common.DTOs.Identity;
+using Backend.Application.Common.Authorization;
 using Client.MVC.Services.Abstractions;
 using Client.MVC.ViewModels.Admin;
 using Client.MVC.Services.ApiClients;
@@ -9,9 +10,10 @@ namespace Client.MVC.Areas.Admin.Controllers
 {
     /// <summary>
     /// Controller for role management in admin panel
+    /// Only SuperAdmin can manage roles
     /// </summary>
     [Area("Admin")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = RoleBasedAuthorizationPolicies.CanManageRoles)]
     public class RolesController : AdminBaseController
     {
         private readonly IUserApiClient _userApiClient;

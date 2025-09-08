@@ -3,6 +3,7 @@ using Backend.Application.Common.Interfaces.Infrastructure;
 using Backend.Application.Common.Security;
 using Backend.Application.DependencyInjection;
 using Backend.Infrastructure.Authentication;
+using Backend.Infrastructure.Authorization;
 using Backend.Infrastructure.Cache;
 using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Extensions;
@@ -37,6 +38,7 @@ public static class InfrastructureServicesRegistration
         // Register Infrastructure services
         services.AddInfrastructureCoreServices(configuration);
         services.AddJwtAuthentication(configuration); // Add JWT authentication
+        services.AddRoleBasedAuthorization(); // Add Role-Based Authorization
         services.AddEmailServices(configuration);
         services.AddCacheServices(configuration);
         services.AddFileStorageServices(configuration);

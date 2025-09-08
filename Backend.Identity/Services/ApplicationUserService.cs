@@ -57,6 +57,19 @@ public class ApplicationUserService : Backend.Application.Common.Interfaces.IUse
                 return Result<UserDto>.Failure($"Failed to create user: {errors}");
             }
 
+            // Assign default role "User" to new users created by admin
+            var roleResult = await _userManager.AddToRoleAsync(user, "User");
+            if (!roleResult.Succeeded)
+            {
+                _logger.LogWarning("Failed to assign default role to user: {Email}. Errors: {Errors}", 
+                    createUserDto.Email, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                // Don't fail user creation if role assignment fails, just log it
+            }
+            else
+            {
+                _logger.LogInformation("Successfully assigned default role 'User' to new user: {Email}", createUserDto.Email);
+            }
+
             var userDto = _mapper.Map<UserDto>((IApplicationUser)user);
             return Result<UserDto>.Success(userDto);
         }
@@ -354,6 +367,19 @@ public class ApplicationUserService : Backend.Application.Common.Interfaces.IUse
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                 return Result<LoginResponse>.Failure($"Failed to create user: {errors}");
+            }
+
+            // Assign default role "User" to new users
+            var roleResult = await _userManager.AddToRoleAsync(user, "User");
+            if (!roleResult.Succeeded)
+            {
+                _logger.LogWarning("Failed to assign default role to user: {Email}. Errors: {Errors}", 
+                    registerDto.Email, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                // Don't fail registration if role assignment fails, just log it
+            }
+            else
+            {
+                _logger.LogInformation("Successfully assigned default role 'User' to new user: {Email}", registerDto.Email);
             }
 
             // Generate JWT access token

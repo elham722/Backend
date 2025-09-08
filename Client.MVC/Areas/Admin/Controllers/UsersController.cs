@@ -1,4 +1,5 @@
 using Backend.Application.Common.Results;
+using Backend.Application.Common.Authorization;
 using Client.MVC.Services.Admin;
 using Backend.Application.Features.UserManagement.DTOs;
 using Client.MVC.Services.Abstractions;
@@ -9,10 +10,10 @@ namespace Client.MVC.Areas.Admin.Controllers
 {
     /// <summary>
     /// Controller for user management in admin panel
+    /// Admin and SuperAdmin can manage users
     /// </summary>
-    ///  [Area("Admin")]
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = RoleBasedAuthorizationPolicies.CanManageUsers)]
     public class UsersController : AdminBaseController
     {
         private readonly IAdminUserService _adminUserService;
