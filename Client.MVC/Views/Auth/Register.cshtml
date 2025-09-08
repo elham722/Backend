@@ -820,12 +820,30 @@
                     e.preventDefault();
                     console.log('📝 Register button clicked');
                     
+                    // Prevent double submission
+                    if (registerBtn.disabled) {
+                        console.log('⚠️ Button already clicked, ignoring...');
+                        return;
+                    }
+                    
+                    // Disable button to prevent double submission
+                    registerBtn.disabled = true;
+                    registerBtn.textContent = 'Creating Account...';
+                    registerBtn.classList.add('loading');
+                    
+                    console.log('🔒 Button disabled to prevent double submission');
+                    
                     if (!document.getElementById('AcceptTerms').checked) {
                         Swal.fire({
                             title: 'Terms Not Accepted',
                             text: 'Please accept the terms and conditions to continue.',
                             icon: 'warning',
                             confirmButtonText: 'OK'
+                        }).then(() => {
+                            // Re-enable button
+                            registerBtn.disabled = false;
+                            registerBtn.textContent = 'Create Account';
+                            registerBtn.classList.remove('loading');
                         });
                         return;
                     }

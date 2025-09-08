@@ -37,28 +37,52 @@ namespace Client.MVC.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(RegisterDto model)
         {
+            Logger.LogInformation("=== CONTROLLER REGISTER START ===");
+            Logger.LogInformation("Register request received for: {Email}", model.Email);
+            Logger.LogInformation("Model State Valid: {IsValid}", ModelState.IsValid);
+            
             if (!ModelState.IsValid)
             {
+                Logger.LogWarning("Model state is invalid. Errors: {Errors}", 
+                    string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
                 return View(model);
             }
 
             try
             {
+                Logger.LogInformation("Calling AuthApiClient.RegisterAsync...");
+                
                 // Call AuthApiClient for registration
                 var response = await _authApiClient.RegisterAsync(model);
+                
+                Logger.LogInformation("AuthApiClient response received - IsSuccess: {IsSuccess}, StatusCode: {StatusCode}, Data: {Data}", 
+                    response.IsSuccess, response.StatusCode, response.Data != null ? "NOT NULL" : "NULL");
 
                 if (response.IsSuccess)
                 {
-                    // Set user session using the new session manager
-                    _sessionManager.SetUserSession(response);
+                    Logger.LogInformation("Registration successful!");
+                    
+                    // Only set user session if we have data (for auto-login)
+                    if (response.Data != null)
+                    {
+                        Logger.LogInformation("Setting user session for auto-login...");
+                        _sessionManager.SetUserSession(response);
+                        TempData["SuccessMessage"] = "ثبت نام با موفقیت انجام شد و وارد شدید!";
+                    }
+                    else
+                    {
+                        Logger.LogInformation("No user data returned, redirecting to login...");
+                        TempData["SuccessMessage"] = "ثبت نام با موفقیت انجام شد! لطفاً وارد شوید.";
+                    }
 
-                    TempData["SuccessMessage"] = "ثبت نام با موفقیت انجام شد!";
-
-                    // Redirect to home with user info
+                    Logger.LogInformation("Redirecting to Home...");
+                    
+                    // Redirect to home
                     return RedirectToAction("Index", "Home");
                 }
                 else
                 {
+                    Logger.LogWarning("Registration failed: {ErrorMessage}", response.ErrorMessage);
                     ModelState.AddModelError("", response.ErrorMessage ?? "خطا در ثبت نام");
                     return View(model);
                 }

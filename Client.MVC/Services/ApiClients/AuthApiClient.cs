@@ -51,21 +51,70 @@ namespace Client.MVC.Services.ApiClients
         {
             try
             {
+                _logger.LogInformation("=== REGISTER DEBUG START ===");
+                _logger.LogInformation("Register attempt for: {Email}", dto.Email);
                 _logger.LogUserAuthentication("Register", dto.Email, true);
                 
-                var response = await _httpClient.PostAsync<RegisterDto, LoginResponse>("api/v1.0/auth/register", dto, cancellationToken);
+                // Step 1: Direct HTTP call to see raw response
+                var httpClient = _httpClientFactory.CreateClient("ApiClient");
+                var json = JsonSerializer.Serialize(dto, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
                 
-                if (response.IsSuccess && response.Data != null)
+                _logger.LogInformation("Request JSON: {RequestJson}", json);
+                
+                var directResponse = await httpClient.PostAsync("api/v1.0/auth/register", content, cancellationToken);
+                var responseContent = await directResponse.Content.ReadAsStringAsync();
+                
+                _logger.LogInformation("=== RAW API RESPONSE ===");
+                _logger.LogInformation("Status Code: {StatusCode}", directResponse.StatusCode);
+                _logger.LogInformation("Response Content: {ResponseContent}", responseContent);
+                _logger.LogInformation("=== END RAW API RESPONSE ===");
+                
+                // Step 2: Parse the response
+                ApiResponse<LoginResponse> parsedResponse;
+                try
                 {
-                    _logger.LogInformation("Registration successful - AccessToken: {AccessToken}, RefreshToken: {RefreshToken}", 
-                        response.Data.AccessToken, response.Data.RefreshToken);
-                    return ApiResponse<LoginResponse>.Success(response.Data);
+                    parsedResponse = JsonSerializer.Deserialize<ApiResponse<LoginResponse>>(responseContent, _jsonOptions);
+                    _logger.LogInformation("Parsed Response - IsSuccess: {IsSuccess}, StatusCode: {StatusCode}, Data: {Data}", 
+                        parsedResponse?.IsSuccess, parsedResponse?.StatusCode, parsedResponse?.Data != null ? "NOT NULL" : "NULL");
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Failed to parse API response as ApiResponse<LoginResponse>");
+                    return ApiResponse<LoginResponse>.Error("Invalid response format from server", 500);
+                }
+                
+                if (parsedResponse == null)
+                {
+                    _logger.LogError("Parsed response is null");
+                    return ApiResponse<LoginResponse>.Error("Empty response from server", 500);
+                }
+                
+                // Step 3: Check for success (only check IsSuccess, not Data)
+                if (parsedResponse.IsSuccess)
+                {
+                    if (parsedResponse.Data != null)
+                    {
+                        _logger.LogInformation("Registration successful with data - AccessToken: {AccessToken}, RefreshToken: {RefreshToken}", 
+                            parsedResponse.Data.AccessToken, parsedResponse.Data.RefreshToken);
+                        _logger.LogInformation("User data: {UserData}", JsonSerializer.Serialize(parsedResponse.Data.User, _jsonOptions));
+                        return ApiResponse<LoginResponse>.Success(parsedResponse.Data);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Registration successful but no data returned (this is OK for registration)");
+                        // For registration, we don't need to return user data immediately
+                        // The user will be redirected to login page or home page
+                        return ApiResponse<LoginResponse>.Success(null);
+                    }
                 }
                 else
                 {
-                    var errorMessage = response.Data?.ErrorMessage ?? response.ErrorMessage ?? "Registration failed";
+                    var errorMessage = parsedResponse.Data?.ErrorMessage ?? parsedResponse.ErrorMessage ?? "Registration failed";
                     _logger.LogWarning("Registration failed: {ErrorMessage}", errorMessage);
-                    return ApiResponse<LoginResponse>.Error(errorMessage, response.StatusCode ?? 400);
+                    _logger.LogWarning("Response details - IsSuccess: {IsSuccess}, StatusCode: {StatusCode}, ErrorCode: {ErrorCode}", 
+                        parsedResponse.IsSuccess, parsedResponse.StatusCode, parsedResponse.ErrorCode);
+                    return ApiResponse<LoginResponse>.Error(errorMessage, parsedResponse.StatusCode ?? 400);
                 }
             }
             catch (OperationCanceledException)

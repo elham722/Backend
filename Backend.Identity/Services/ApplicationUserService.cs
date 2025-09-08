@@ -424,16 +424,42 @@ public class ApplicationUserService : Backend.Application.Common.Interfaces.IUse
             var jwtToken = tokenHandler.ReadJwtToken(accessToken);
             var expiresAt = jwtToken.ValidTo;
 
+            // Map user to DTO and set roles
+            _logger.LogInformation("Starting user mapping for user: {Email}", user.Email);
+            var userDto = _mapper.Map<UserDto>((IApplicationUser)user);
+            _logger.LogInformation("User mapping completed. Result: {Result}", userDto != null ? "Success" : "NULL");
+            
+            if (userDto != null)
+            {
+                // Get user roles for mapping
+                var roles = await _userManager.GetRolesAsync(user);
+                userDto.Roles = roles.ToList();
+                _logger.LogInformation("User roles assigned: {Roles}", string.Join(", ", roles));
+            }
+            else
+            {
+                _logger.LogError("AutoMapper failed to map ApplicationUser to UserDto for user: {Email}", user.Email);
+                return Result<LoginResponse>.Failure("Failed to create user profile");
+            }
+            
             var loginResponse = new LoginResponse
             {
-                IsSuccess = true,
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 ExpiresAt = expiresAt,
-                User = _mapper.Map<UserDto>((IApplicationUser)user)
+                User = userDto
             };
 
-            _logger.LogInformation("Registration completed successfully for user: {Email}", registerDto.Email);
+            // Log the mapping result for debugging
+            _logger.LogInformation("User mapping result: {UserDto}", loginResponse.User != null ? "Success" : "NULL");
+            
+            if (loginResponse.User == null)
+            {
+                _logger.LogError("Failed to map ApplicationUser to UserDto for user: {Email}", user.Email);
+                return Result<LoginResponse>.Failure("Failed to create user profile");
+            }
+
+            _logger.LogInformation("Registration completed successfully for user: {Email}", user.Email);
             return Result<LoginResponse>.Success(loginResponse);
         }
         catch (Exception ex)

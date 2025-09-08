@@ -25,7 +25,7 @@ public class ApiResponse<T>
     public static ApiResponse<T> Failure(Exception ex, int? statusCode = 500) =>
         new() { IsSuccess = false, ErrorMessage = ex.Message, StatusCode = statusCode, ErrorCode = ex.GetType().Name };
 
-    // ? Failure with custom message and error code
+    // ? Failure with custom message
     public static ApiResponse<T> Failure(string errorMessage, string? errorCode = null, int? statusCode = 400) =>
         new() { IsSuccess = false, ErrorMessage = errorMessage, StatusCode = statusCode, ErrorCode = errorCode };
 
@@ -34,6 +34,11 @@ public class ApiResponse<T>
     {
         if (result.IsSuccess)
         {
+            // Check if Data is null even when IsSuccess is true
+            if (result.Data == null)
+            {
+                return Error("Operation completed but no data received", statusCode ?? 500, "NULL_DATA");
+            }
             return Success(result.Data, statusCode ?? 200);
         }
         else
@@ -43,11 +48,11 @@ public class ApiResponse<T>
     }
 }
 
-// Non-generic
+// ? Non-generic ?? ?????? Data
 public class ApiResponse : ApiResponse<object>
 {
-    public static ApiResponse Success(int? statusCode = 200) =>
-        new() { IsSuccess = true, StatusCode = statusCode };
+    public static ApiResponse Success(object? data = null, int? statusCode = 200) =>
+        new() { IsSuccess = true, Data = data, StatusCode = statusCode };
 
     public static new ApiResponse Error(string errorMessage, int? statusCode = 400, string? errorCode = null) =>
         new() { IsSuccess = false, ErrorMessage = errorMessage, StatusCode = statusCode, ErrorCode = errorCode };
@@ -63,6 +68,6 @@ public class ApiResponse : ApiResponse<object>
 
     public static new ApiResponse FromResult(Result result, int? statusCode = null) =>
         result.IsSuccess
-            ? Success(statusCode ?? 200)
+            ? Success(null, statusCode ?? 200) // ????? ??????? Data = null ?? ?? ???? ?????
             : Error(result.ErrorMessage ?? "Operation failed", statusCode ?? 400, result.ErrorCode);
 }
