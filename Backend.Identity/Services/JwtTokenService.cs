@@ -38,11 +38,12 @@ namespace Backend.Identity.Services
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id),
-                new(ClaimTypes.Name, user.UserName ?? ""),
+                new(ClaimTypes.Name, user.UserName ?? user.Email ?? user.Id),
                 new(ClaimTypes.Email, user.Email ?? ""),
                 new("sub", user.Id),
                 new("jti", Guid.NewGuid().ToString()),
-                new("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+                new("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+                new("UserName", user.UserName ?? user.Email ?? user.Id) // اضافه کردن یوزرنیم به عنوان claim جداگانه
             };
 
             // Add user roles

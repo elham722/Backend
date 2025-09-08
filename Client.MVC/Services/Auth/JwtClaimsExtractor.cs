@@ -54,7 +54,18 @@ namespace Client.MVC.Services.Auth
                     return null;
 
                 var claims = ExtractClaims(jwtToken);
-                return claims.FirstOrDefault(c => c.Type == ClaimTypes.Name || c.Type == "name" || c.Type == "username")?.Value;
+                // اول سعی می‌کنیم UserName claim را پیدا کنیم
+                var userName = claims.FirstOrDefault(c => c.Type == "UserName")?.Value;
+                if (!string.IsNullOrEmpty(userName))
+                    return userName;
+                
+                // اگر UserName claim نبود، از ClaimTypes.Name استفاده می‌کنیم
+                var nameClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name || c.Type == "name" || c.Type == "username")?.Value;
+                if (!string.IsNullOrEmpty(nameClaim))
+                    return nameClaim;
+                
+                // در نهایت از Email استفاده می‌کنیم
+                return claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
             }
             catch (Exception ex)
             {
