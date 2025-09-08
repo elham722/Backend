@@ -160,7 +160,7 @@ namespace Client.MVC.Controllers
                 TempData["ErrorMessage"] = "خطا در خروج از سیستم";
             }
 
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index", "Home", new { area = "" });
         }
 
 

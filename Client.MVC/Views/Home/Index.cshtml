@@ -27,7 +27,7 @@
                             <a href="#" class="btn-hero btn-hero-primary">
                                 <i class="fas fa-shopping-cart me-2"></i>Shop Now
                             </a>
-                            <form asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
+                            <form asp-area="" asp-controller="Auth" asp-action="Logout" method="post" style="display: inline;">
                                 <button type="submit" class="btn-hero btn-hero-secondary">
                                     <i class="fas fa-sign-out-alt me-2"></i>خروج
                                 </button>
@@ -37,10 +37,10 @@
                     else
                     {
                         <div class="hero-buttons">
-                            <a asp-controller="Auth" asp-action="Login" class="btn-hero btn-hero-primary">
+                            <a asp-area="" asp-controller="Auth" asp-action="Login" class="btn-hero btn-hero-primary">
                                 <i class="fas fa-sign-in-alt me-2"></i>ورود
                             </a>
-                            <a asp-controller="Auth" asp-action="Register" class="btn-hero btn-hero-secondary">
+                            <a asp-area="" asp-controller="Auth" asp-action="Register" class="btn-hero btn-hero-secondary">
                                 <i class="fas fa-user-plus me-2"></i>ثبت نام
                             </a>
                         </div>

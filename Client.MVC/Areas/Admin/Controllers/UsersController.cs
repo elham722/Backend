@@ -3,12 +3,16 @@ using Client.MVC.Services.Admin;
 using Backend.Application.Features.UserManagement.DTOs;
 using Client.MVC.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Client.MVC.Areas.Admin.Controllers
 {
     /// <summary>
     /// Controller for user management in admin panel
     /// </summary>
+    ///  [Area("Admin")]
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
     public class UsersController : AdminBaseController
     {
         private readonly IAdminUserService _adminUserService;
