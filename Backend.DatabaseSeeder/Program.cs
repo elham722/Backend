@@ -24,7 +24,7 @@ namespace Backend.DatabaseSeeder
 
                 // Build configuration
                 var configuration = new ConfigurationBuilder()
-                    .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "Backend.DatabaseSeeder"))
+                    .SetBasePath(Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                     .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
                     .Build();

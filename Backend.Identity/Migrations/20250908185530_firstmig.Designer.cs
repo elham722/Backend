@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Identity.Migrations
 {
     [DbContext(typeof(BackendIdentityDbContext))]
-    [Migration("20250908102936_seeddata")]
-    partial class seeddata
+    [Migration("20250908185530_firstmig")]
+    partial class firstmig
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
