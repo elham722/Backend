@@ -25,6 +25,8 @@ public class AdminAreaAccessMiddleware
         {
             _logger.LogDebug("Admin area request detected: {Path}", context.Request.Path);
 
+            // No special handling needed for /Admin root - routing will handle it
+
             // Check if user is authenticated
             if (!currentUser.IsAuthenticated())
             {
@@ -39,8 +41,8 @@ public class AdminAreaAccessMiddleware
             }
 
             // Check if user has Admin or SuperAdmin role
-            var userRoles = currentUser.GetUserRoles();
-            if (userRoles == null || (!userRoles.Contains("Admin") && !userRoles.Contains("SuperAdmin")))
+            var userRolesForSubPaths = currentUser.GetUserRoles();
+            if (userRolesForSubPaths == null || (!userRolesForSubPaths.Contains("Admin") && !userRolesForSubPaths.Contains("SuperAdmin")))
             {
                 _logger.LogWarning("Non-admin user attempted to access admin area: {UserId}, {Path}", 
                     currentUser.GetUserId(), context.Request.Path);

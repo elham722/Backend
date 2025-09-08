@@ -183,7 +183,7 @@ app.MapHealthChecks("/health");
 // Configure Admin Area routing
 app.MapControllerRoute(
     name: "admin",
-    pattern: "Admin/{controller=Dashboard}/{action=Index}/{id?}",
+    pattern: "Admin/{controller=Home}/{action=Index}/{id?}",
     defaults: new { area = "Admin" });
 
 app.MapControllerRoute(

@@ -44,11 +44,19 @@ The middleware intercepts requests matching these patterns:
 
 ## Enhanced Components
 
+### Admin HomeController
+- **Location**: `Client.MVC/Areas/Admin/Controllers/HomeController.cs`
+- **Purpose**: Handles `/Admin` root path and redirects to Dashboard
+- **Features**:
+  - Simple redirect from `/Admin` to `/Admin/Dashboard`
+  - Clean routing solution for admin root access
+
 ### Enhanced AuthController
 - **Updated Login Action**: Now properly checks user roles and returnUrl after successful login
+- **Simplified Logic**: No special handling needed for `/Admin` - routing handles it
 - **Smart Redirection Logic**: 
   - **With ReturnUrl (Admin Area)**: 
-    - Admin user → Original Admin URL (e.g., `/Admin/Dashboard`)
+    - Admin user → Original Admin URL
     - Regular user → Access Denied
   - **With ReturnUrl (Non-Admin)**: 
     - Any user → Original URL
@@ -56,33 +64,45 @@ The middleware intercepts requests matching these patterns:
     - Admin user → Admin Dashboard
     - Regular user → Home page
 
-### Simplified Middleware
-- **Direct Access Control**: No unnecessary redirects to admin login
-- **Clean Logic**: Simple role-based access control
+### Enhanced Middleware
+- **Simplified Logic**: No special handling for `/Admin` root
+- **Clean Routing**: Let ASP.NET Core routing handle the `/Admin` → `/Admin/Home/Index` → Dashboard redirect
 - **Efficient**: Minimal redirects for better performance
 
 ## Usage Scenarios
 
-### Scenario 1: Admin User Access (With ReturnUrl)
-1. User visits `/Admin/Dashboard`
-2. If not authenticated → `/Auth/Login?returnUrl=/Admin/Dashboard`
-3. After login → `/Admin/Dashboard` (admin user - returns to original URL)
+### Scenario 1: Admin User Access (Admin Root)
+1. User visits `/Admin`
+2. ASP.NET Core routing maps to `/Admin/Home/Index`
+3. HomeController redirects to `/Admin/Dashboard`
+4. If not authenticated → `/Auth/Login?returnUrl=/Admin`
+5. After login → `/Admin` → Dashboard (admin user)
 
-### Scenario 2: Regular User Access (With ReturnUrl)
-1. User visits `/Admin/Dashboard`
-2. If not authenticated → `/Auth/Login?returnUrl=/Admin/Dashboard`
+### Scenario 2: Admin User Access (Admin Sub-path)
+1. User visits `/Admin/Users`
+2. If not authenticated → `/Auth/Login?returnUrl=/Admin/Users`
+3. After login → `/Admin/Users` (admin user - returns to original URL)
+
+### Scenario 3: Regular User Access (Admin Root)
+1. User visits `/Admin`
+2. ASP.NET Core routing maps to `/Admin/Home/Index`
+3. Middleware detects non-admin user → `/Home/AccessDenied`
+
+### Scenario 4: Regular User Access (Admin Sub-path)
+1. User visits `/Admin/Users`
+2. If not authenticated → `/Auth/Login?returnUrl=/Admin/Users`
 3. After login → `/Home/AccessDenied` (regular user - access denied)
 
-### Scenario 3: Admin User Direct Login (No ReturnUrl)
+### Scenario 5: Admin User Direct Login (No ReturnUrl)
 1. User visits `/Auth/Login` directly
 2. After login → `/Admin/Dashboard` (admin user - smart redirection)
 
-### Scenario 4: Regular User Direct Login (No ReturnUrl)
+### Scenario 6: Regular User Direct Login (No ReturnUrl)
 1. User visits `/Auth/Login` directly
 2. After login → `/Home` (regular user - smart redirection)
 
-### Scenario 5: Regular User Trying Admin Access (Already Logged In)
-1. Regular user visits `/Admin/Dashboard`
+### Scenario 7: Regular User Trying Admin Access (Already Logged In)
+1. Regular user visits `/Admin` or `/Admin/Dashboard`
 2. Middleware detects non-admin user → `/Home/AccessDenied` (direct)
 
 ## Configuration

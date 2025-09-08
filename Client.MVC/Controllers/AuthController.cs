@@ -150,7 +150,7 @@ namespace Client.MVC.Controllers
                     else
                     {
                         // Regular user with no specific returnUrl - redirect to home
-                        return RedirectToAction("Index", "Home", new { area = "" });
+                        return RedirectToAction("Index", "Home");
                     }
                 }
                 else
