@@ -11,7 +11,7 @@ namespace Client.MVC.Areas.Admin.Controllers
     /// </summary>
     ///   [Area("Admin")]
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class DashboardController : AdminBaseController
     {
         private readonly IAdminUserService _adminUserService;

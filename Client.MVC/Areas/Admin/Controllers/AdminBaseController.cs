@@ -10,7 +10,7 @@ namespace Client.MVC.Areas.Admin.Controllers
     /// Provides common functionality and authorization for admin operations
     /// </summary>
     [Area("Admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public abstract class AdminBaseController : SecureController
     {
         protected AdminBaseController(

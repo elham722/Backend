@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Client.MVC.Areas.Admin.Controllers
@@ -7,6 +8,7 @@ namespace Client.MVC.Areas.Admin.Controllers
     /// Redirects /Admin to Dashboard
     /// </summary>
     [Area("Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class HomeController : Controller
     {
         /// <summary>
