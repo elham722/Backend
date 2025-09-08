@@ -1,63 +1,90 @@
 @model dynamic
 @{
     ViewData["Title"] = "داشبورد مدیریت";
-    Layout = "~/Areas/Admin/Views/Shared/_Layout.cshtml";
 }
 
 <div class="row">
     <!-- Statistics Cards -->
-    <div class="col-lg-3 col-md-6 mb-4">
-        <div class="stats-card">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">کل کاربران</h6>
-                    <div class="stats-number">@Model.Statistics.TotalUsers</div>
+    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-9">
+                        <div class="d-flex align-items-center align-self-start">
+                            <h3 class="mb-0">@Model.Statistics.TotalUsers</h3>
+                            <p class="text-success ml-2 mb-0 font-weight-medium">+3.5%</p>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="icon icon-box-success">
+                            <span class="mdi mdi-account-multiple icon-item"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="stats-icon">
-                    <i class="fas fa-users"></i>
-                </div>
+                <h6 class="font-weight-normal">کل کاربران</h6>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-3 col-md-6 mb-4">
-        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">کاربران فعال</h6>
-                    <div class="stats-number">@Model.Statistics.ActiveUsers</div>
+    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-9">
+                        <div class="d-flex align-items-center align-self-start">
+                            <h3 class="mb-0">@Model.Statistics.ActiveUsers</h3>
+                            <p class="text-success ml-2 mb-0 font-weight-medium">+3.5%</p>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="icon icon-box-success">
+                            <span class="mdi mdi-account-check icon-item"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="stats-icon">
-                    <i class="fas fa-user-check"></i>
-                </div>
+                <h6 class="font-weight-normal">کاربران فعال</h6>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-3 col-md-6 mb-4">
-        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">کاربران جدید این ماه</h6>
-                    <div class="stats-number">@Model.Statistics.NewUsersThisMonth</div>
+    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-9">
+                        <div class="d-flex align-items-center align-self-start">
+                            <h3 class="mb-0">@Model.Statistics.NewUsersThisMonth</h3>
+                            <p class="text-success ml-2 mb-0 font-weight-medium">+3.5%</p>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="icon icon-box-success">
+                            <span class="mdi mdi-account-plus icon-item"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="stats-icon">
-                    <i class="fas fa-user-plus"></i>
-                </div>
+                <h6 class="font-weight-normal">کاربران جدید این ماه</h6>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-3 col-md-6 mb-4">
-        <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-1">کاربران با MFA</h6>
-                    <div class="stats-number">@Model.Statistics.UsersWithMfa</div>
+    <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-9">
+                        <div class="d-flex align-items-center align-self-start">
+                            <h3 class="mb-0">@Model.Statistics.UsersWithMfa</h3>
+                            <p class="text-success ml-2 mb-0 font-weight-medium">+3.5%</p>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="icon icon-box-success">
+                            <span class="mdi mdi-shield-account icon-item"></span>
+                        </div>
+                    </div>
                 </div>
-                <div class="stats-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
+                <h6 class="font-weight-normal">کاربران با MFA</h6>
             </div>
         </div>
     </div>
@@ -65,19 +92,14 @@
 
 <div class="row">
     <!-- Recent Activity -->
-    <div class="col-lg-8 mb-4">
-        <div class="admin-card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-history me-2"></i>
-                    فعالیت‌های اخیر
-                </h5>
-            </div>
+    <div class="col-lg-8 grid-margin stretch-card">
+        <div class="card">
             <div class="card-body">
+                <h4 class="card-title">فعالیت‌های اخیر</h4>
                 @if (Model.RecentActivity.Count > 0)
                 {
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>کاربر</th>
