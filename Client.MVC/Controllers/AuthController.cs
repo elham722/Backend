@@ -113,25 +113,45 @@ namespace Client.MVC.Controllers
 
                     TempData["SuccessMessage"] = "ورود با موفقیت انجام شد!";
 
-                    // Check if user has admin role and returnUrl is admin area
+                    // Get user roles after successful login
                     var userRoles = CurrentUser.GetUserRoles();
-                    if (userRoles != null && (userRoles.Contains("Admin") || userRoles.Contains("SuperAdmin")))
+                    bool isAdmin = userRoles != null && (userRoles.Contains("Admin") || userRoles.Contains("SuperAdmin"));
+
+                    // Check if returnUrl is provided and valid
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                     {
-                        // If returnUrl is admin area, redirect to admin dashboard
-                        if (!string.IsNullOrEmpty(returnUrl) && returnUrl.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase))
+                        // Check if returnUrl is admin area
+                        if (returnUrl.StartsWith("/Admin", StringComparison.OrdinalIgnoreCase))
                         {
-                            return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                            if (isAdmin)
+                            {
+                                // Admin user trying to access admin area - redirect to original admin URL
+                                return Redirect(returnUrl);
+                            }
+                            else
+                            {
+                                // Regular user trying to access admin area - redirect to access denied
+                                return RedirectToAction("AccessDenied", "Home");
+                            }
                         }
-                        
-                        // If user is admin but no specific returnUrl, redirect to admin dashboard
-                        if (string.IsNullOrEmpty(returnUrl))
+                        else
                         {
-                            return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                            // Non-admin returnUrl - redirect to original URL
+                            return Redirect(returnUrl);
                         }
                     }
-
-                    // اگر returnUrl معتبر باشه برگرد همونجا، در غیر اینصورت برو Home
-                    return RedirectToLocal(returnUrl ?? "/");
+                    
+                    // No returnUrl or invalid returnUrl - smart redirection based on user role
+                    if (isAdmin)
+                    {
+                        // Admin user with no specific returnUrl - redirect to admin dashboard
+                        return RedirectToAction("Index", "Dashboard", new { area = "Admin" });
+                    }
+                    else
+                    {
+                        // Regular user with no specific returnUrl - redirect to home
+                        return RedirectToAction("Index", "Home", new { area = "" });
+                    }
                 }
                 else
                 {

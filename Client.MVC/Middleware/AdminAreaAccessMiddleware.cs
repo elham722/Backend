@@ -45,8 +45,8 @@ public class AdminAreaAccessMiddleware
                 _logger.LogWarning("Non-admin user attempted to access admin area: {UserId}, {Path}", 
                     currentUser.GetUserId(), context.Request.Path);
                 
-                // Redirect to Admin Login page for re-authentication
-                context.Response.Redirect("/Admin/Login");
+                // Redirect to Access Denied page for logged-in non-admin users
+                context.Response.Redirect("/Home/AccessDenied");
                 return;
             }
 
