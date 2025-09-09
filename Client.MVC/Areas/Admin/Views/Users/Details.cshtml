@@ -1,0 +1,294 @@
+@{
+    ViewData["Title"] = "جزئیات کاربر";
+    Layout = "_AdminLayout";
+}
+
+<div class="content-wrapper">
+    <div class="row">
+        <div class="col-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="card-title">جزئیات کاربر</h4>
+                        <div>
+                            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                <i class="mdi mdi-arrow-right"></i> بازگشت به لیست
+                            </a>
+                            @if (ViewBag.CanEdit == true)
+                            {
+                                <a href="@Url.Action("Edit", new { id = ViewBag.User.Id })" class="btn btn-warning">
+                                    <i class="mdi mdi-pencil"></i> ویرایش
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    @if (ViewBag.User != null)
+                    {
+                        <div class="row">
+                            <!-- User Basic Information -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">اطلاعات پایه</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>نام کاربری:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @ViewBag.User.UserName
+                                                @if (ViewBag.User.IsNewUser)
+                                                {
+                                                    <span class="badge badge-success ml-2">جدید</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>ایمیل:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @ViewBag.User.Email
+                                                @if (ViewBag.User.EmailConfirmed)
+                                                {
+                                                    <i class="mdi mdi-check-circle text-success" title="تایید شده"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="mdi mdi-alert-circle text-warning" title="تایید نشده"></i>
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>شماره تلفن:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (!string.IsNullOrEmpty(ViewBag.User.PhoneNumber))
+                                                {
+                                                    @ViewBag.User.PhoneNumber
+                                                    @if (ViewBag.User.PhoneNumberConfirmed)
+                                                    {
+                                                        <i class="mdi mdi-check-circle text-success" title="تایید شده"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="mdi mdi-alert-circle text-warning" title="تایید نشده"></i>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">ثبت نشده</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>وضعیت حساب:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (ViewBag.User.IsActive)
+                                                {
+                                                    <span class="badge badge-success">فعال</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-danger">غیرفعال</span>
+                                                }
+                                                
+                                                @if (ViewBag.User.IsLocked)
+                                                {
+                                                    <span class="badge badge-warning ml-1">قفل شده</span>
+                                                }
+                                                
+                                                @if (ViewBag.User.TwoFactorEnabled)
+                                                {
+                                                    <span class="badge badge-info ml-1">احراز هویت دو مرحله‌ای</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Information -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">اطلاعات امنیتی</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>نقش‌ها:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (ViewBag.User.Roles != null && ViewBag.User.Roles.Any())
+                                                {
+                                                    @foreach (var role in ViewBag.User.Roles)
+                                                    {
+                                                        <span class="badge badge-secondary mr-1">@role</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">هیچ نقشی ندارد</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>تعداد تلاش ناموفق:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @ViewBag.User.AccessFailedCount
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>آخرین ورود:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (ViewBag.User.LastLoginAt.HasValue)
+                                                {
+                                                    @ViewBag.User.LastLoginAt.Value.ToString("yyyy/MM/dd HH:mm")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">هیچ‌وقت وارد نشده</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>آخرین تغییر رمز:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (ViewBag.User.LastPasswordChangeAt.HasValue)
+                                                {
+                                                    @ViewBag.User.LastPasswordChangeAt.Value.ToString("yyyy/MM/dd HH:mm")
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">هیچ‌وقت تغییر نکرده</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">اطلاعات تکمیلی</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">تاریخ ایجاد</h6>
+                                                    <p class="mb-0">@ViewBag.User.CreatedAt.ToString("yyyy/MM/dd HH:mm")</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">ایجاد شده توسط</h6>
+                                                    <p class="mb-0">@(ViewBag.User.CreatedBy ?? "سیستم")</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">آخرین ویرایش</h6>
+                                                    <p class="mb-0">
+                                                        @if (ViewBag.User.LastModifiedAt.HasValue)
+                                                        {
+                                                            @ViewBag.User.LastModifiedAt.Value.ToString("yyyy/MM/dd HH:mm")
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">هیچ‌وقت ویرایش نشده</span>
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="text-center">
+                                                    <h6 class="text-muted">ویرایش شده توسط</h6>
+                                                    <p class="mb-0">@(ViewBag.User.LastModifiedBy ?? "-")</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        @if (ViewBag.CanEdit == true)
+                        {
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title">عملیات</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="btn-group" role="group">
+                                                <a href="@Url.Action("Edit", new { id = ViewBag.User.Id })" class="btn btn-warning">
+                                                    <i class="mdi mdi-pencil"></i> ویرایش کاربر
+                                                </a>
+                                                
+                                                @if (ViewBag.User.IsActive)
+                                                {
+                                                    <button type="button" class="btn btn-danger" onclick="toggleUserStatus('@ViewBag.User.Id', true)">
+                                                        <i class="mdi mdi-account-off"></i> غیرفعال کردن
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-success" onclick="toggleUserStatus('@ViewBag.User.Id', false)">
+                                                        <i class="mdi mdi-account-check"></i> فعال کردن
+                                                    </button>
+                                                }
+                                                
+                                                @if (ViewBag.CanDelete == true)
+                                                {
+                                                    <button type="button" class="btn btn-danger" onclick="deleteUser('@ViewBag.User.Id', '@ViewBag.User.UserName')">
+                                                        <i class="mdi mdi-delete"></i> حذف کاربر
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger">
+                            <i class="mdi mdi-alert-circle"></i>
+                            کاربر مورد نظر یافت نشد.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Admin/js/users-management.js"></script>
+}

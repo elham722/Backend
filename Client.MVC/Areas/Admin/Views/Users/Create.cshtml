@@ -1,0 +1,221 @@
+@model Client.MVC.Areas.Admin.ViewModels.CreateUserViewModel
+
+@{
+    ViewData["Title"] = "ایجاد کاربر جدید";
+    Layout = "_AdminLayout";
+}
+
+<div class="content-wrapper">
+    <div class="row">
+        <div class="col-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="card-title">ایجاد کاربر جدید</h4>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="mdi mdi-arrow-right"></i> بازگشت به لیست
+                        </a>
+                    </div>
+
+                    <form asp-action="Create" method="post" class="forms-sample">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="row">
+                            <!-- Basic Information -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="UserData.Email">ایمیل <span class="text-danger">*</span></label>
+                                    <input asp-for="UserData.Email" type="email" class="form-control" 
+                                           placeholder="example@domain.com" required>
+                                    <span asp-validation-for="UserData.Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="UserData.UserName">نام کاربری <span class="text-danger">*</span></label>
+                                    <input asp-for="UserData.UserName" type="text" class="form-control" 
+                                           placeholder="نام کاربری" required>
+                                    <span asp-validation-for="UserData.UserName" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="UserData.PhoneNumber">شماره تلفن</label>
+                                    <input asp-for="UserData.PhoneNumber" type="tel" class="form-control" 
+                                           placeholder="09123456789">
+                                    <span asp-validation-for="UserData.PhoneNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="UserData.Password">رمز عبور <span class="text-danger">*</span></label>
+                                    <input asp-for="UserData.Password" type="password" class="form-control" 
+                                           placeholder="رمز عبور" required>
+                                    <span asp-validation-for="UserData.Password" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="ConfirmPassword">تایید رمز عبور <span class="text-danger">*</span></label>
+                                    <input asp-for="ConfirmPassword" type="password" class="form-control" 
+                                           placeholder="تایید رمز عبور" required>
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="UserData.Roles">نقش‌ها</label>
+                                    <select asp-for="UserData.Roles" class="form-control" multiple>
+                                        @if (Model.AvailableRoles != null)
+                                        {
+                                            @foreach (var role in Model.AvailableRoles)
+                                            {
+                                                <option value="@role">@role</option>
+                                            }
+                                        }
+                                    </select>
+                                    <small class="form-text text-muted">برای انتخاب چند نقش، Ctrl را نگه دارید</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h5 class="mb-3">گزینه‌های اضافی</h5>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="EmailConfirmed" name="EmailConfirmed" value="true">
+                                    <label class="form-check-label" for="EmailConfirmed">
+                                        ایمیل تایید شده باشد
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="PhoneNumberConfirmed" name="PhoneNumberConfirmed" value="true">
+                                    <label class="form-check-label" for="PhoneNumberConfirmed">
+                                        شماره تلفن تایید شده باشد
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="TwoFactorEnabled" name="TwoFactorEnabled" value="true">
+                                    <label class="form-check-label" for="TwoFactorEnabled">
+                                        احراز هویت دو مرحله‌ای فعال باشد
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input asp-for="UserData.SendConfirmationEmail" type="checkbox" class="form-check-input" checked>
+                                    <label asp-for="UserData.SendConfirmationEmail" class="form-check-label">
+                                        ارسال ایمیل تایید
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input asp-for="UserData.RequirePasswordChange" type="checkbox" class="form-check-input">
+                                    <label asp-for="UserData.RequirePasswordChange" class="form-check-label">
+                                        نیاز به تغییر رمز عبور در ورود بعدی
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="IsActive" name="IsActive" value="true" checked>
+                                    <label class="form-check-label" for="IsActive">
+                                        حساب فعال باشد
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary mr-2">
+                                    <i class="mdi mdi-content-save"></i> ایجاد کاربر
+                                </button>
+                                <a href="@Url.Action("Index")" class="btn btn-light">
+                                    <i class="mdi mdi-close"></i> انصراف
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Admin/js/users-management.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Password confirmation validation
+            $('input[name="ConfirmPassword"]').on('keyup', function() {
+                var password = $('input[name="UserData.Password"]').val();
+                var confirmPassword = $(this).val();
+                
+                if (password !== confirmPassword) {
+                    $(this).addClass('is-invalid');
+                    $(this).next('.text-danger').text('رمز عبور و تایید آن مطابقت ندارند');
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $(this).next('.text-danger').text('');
+                }
+            });
+            
+            // Email validation
+            $('input[name="UserData.Email"]').on('blur', function() {
+                var email = $(this).val();
+                var emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                
+                if (email && !emailRegex.test(email)) {
+                    $(this).addClass('is-invalid');
+                    $(this).next('.text-danger').text('فرمت ایمیل صحیح نیست');
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $(this).next('.text-danger').text('');
+                }
+            });
+            
+            // Phone number validation
+            $('input[name="UserData.PhoneNumber"]').on('blur', function() {
+                var phone = $(this).val();
+                var phoneRegex = /^09\d{9}$/;
+                
+                if (phone && !phoneRegex.test(phone)) {
+                    $(this).addClass('is-invalid');
+                    $(this).next('.text-danger').text('فرمت شماره تلفن صحیح نیست (مثال: 09123456789)');
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $(this).next('.text-danger').text('');
+                }
+            });
+        });
+    </script>
+}

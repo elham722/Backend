@@ -19,6 +19,7 @@
     <!-- endinject -->
     <!-- Layout styles -->
     <link rel="stylesheet" href="~/Admin/css/style.css">
+    <link rel="stylesheet" href="~/Admin/css/users-management.css">
     <!-- End layout styles -->
     <link rel="shortcut icon" href="~/Admin/images/favicon.png" />
 </head>
@@ -63,5 +64,8 @@
     <!-- Custom js for this page -->
     <script src="~/Admin/js/dashboard.js"></script>
     <!-- End custom js for this page -->
+    
+    <!-- Render additional scripts from pages -->
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

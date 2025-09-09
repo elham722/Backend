@@ -5,6 +5,7 @@ using Backend.Application.Features.UserManagement.DTOs;
 using Client.MVC.Services.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Client.MVC.Areas.Admin.ViewModels;
 
 namespace Client.MVC.Areas.Admin.Controllers
 {
@@ -45,17 +46,19 @@ namespace Client.MVC.Areas.Admin.Controllers
                 var rolesResult = await _adminUserService.GetAvailableRolesAsync();
                 var availableRoles = rolesResult.IsSuccess ? rolesResult.Data! : new List<string>();
 
-                // Create view model using anonymous object
-                var viewModel = new
+                // Create ViewModel for the view
+                var model = new UsersIndexViewModel
                 {
                     Users = users,
                     SearchTerm = searchTerm,
                     CurrentPage = page,
                     PageSize = pageSize,
-                    AvailableRoles = availableRoles
+                    AvailableRoles = availableRoles,
+                    CanDelete = IsSuperAdmin,
+                    CurrentAdminId = CurrentAdminId
                 };
 
-                return View(viewModel);
+                return View(model);
             }
             catch (Exception ex)
             {
@@ -89,16 +92,14 @@ namespace Client.MVC.Areas.Admin.Controllers
                 var rolesResult = await _adminUserService.GetAvailableRolesAsync();
                 var availableRoles = rolesResult.IsSuccess ? rolesResult.Data! : new List<string>();
 
-                var viewModel = new
-                {
-                    User = userResult.Data!,
-                    AvailableRoles = availableRoles,
-                    UserRoles = userResult.Data!.Roles ?? new List<string>(),
-                    CanEdit = IsSuperAdmin || userResult.Data!.Id != CurrentAdminId,
-                    CanDelete = IsSuperAdmin && userResult.Data!.Id != CurrentAdminId
-                };
+                // Set ViewBag properties for the view
+                ViewBag.User = userResult.Data!;
+                ViewBag.AvailableRoles = availableRoles;
+                ViewBag.UserRoles = userResult.Data!.Roles ?? new List<string>();
+                ViewBag.CanEdit = IsSuperAdmin || userResult.Data!.Id != CurrentAdminId;
+                ViewBag.CanDelete = IsSuperAdmin && userResult.Data!.Id != CurrentAdminId;
 
-                return View(viewModel);
+                return View();
             }
             catch (Exception ex)
             {
@@ -120,12 +121,13 @@ namespace Client.MVC.Areas.Admin.Controllers
                 var rolesResult = await _adminUserService.GetAvailableRolesAsync();
                 var availableRoles = rolesResult.IsSuccess ? rolesResult.Data! : new List<string>();
 
-                var viewModel = new
+                var model = new CreateUserViewModel
                 {
+                    UserData = new CreateUserDto(),
                     AvailableRoles = availableRoles
                 };
 
-                return View(viewModel);
+                return View(model);
             }
             catch (Exception ex)
             {
@@ -139,31 +141,28 @@ namespace Client.MVC.Areas.Admin.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateUserDto model)
+        public async Task<IActionResult> Create(CreateUserViewModel model)
         {
             try
             {
+                // Custom validation for password confirmation
+                if (model.UserData.Password != model.ConfirmPassword)
+                {
+                    ModelState.AddModelError("ConfirmPassword", "رمز عبور و تایید آن مطابقت ندارند");
+                }
+
                 if (!ModelState.IsValid)
                 {
                     // Get available roles again for the form
                     var rolesResult = await _adminUserService.GetAvailableRolesAsync();
                     var availableRoles = rolesResult.IsSuccess ? rolesResult.Data! : new List<string>();
                     
-                    var viewModel = new
-                    {
-                        AvailableRoles = availableRoles,
-                        Email = model.Email,
-                        UserName = model.UserName,
-                        PhoneNumber = model.PhoneNumber,
-                        SelectedRoles = model.Roles,
-                        SendConfirmationEmail = model.SendConfirmationEmail,
-                        RequirePasswordChange = model.RequirePasswordChange
-                    };
+                    model.AvailableRoles = availableRoles;
                     
-                    return View(viewModel);
+                    return View(model);
                 }
 
-                var result = await _adminUserService.CreateUserAsync(model);
+                var result = await _adminUserService.CreateUserAsync(model.UserData);
 
                 if (result.IsSuccess)
                 {
@@ -177,18 +176,9 @@ namespace Client.MVC.Areas.Admin.Controllers
                 var rolesResult2 = await _adminUserService.GetAvailableRolesAsync();
                 var availableRoles2 = rolesResult2.IsSuccess ? rolesResult2.Data! : new List<string>();
                 
-                var viewModel2 = new
-                {
-                    AvailableRoles = availableRoles2,
-                    Email = model.Email,
-                    UserName = model.UserName,
-                    PhoneNumber = model.PhoneNumber,
-                    SelectedRoles = model.Roles,
-                    SendConfirmationEmail = model.SendConfirmationEmail,
-                    RequirePasswordChange = model.RequirePasswordChange
-                };
+                model.AvailableRoles = availableRoles2;
                 
-                return View(viewModel2);
+                return View(model);
             }
             catch (Exception ex)
             {

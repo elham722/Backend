@@ -8,6 +8,7 @@ using Client.MVC.Services.Security;
 using Client.MVC.Services.Session;
 using Client.MVC.Middleware;
 using Microsoft.AspNetCore.HttpOverrides;
+using Backend.Infrastructure.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,6 +98,9 @@ builder.Services.AddScoped<IUserSessionService, UserSessionServiceAdapter>();
 
 // Register Admin services
 builder.Services.AddScoped<Client.MVC.Services.Admin.IAdminUserService, Client.MVC.Services.Admin.AdminUserService>();
+
+// Add Role-Based Authorization
+builder.Services.AddRoleBasedAuthorization();
 
 builder.Services.AddHttpContextAccessor();
 

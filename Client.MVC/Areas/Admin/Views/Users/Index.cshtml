@@ -1,0 +1,241 @@
+@model Client.MVC.Areas.Admin.ViewModels.UsersIndexViewModel
+
+@{
+    ViewData["Title"] = "مدیریت کاربران";
+    Layout = "_AdminLayout";
+}
+
+<div class="content-wrapper">
+    <div class="row">
+        <div class="col-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">لیست کاربران</h4>
+                    <p class="card-description">
+                        مدیریت و مشاهده تمام کاربران سیستم
+                    </p>
+                    
+                    <!-- Search and Filter Section -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <form method="get" class="d-flex">
+                                <input type="text" name="searchTerm" value="@Model.SearchTerm" 
+                                       class="form-control" placeholder="جستجو بر اساس ایمیل، نام کاربری یا شماره تلفن...">
+                                <button type="submit" class="btn btn-primary ml-2">
+                                    <i class="mdi mdi-magnify"></i> جستجو
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <a href="@Url.Action("Create")" class="btn btn-success">
+                                <i class="mdi mdi-plus"></i> کاربر جدید
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Users Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>نام کاربری</th>
+                                    <th>ایمیل</th>
+                                    <th>شماره تلفن</th>
+                                    <th>وضعیت</th>
+                                    <th>نقش‌ها</th>
+                                    <th>تاریخ ایجاد</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Users != null && Model.Users.Data != null && Model.Users.Data.Any())
+                                {
+                                    @foreach (var user in Model.Users.Data)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center text-white me-2">
+                                                        @user.UserName.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div>
+                                                        <strong>@user.UserName</strong>
+                                                        @if (user.IsNewUser)
+                                                        {
+                                                            <span class="badge badge-success ml-1">جدید</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @user.Email
+                                                @if (user.EmailConfirmed)
+                                                {
+                                                    <i class="mdi mdi-check-circle text-success" title="تایید شده"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="mdi mdi-alert-circle text-warning" title="تایید نشده"></i>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                                                {
+                                                    @user.PhoneNumber
+                                                    @if (user.PhoneNumberConfirmed)
+                                                    {
+                                                        <i class="mdi mdi-check-circle text-success" title="تایید شده"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="mdi mdi-alert-circle text-warning" title="تایید نشده"></i>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (user.IsActive)
+                                                {
+                                                    <span class="badge badge-success">فعال</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge badge-danger">غیرفعال</span>
+                                                }
+                                                
+                                                @if (user.IsLocked)
+                                                {
+                                                    <span class="badge badge-warning ml-1">قفل شده</span>
+                                                }
+                                                
+                                                @if (user.TwoFactorEnabled)
+                                                {
+                                                    <span class="badge badge-info ml-1">2FA</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (user.Roles != null && user.Roles.Any())
+                                                {
+                                                    @foreach (var role in user.Roles.Take(2))
+                                                    {
+                                                        <span class="badge badge-secondary">@role</span>
+                                                    }
+                                                    @if (user.Roles.Count > 2)
+                                                    {
+                                                        <span class="badge badge-light">+@(user.Roles.Count - 2)</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">-</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @user.CreatedAt.ToString("yyyy/MM/dd")
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="@Url.Action("Details", new { id = user.Id })" 
+                                                       class="btn btn-sm btn-outline-info" title="مشاهده جزئیات">
+                                                        <i class="mdi mdi-eye"></i>
+                                                    </a>
+                                                    <a href="@Url.Action("Edit", new { id = user.Id })" 
+                                                       class="btn btn-sm btn-outline-warning" title="ویرایش">
+                                                        <i class="mdi mdi-pencil"></i>
+                                                    </a>
+                                                    @if (Model.CanDelete == true && user.Id != Model.CurrentAdminId)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                onclick="deleteUser('@user.Id', '@user.UserName')" title="حذف">
+                                                            <i class="mdi mdi-delete"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">
+                                            <i class="mdi mdi-information-outline"></i>
+                                            هیچ کاربری یافت نشد
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if (Model.Users != null && Model.Users.TotalPages > 1)
+                    {
+                        <nav aria-label="صفحه‌بندی کاربران">
+                            <ul class="pagination justify-content-center">
+                                @if (Model.CurrentPage > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = Model.CurrentPage - 1, pageSize = Model.PageSize, searchTerm = Model.SearchTerm })">
+                                            <i class="mdi mdi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                }
+
+                                @for (int i = Math.Max(1, Model.CurrentPage - 2); i <= Math.Min(Model.Users.TotalPages, Model.CurrentPage + 2); i++)
+                                {
+                                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = i, pageSize = Model.PageSize, searchTerm = Model.SearchTerm })">
+                                            @i
+                                        </a>
+                                    </li>
+                                }
+
+                                @if (Model.CurrentPage < Model.Users.TotalPages)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@Url.Action("Index", new { page = Model.CurrentPage + 1, pageSize = Model.PageSize, searchTerm = Model.SearchTerm })">
+                                            <i class="mdi mdi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">تایید حذف کاربر</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>آیا مطمئن هستید که می‌خواهید کاربر <strong id="userNameToDelete"></strong> را حذف کنید؟</p>
+                <p class="text-danger"><small>این عمل قابل بازگشت نیست!</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">حذف کاربر</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/Admin/js/users-management.js"></script>
+}
