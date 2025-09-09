@@ -181,7 +181,7 @@ namespace Backend.Identity.DependencyInjection
             services.AddScoped<Backend.Application.Common.Interfaces.Identity.IAuditService, AuditService>();
             
             // Register RefreshTokenService
-            services.AddScoped<Backend.Domain.Interfaces.IRefreshTokenService, RefreshTokenService>();
+            services.AddScoped<Backend.Application.Common.Interfaces.Identity.IRefreshTokenService, RefreshTokenService>();
             
             // Register default date time service if not already registered
             services.AddScoped<IDateTimeService, DefaultDateTimeService>();

@@ -33,7 +33,7 @@ public class CreateUserDto
     /// <summary>
     /// Associated customer ID (optional)
     /// </summary>
-    public Guid? CustomerId { get; set; }
+    public string? CustomerId { get; set; }
     
     /// <summary>
     /// Whether to send confirmation email

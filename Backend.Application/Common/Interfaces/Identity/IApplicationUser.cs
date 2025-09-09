@@ -21,7 +21,7 @@ public interface IApplicationUser
     DateTimeOffset? LockoutEnd { get; }
     
     // Custom Properties
-    Guid? CustomerId { get; }
+    string? CustomerId { get; }
     string? TotpSecretKey { get; }
     bool TotpEnabled { get; }
     bool SmsEnabled { get; }

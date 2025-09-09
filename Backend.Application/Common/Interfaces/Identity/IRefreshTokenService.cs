@@ -1,4 +1,4 @@
-namespace Backend.Domain.Interfaces
+namespace Backend.Application.Common.Interfaces.Identity
 {
     /// <summary>
     /// Service for managing refresh tokens
@@ -54,4 +54,4 @@ namespace Backend.Domain.Interfaces
         /// <returns>Number of tokens cleaned up</returns>
         Task<int> CleanupExpiredTokensAsync(CancellationToken cancellationToken = default);
     }
-} 
+}

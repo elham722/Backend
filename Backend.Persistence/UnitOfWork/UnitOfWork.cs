@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Backend.Domain.Aggregates.Common;
+using Backend.Domain.Events;
 using Backend.Domain.Interfaces.Repositories;
 using Backend.Domain.Interfaces.UnitOfWork;
 using Backend.Persistence.Contexts;
@@ -11,6 +12,7 @@ using Backend.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using MediatR;
 
 namespace Backend.Persistence.UnitOfWork;
 
@@ -21,6 +23,7 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<UnitOfWork> _logger;
+    private readonly IMediator _mediator;
     private readonly Dictionary<Type, object> _repositories;
     private IDbContextTransaction? _currentTransaction;
 
@@ -30,10 +33,12 @@ public class UnitOfWork : IUnitOfWork
     public UnitOfWork(
         ApplicationDbContext context,
         ILogger<UnitOfWork> logger,
+        IMediator mediator,
         ICustomerRepository customerRepository)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         CustomerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
         
         _repositories = new Dictionary<Type, object>();
@@ -212,8 +217,8 @@ public class UnitOfWork : IUnitOfWork
             {
                 _logger.LogInformation("Dispatching domain event: {EventType}", domainEvent.GetType().Name);
                 
-                // Note: In a real implementation, you would use a domain event dispatcher
-                // For now, we'll just log the event
+                // TODO: Implement domain event handling when Customer feature is added
+                // For now, just log the event
                 await Task.CompletedTask;
             }
 

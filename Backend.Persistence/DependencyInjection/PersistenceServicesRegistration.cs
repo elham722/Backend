@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MediatR;
 
 namespace Backend.Persistence.DependencyInjection;
 
@@ -34,6 +35,9 @@ public static class PersistenceServicesRegistration
 
         // Unit of Work
         services.AddScoped<IUnitOfWork, Backend.Persistence.UnitOfWork.UnitOfWork>();
+
+        // MediatR for domain events
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(PersistenceServicesRegistration).Assembly));
 
         return services;
     }
@@ -76,6 +80,9 @@ public static class PersistenceServicesRegistration
         // Register Unit of Work
         services.AddScoped<IUnitOfWork, Backend.Persistence.UnitOfWork.UnitOfWork>();
 
+        // MediatR for domain events
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(PersistenceServicesRegistration).Assembly));
+
         // Register Repository Factory (if needed)
         services.AddScoped<IRepositoryFactory, RepositoryFactory>();
 
@@ -103,6 +110,9 @@ public static class PersistenceServicesRegistration
 
         // Register Unit of Work
         services.AddScoped<IUnitOfWork, Backend.Persistence.UnitOfWork.UnitOfWork>();
+
+        // MediatR for domain events
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(PersistenceServicesRegistration).Assembly));
 
         // Register Repository Factory
         services.AddScoped<IRepositoryFactory, RepositoryFactory>();

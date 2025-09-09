@@ -1,7 +1,7 @@
 using Backend.Application.Common.Commands;
 using Backend.Application.Common.Results;
 using Backend.Application.Features.UserManagement.DTOs;
-using Backend.Domain.Interfaces;
+using Backend.Application.Common.Interfaces.Identity;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,12 +15,12 @@ namespace Backend.Application.Features.UserManagement.Commands.Logout
     public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result<LogoutResultDto>>
     {
         private readonly IRefreshTokenService _refreshTokenService;
-        private readonly IUserService _userService;
+        private readonly Common.Interfaces.Identity.IUserService _userService;
         private readonly ILogger<LogoutCommandHandler> _logger;
 
         public LogoutCommandHandler(
             IRefreshTokenService refreshTokenService,
-            IUserService userService,
+            Common.Interfaces.Identity.IUserService userService,
             ILogger<LogoutCommandHandler> logger)
         {
             _refreshTokenService = refreshTokenService ?? throw new ArgumentNullException(nameof(refreshTokenService));

@@ -30,7 +30,7 @@ public class ApplicationUserAdapter : IApplicationUser
     public DateTimeOffset? LockoutEnd => _user.LockoutEnd;
     
     // Custom Properties
-    public Guid? CustomerId => _user.CustomerId;
+    public string? CustomerId => _user.CustomerId;
     public string? TotpSecretKey => _user.TotpSecretKey;
     public bool TotpEnabled => _user.TotpEnabled;
     public bool SmsEnabled => _user.SmsEnabled;

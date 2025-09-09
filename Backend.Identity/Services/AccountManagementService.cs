@@ -20,7 +20,7 @@ namespace Backend.Identity.Services
         Task<bool> DeactivateAccountAsync(ApplicationUser user);
         Task<bool> ActivateAccountAsync(ApplicationUser user);
         Task<bool> MarkAsDeletedAsync(ApplicationUser user);
-        Task<bool> LinkToCustomerAsync(ApplicationUser user, Guid customerId);
+        Task<bool> LinkToCustomerAsync(ApplicationUser user, string customerId);
         Task<bool> UnlinkFromCustomerAsync(ApplicationUser user);
         Task<List<Claim>> GetUserClaimsAsync(ApplicationUser user);
         Task<string> GenerateAccessTokenAsync(List<Claim> claims, string userId);
@@ -129,7 +129,7 @@ namespace Backend.Identity.Services
             return result.Succeeded;
         }
 
-        public async Task<bool> LinkToCustomerAsync(ApplicationUser user, Guid customerId)
+        public async Task<bool> LinkToCustomerAsync(ApplicationUser user, string customerId)
         {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));

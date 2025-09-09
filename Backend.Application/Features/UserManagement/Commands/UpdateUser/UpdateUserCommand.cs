@@ -52,7 +52,7 @@ public class UpdateUserCommand : ICommand<Result<UserDto>>
     /// <summary>
     /// Associated customer ID
     /// </summary>
-    public Guid? CustomerId { get; set; }
+    public string? CustomerId { get; set; }
     
     /// <summary>
     /// ID of the user performing the update (for audit)

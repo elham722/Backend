@@ -43,5 +43,5 @@ public class UpdateUserDto
     /// <summary>
     /// Associated customer ID
     /// </summary>
-    public Guid? CustomerId { get; set; }
+    public string? CustomerId { get; set; }
 } 

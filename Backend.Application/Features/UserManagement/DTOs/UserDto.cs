@@ -91,7 +91,7 @@ public class UserDto : BaseDto
     /// <summary>
     /// Associated customer ID (if any)
     /// </summary>
-    public Guid? CustomerId { get; set; }
+    public string? CustomerId { get; set; }
     
     /// <summary>
     /// TOTP secret key (if enabled)

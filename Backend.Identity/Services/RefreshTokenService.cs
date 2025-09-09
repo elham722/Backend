@@ -1,5 +1,5 @@
 using Backend.Identity.Context;
-using Backend.Domain.Interfaces;
+using Backend.Application.Common.Interfaces.Identity;
 using Backend.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

@@ -20,8 +20,8 @@ namespace Backend.Identity.Models
         ISecurityInfo IApplicationUser.Security => Security;
         IAuditInfo IApplicationUser.Audit => Audit;
 
-        // Integration with Domain (using Guid instead of string)
-        public Guid? CustomerId { get; private set; }
+        // Integration with Domain (using string to match IdentityUser.Id)
+        public string? CustomerId { get; private set; }
         
         // MFA Properties
         public string? TotpSecretKey { get; private set; }
@@ -57,7 +57,7 @@ namespace Backend.Identity.Models
             Audit = AuditInfo.Create();
         } // For EF Core
 
-        public static ApplicationUser Create(string email, string userName, Guid? customerId = null, string? createdBy = null, IDateTimeService? dateTimeService = null)
+        public static ApplicationUser Create(string email, string userName, string? customerId = null, string? createdBy = null, IDateTimeService? dateTimeService = null)
         {
             if (string.IsNullOrWhiteSpace(email))
                 throw new ArgumentException("Email cannot be null or empty", nameof(email));
@@ -100,7 +100,7 @@ namespace Backend.Identity.Models
             Audit = audit ?? throw new ArgumentNullException(nameof(audit));
         }
 
-        internal void SetCustomerId(Guid? customerId)
+        internal void SetCustomerId(string? customerId)
         {
             CustomerId = customerId;
         }
